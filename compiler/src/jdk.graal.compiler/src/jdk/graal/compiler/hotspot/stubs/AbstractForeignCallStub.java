@@ -28,7 +28,6 @@ import static jdk.graal.compiler.nodes.ConstantNode.forBoolean;
 import static jdk.vm.ci.hotspot.HotSpotCallingConventionType.JavaCall;
 import static jdk.vm.ci.hotspot.HotSpotCallingConventionType.JavaCallee;
 import static jdk.vm.ci.hotspot.HotSpotCallingConventionType.NativeCall;
-import static jdk.vm.ci.services.Services.IS_BUILDING_NATIVE_IMAGE;
 
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
@@ -275,10 +274,6 @@ public abstract class AbstractForeignCallStub extends Stub {
         }
         if (thisMethod == null) {
             throw new InternalError("Can't find " + getClass().getSimpleName() + ".getGraph");
-        }
-        if (IS_BUILDING_NATIVE_IMAGE) {
-            HotSpotReplacementsImpl replacements = (HotSpotReplacementsImpl) providers.getReplacements();
-            replacements.findSnippetMethod(thisMethod);
         }
         return thisMethod;
     }
