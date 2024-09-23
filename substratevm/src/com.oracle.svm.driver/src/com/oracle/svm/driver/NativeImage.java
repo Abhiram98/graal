@@ -1848,7 +1848,9 @@ public class NativeImage {
             return Set.of();
         }
 
-        List<Path> modulePath = finalModulePath.stream().filter(p -> !p.endsWith("lib/svm/library-support.jar")).toList();
+        // https://bugs.openjdk.org/browse/JDK-8334761
+        List<String> excludedJars = List.of("lib/svm/library-support.jar", "lib/svm/svm-graalos-support.jar");
+        List<Path> modulePath = finalModulePath.stream().filter(p -> excludedJars.stream().noneMatch(p::endsWith)).toList();
 
         ModuleFinder finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
         Set<String> modules = finder.findAll().stream()
