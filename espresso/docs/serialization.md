@@ -122,7 +122,7 @@ public class PersistentApp implements ContinuationEntryPoint, Serializable {
             /*
              * Program had been executed at least once with the specified path: restore the continuation from file.
              */
-            continuation = ser.load(storagePath); // (7)!
+            continuation = ser.load(storagePath);
         }
         return continuation;
     }
