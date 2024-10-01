@@ -274,6 +274,13 @@ public class HotSpotReplacementsImpl extends ReplacementsImpl {
         return super.getInjectedArgument(capability);
     }
 
+    public ResolvedJavaMethod findSnippetMethod(ResolvedJavaMethod thisMethod) {
+        if (snippetEncoder == null) {
+            throw new GraalError("findSnippetMethod called before initialization of Replacements");
+        }
+        return snippetEncoder.findSnippetMethod(thisMethod);
+    }
+
     public static MetaAccessProvider noticeTypes(MetaAccessProvider metaAccess) {
         if (inImageBuildtimeCode()) {
             return SymbolicSnippetEncoder.noticeTypes(metaAccess);

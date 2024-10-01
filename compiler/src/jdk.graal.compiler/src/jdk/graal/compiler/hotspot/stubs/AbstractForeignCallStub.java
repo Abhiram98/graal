@@ -50,6 +50,7 @@ import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.replacements.GraphKit;
 import jdk.graal.compiler.replacements.nodes.ReadRegisterNode;
+import jdk.graal.compiler.serviceprovider.GraalServices;
 import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotSignature;
 import jdk.vm.ci.meta.JavaMethod;
@@ -274,6 +275,10 @@ public abstract class AbstractForeignCallStub extends Stub {
         }
         if (thisMethod == null) {
             throw new InternalError("Can't find " + getClass().getSimpleName() + ".getGraph");
+        }
+        if (GraalServices.isBuildingLibgraal()) {
+            HotSpotReplacementsImpl replacements = (HotSpotReplacementsImpl) providers.getReplacements();
+            replacements.findSnippetMethod(thisMethod);
         }
         return thisMethod;
     }
