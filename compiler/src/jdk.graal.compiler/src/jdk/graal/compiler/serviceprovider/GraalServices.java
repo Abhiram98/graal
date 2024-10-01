@@ -44,6 +44,8 @@ import jdk.vm.ci.meta.SpeculationLog.SpeculationReason;
 import jdk.vm.ci.runtime.JVMCI;
 import jdk.vm.ci.services.Services;
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
 /**
  * Interface to functionality that abstracts over which JDK version Graal is running on.
@@ -75,6 +77,7 @@ public final class GraalServices {
      */
     private static Map<Class<?>, List<?>> libgraalServices;
 
+    @Platforms(Platform.HOSTED_ONLY.class)
     @ExcludeFromJacocoGeneratedReport("only called when building libgraal")
     public static void setLibgraalServices(Map<Class<?>, List<?>> services) {
         GraalError.guarantee(libgraalServices == null, "Libgraal services must be set exactly once");
