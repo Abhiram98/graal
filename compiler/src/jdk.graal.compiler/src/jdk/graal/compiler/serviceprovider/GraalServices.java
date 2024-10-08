@@ -54,8 +54,8 @@ public final class GraalServices {
 
     /**
      * Returns true if (at the time of the call) code is executing in the context of building
-     * libgraal. Note that this is more specific than {@link ImageInfo#inImageBuildtimeCode()} which
-     * will return true when building any native image, not just libgraal.
+     * libgraal. Note that this is more specific than {@link ImageInfo#inImageBuildtimeCode()}. The
+     * latter will return true when building any native image, not just libgraal.
      */
     public static boolean isBuildingLibgraal() {
         // Note that IS_BUILDING_NATIVE_IMAGE is true when in libgraal runtime
@@ -64,8 +64,8 @@ public final class GraalServices {
 
     /**
      * Returns true if (at the time of the call) code is executing in the context of executing
-     * libgraal. Note that this is more specific than {@link ImageInfo#inImageRuntimeCode()} which
-     * will return true when executing any native image, not just libgraal.
+     * libgraal. Note that this is more specific than {@link ImageInfo#inImageRuntimeCode()}. The
+     * latter will return true when executing any native image, not just libgraal.
      */
     public static boolean isInLibgraal() {
         return Services.IS_IN_NATIVE_IMAGE;

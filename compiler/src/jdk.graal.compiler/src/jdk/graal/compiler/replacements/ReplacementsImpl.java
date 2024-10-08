@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jdk.graal.compiler.serviceprovider.GraalServices;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
 import org.graalvm.collections.Pair;
@@ -478,13 +479,14 @@ public abstract class ReplacementsImpl implements Replacements, InlineInvokePlug
 
             @Override
             public boolean isDeferredInvoke(StateSplit stateSplit) {
-                if (inImageRuntimeCode()) {
+                if (GraalServices.isInLibgraal()) {
                     throw GraalError.shouldNotReachHere("unused in libgraal"); // ExcludeFromJacocoGeneratedReport
                 }
                 if (stateSplit instanceof Invoke) {
                     Invoke invoke = (Invoke) stateSplit;
                     ResolvedJavaMethod method = invoke.callTarget().targetMethod();
                     if (method == null) {
+                        Runtime.version();
                         return false;
                     }
                     if (method.getAnnotation(Fold.class) != null) {

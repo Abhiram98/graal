@@ -167,8 +167,8 @@ public final class HotSpotGraalCompilerFactory implements JVMCICompilerFactory {
     @Override
     public HotSpotGraalCompiler createCompiler(JVMCIRuntime runtime) {
         if (inImageBuildtimeCode() && inImageRuntimeCode()) {
-            // A number of guards in the compiler assume the invariant that
-            // at most one of these conditions is true so best to check it.
+            // A bunch of code assumes that at most one of these conditions
+            // is true so that invariant is verified here.
             throw new GraalError("Invariant violation: inImageBuildtimeCode && inImageRuntimeCode must not both be true");
         }
         HotSpotJVMCIRuntime hsRuntime = (HotSpotJVMCIRuntime) runtime;
