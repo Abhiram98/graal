@@ -1645,7 +1645,7 @@ public class NativeImage {
          * to create the image-build module layer, as it will attempt to define system modules to
          * the host VM.
          */
-        Set<String> implicitlyRequiredSystemModules = getImplicitlyRequiredSystemModules(finalImageModulePath);
+        Set<String> implicitlyRequiredSystemModules = getImplicitlyRequiredSystemModules(mp, localImageModulePath);
         addModules.addAll(implicitlyRequiredSystemModules);
 
         if (!addModules.isEmpty()) {
@@ -1843,16 +1843,18 @@ public class NativeImage {
         return mrefs;
     }
 
-    private Set<String> getImplicitlyRequiredSystemModules(Collection<Path> finalModulePath) {
-        if (!config.modulePathBuild || finalModulePath.isEmpty()) {
+    private Set<String> getImplicitlyRequiredSystemModules(Collection<Path> mp, Collection<Path> imagemp) {
+        if (!config.modulePathBuild || imagemp.isEmpty()) {
             return Set.of();
         }
 
         // https://bugs.openjdk.org/browse/JDK-8334761
         List<String> excludedJars = List.of("lib/svm/library-support.jar", "lib/svm/svm-graalos-support.jar");
-        List<Path> modulePath = finalModulePath.stream().filter(p -> excludedJars.stream().noneMatch(p::endsWith)).toList();
+        List<Path> modulePath = imagemp.stream().filter(p -> excludedJars.stream().noneMatch(p::endsWith)).toList();
 
-        ModuleFinder finder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+        ModuleFinder mpFinder = ModuleFinder.of(mp.toArray(Path[]::new));
+        ModuleFinder imagempFinder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+        ModuleFinder finder = ModuleFinder.compose(imagempFinder, mpFinder);
         Set<String> modules = finder.findAll().stream()
                         .map(mref -> mref.descriptor().name())
                         .collect(Collectors.toSet());
