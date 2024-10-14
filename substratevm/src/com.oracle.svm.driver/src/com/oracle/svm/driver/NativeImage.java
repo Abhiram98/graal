@@ -1634,21 +1634,20 @@ public class NativeImage {
         }
         List<Path> finalImageModulePath = applicationModules.values().stream().toList();
 
-        if (!addModules.isEmpty()) {
-            arguments.add("-D" + ModuleSupport.PROPERTY_IMAGE_EXPLICITLY_ADDED_MODULES + "=" +
-                            String.join(",", addModules));
-        }
-
         /*
          * Make sure to add all system modules required by the application that might not be part of
          * the boot module layer of image builder. If we do not do this, the image builder will fail
          * to create the image-build module layer, as it will attempt to define system modules to
          * the host VM.
          */
-        Set<String> implicitlyRequiredSystemModules = getImplicitlyRequiredSystemModules(mp, localImageModulePath);
-        addModules.addAll(implicitlyRequiredSystemModules);
+        Set<String> implicitlyRequiredSystemModules = getImplicitlyRequiredSystemModules(finalImageModulePath);
+        addModules.addAll(implicitlyRequiredSystemModules);     // TODO (ivan-ristovic): add modules to builderVM instead
 
         if (!addModules.isEmpty()) {
+
+            arguments.add("-D" + ModuleSupport.PROPERTY_IMAGE_EXPLICITLY_ADDED_MODULES + "=" +
+                            String.join(",", addModules));
+
             List<String> addModulesForBuilderVM = new ArrayList<>();
             for (String moduleNameInAddModules : addModules) {
                 if (!applicationModules.containsKey(moduleNameInAddModules)) {
@@ -1843,26 +1842,24 @@ public class NativeImage {
         return mrefs;
     }
 
-    private Set<String> getImplicitlyRequiredSystemModules(Collection<Path> mp, Collection<Path> imagemp) {
-        if (!config.modulePathBuild || imagemp.isEmpty()) {
+    private Set<String> getImplicitlyRequiredSystemModules(Collection<Path> modulePath) {
+        if (!config.modulePathBuild || modulePath.isEmpty()) {
             return Set.of();
         }
 
-        // https://bugs.openjdk.org/browse/JDK-8334761
-        List<String> excludedJars = List.of("lib/svm/library-support.jar", "lib/svm/svm-graalos-support.jar");
-        List<Path> modulePath = imagemp.stream().filter(p -> excludedJars.stream().noneMatch(p::endsWith)).toList();
+        Set<Path> applicationModulePath = modulePath.stream()
+                .filter(p -> !p.getParent().endsWith(Paths.get("lib", "svm")))
+                .collect(Collectors.toSet());
 
-        ModuleFinder mpFinder = ModuleFinder.of(mp.toArray(Path[]::new));
-        ModuleFinder imagempFinder = ModuleFinder.of(modulePath.toArray(Path[]::new));
-        ModuleFinder finder = ModuleFinder.compose(imagempFinder, mpFinder);
+        ModuleFinder finder = ModuleFinder.of(applicationModulePath.toArray(Path[]::new));
         Set<String> modules = finder.findAll().stream()
-                        .map(mref -> mref.descriptor().name())
-                        .collect(Collectors.toSet());
+                .map(mref -> mref.descriptor().name())
+                .collect(Collectors.toSet());
 
         Configuration configuration = ModuleLayer.boot().configuration().resolve(finder, ModuleFinder.ofSystem(), modules);
         Set<String> applicationModulePathRequiredModules = configuration.modules().stream()
-                        .map(ResolvedModule::name)
-                        .collect(Collectors.toSet());
+                .map(ResolvedModule::name)
+                .collect(Collectors.toSet());
 
         Set<String> applicationModulePathRequiredSystemModules = new HashSet<>(getBuiltInModules());
         applicationModulePathRequiredSystemModules.retainAll(applicationModulePathRequiredModules);
