@@ -15314,8 +15314,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 bytecodeNode = "this";
             }
 
-            // Store local may not have a valid child bci.
-            b.startIf().string("operandIndex != -1").end().startBlock();
             b.declaration(type(short.class), "newOperand");
             b.declaration(type(short.class), "operand", readInstruction("bc", "operandIndex"));
 
@@ -15430,27 +15428,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end().end();
 
             emitQuickeningOperand(b, "this", "bc", "bci", null, 0, "operandIndex", "operand", "newOperand");
-
-            b.end(); // case operandIndex != -1
-            b.startElseBlock();
-            b.startStatement().string("newInstruction = ").tree(createInstructionConstant(genericInstruction)).end();
-            b.statement(setFrameObject("slot", "local"));
-            b.startStatement().startCall(bytecodeNode, "setCachedLocalTagInternal");
-            if (materialized) {
-                b.startCall(bytecodeNode, "getLocalTags").end();
-            } else {
-                b.string("localTags");
-            }
-            if (model.enableBlockScoping) {
-                b.string("localIndex");
-            } else {
-                b.string("slot");
-            }
-            b.staticReference(frameTagsElement.getObject());
-
-            b.end().end();
-
-            b.end(); // case operandIndex == -1
 
             emitQuickening(b, "this", "bc", "bci", null, "newInstruction");
 

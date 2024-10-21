@@ -6172,76 +6172,70 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             int operandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
-            if (operandIndex != -1) {
-                short newOperand;
-                short operand = BYTES.getShort(bc, operandIndex);
-                byte oldTag = this.getCachedLocalTagInternal(localTags, localIndex);
-                byte newTag;
-                if (local instanceof Boolean) {
-                    switch (oldTag) {
-                        case FrameTags.BOOLEAN :
-                        case FrameTags.ILLEGAL :
-                            if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
-                                newInstruction = Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN;
-                            } else {
-                                newInstruction = Instructions.STORE_LOCAL$BOOLEAN;
-                                newOperand = operand;
-                            }
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
-                            newTag = FrameTags.BOOLEAN;
-                            FRAMES.setBoolean(frame, slot, (boolean) local);
-                            break;
-                        case FrameTags.LONG :
-                        case FrameTags.OBJECT :
-                            newInstruction = Instructions.STORE_LOCAL$GENERIC;
-                            newOperand = undoQuickening(operand);
-                            newTag = FrameTags.OBJECT;
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                            FRAMES.setObject(frame, slot, local);
-                            break;
-                        default :
-                            throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                    }
-                } else if (local instanceof Long) {
-                    switch (oldTag) {
-                        case FrameTags.LONG :
-                        case FrameTags.ILLEGAL :
-                            if ((newOperand = applyQuickeningLong(operand)) != -1) {
-                                newInstruction = Instructions.STORE_LOCAL$LONG$LONG;
-                            } else {
-                                newInstruction = Instructions.STORE_LOCAL$LONG;
-                                newOperand = operand;
-                            }
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
-                            newTag = FrameTags.LONG;
-                            FRAMES.setLong(frame, slot, (long) local);
-                            break;
-                        case FrameTags.BOOLEAN :
-                        case FrameTags.OBJECT :
-                            newInstruction = Instructions.STORE_LOCAL$GENERIC;
-                            newOperand = undoQuickening(operand);
-                            newTag = FrameTags.OBJECT;
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                            FRAMES.setObject(frame, slot, local);
-                            break;
-                        default :
-                            throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                    }
-                } else {
-                    newInstruction = Instructions.STORE_LOCAL$GENERIC;
-                    newOperand = undoQuickening(operand);
-                    newTag = FrameTags.OBJECT;
-                    this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                    FRAMES.setObject(frame, slot, local);
+            short newOperand;
+            short operand = BYTES.getShort(bc, operandIndex);
+            byte oldTag = this.getCachedLocalTagInternal(localTags, localIndex);
+            byte newTag;
+            if (local instanceof Boolean) {
+                switch (oldTag) {
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL$BOOLEAN;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
+                        newTag = FrameTags.BOOLEAN;
+                        FRAMES.setBoolean(frame, slot, (boolean) local);
+                        break;
+                    case FrameTags.LONG :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
                 }
-                this.setCachedLocalTagInternal(localTags, localIndex, newTag);
-                BYTES.putShort(bc, operandIndex, newOperand);
-                this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
+            } else if (local instanceof Long) {
+                switch (oldTag) {
+                    case FrameTags.LONG :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningLong(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL$LONG$LONG;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL$LONG;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
+                        newTag = FrameTags.LONG;
+                        FRAMES.setLong(frame, slot, (long) local);
+                        break;
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
             } else {
                 newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                newOperand = undoQuickening(operand);
+                newTag = FrameTags.OBJECT;
+                this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
                 FRAMES.setObject(frame, slot, local);
-                this.setCachedLocalTagInternal(localTags, localIndex, FrameTags.OBJECT);
             }
+            this.setCachedLocalTagInternal(localTags, localIndex, newTag);
+            BYTES.putShort(bc, operandIndex, newOperand);
+            this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
             {
                 InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
                 BYTES.putShort(bc, bci, newInstruction);
@@ -6596,76 +6590,70 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
             AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            if (operandIndex != -1) {
-                short newOperand;
-                short operand = BYTES.getShort(bc, operandIndex);
-                byte oldTag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-                byte newTag;
-                if (local instanceof Boolean) {
-                    switch (oldTag) {
-                        case FrameTags.BOOLEAN :
-                        case FrameTags.ILLEGAL :
-                            if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
-                                newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN;
-                            } else {
-                                newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN;
-                                newOperand = operand;
-                            }
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
-                            newTag = FrameTags.BOOLEAN;
-                            FRAMES.setBoolean(frame, slot, (boolean) local);
-                            break;
-                        case FrameTags.LONG :
-                        case FrameTags.OBJECT :
-                            newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                            newOperand = undoQuickening(operand);
-                            newTag = FrameTags.OBJECT;
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                            FRAMES.setObject(frame, slot, local);
-                            break;
-                        default :
-                            throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                    }
-                } else if (local instanceof Long) {
-                    switch (oldTag) {
-                        case FrameTags.LONG :
-                        case FrameTags.ILLEGAL :
-                            if ((newOperand = applyQuickeningLong(operand)) != -1) {
-                                newInstruction = Instructions.STORE_LOCAL_MAT$LONG$LONG;
-                            } else {
-                                newInstruction = Instructions.STORE_LOCAL_MAT$LONG;
-                                newOperand = operand;
-                            }
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
-                            newTag = FrameTags.LONG;
-                            FRAMES.setLong(frame, slot, (long) local);
-                            break;
-                        case FrameTags.BOOLEAN :
-                        case FrameTags.OBJECT :
-                            newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                            newOperand = undoQuickening(operand);
-                            newTag = FrameTags.OBJECT;
-                            this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                            FRAMES.setObject(frame, slot, local);
-                            break;
-                        default :
-                            throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                    }
-                } else {
-                    newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                    newOperand = undoQuickening(operand);
-                    newTag = FrameTags.OBJECT;
-                    this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
-                    FRAMES.setObject(frame, slot, local);
+            short newOperand;
+            short operand = BYTES.getShort(bc, operandIndex);
+            byte oldTag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
+            byte newTag;
+            if (local instanceof Boolean) {
+                switch (oldTag) {
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
+                        newTag = FrameTags.BOOLEAN;
+                        FRAMES.setBoolean(frame, slot, (boolean) local);
+                        break;
+                    case FrameTags.LONG :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
                 }
-                bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, newTag);
-                BYTES.putShort(bc, operandIndex, newOperand);
-                this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
+            } else if (local instanceof Long) {
+                switch (oldTag) {
+                    case FrameTags.LONG :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningLong(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG$LONG;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
+                        newTag = FrameTags.LONG;
+                        FRAMES.setLong(frame, slot, (long) local);
+                        break;
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
             } else {
                 newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                newOperand = undoQuickening(operand);
+                newTag = FrameTags.OBJECT;
+                this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
                 FRAMES.setObject(frame, slot, local);
-                bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, FrameTags.OBJECT);
             }
+            bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, newTag);
+            BYTES.putShort(bc, operandIndex, newOperand);
+            this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
             {
                 InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
                 BYTES.putShort(bc, bci, newInstruction);
