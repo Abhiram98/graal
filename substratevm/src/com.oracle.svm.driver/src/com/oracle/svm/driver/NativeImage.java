@@ -1847,8 +1847,9 @@ public class NativeImage {
             return Set.of();
         }
 
+        Path libPath = Paths.get("lib", "svm");
         Set<Path> applicationModulePath = modulePath.stream()
-                .filter(p -> !p.getParent().endsWith(Paths.get("lib", "svm")))
+                .filter(p -> !isChildOf(libPath, p))
                 .collect(Collectors.toSet());
 
         ModuleFinder finder = ModuleFinder.of(applicationModulePath.toArray(Path[]::new));
@@ -1864,6 +1865,17 @@ public class NativeImage {
         Set<String> applicationModulePathRequiredSystemModules = new HashSet<>(getBuiltInModules());
         applicationModulePathRequiredSystemModules.retainAll(applicationModulePathRequiredModules);
         return applicationModulePathRequiredSystemModules;
+    }
+
+    private static boolean isChildOf(Path parent, Path candidate) {
+        Path p = candidate.getParent();
+        while (p != null) {
+            if (p.endsWith(parent)) {
+                return true;
+            }
+            p = p.getParent();
+        }
+        return false;
     }
 
     boolean useBundle() {
