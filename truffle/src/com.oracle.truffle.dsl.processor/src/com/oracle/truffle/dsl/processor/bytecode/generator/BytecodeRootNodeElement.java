@@ -2126,6 +2126,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return String.format("BYTES.putInt(%s, %s, %s)", array, index, value);
     }
 
+    private static String readByte(String array, String index) {
+        return String.format("BYTES.getByte(%s, %s)", array, index);
+    }
+
+    private static String writeByte(String array, String index, String value) {
+        return String.format("BYTES.putByte(%s, %s, %s)", array, index, value);
+    }
+
     private static CodeTree readConst(String index) {
         return readConst(CodeTreeBuilder.singleString(index));
     }
@@ -12134,15 +12142,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeTreeBuilder b = ex.createBuilder();
 
             if (tier.isCached()) {
-                b.startStatement();
-                b.string("localTags[");
-                if (model.enableBlockScoping) {
-                    b.string("localIndex");
-                } else {
-                    b.string("frameIndex - USER_LOCALS_START_INDEX");
-                }
-                b.string("] = tag");
-                b.end();
+                b.statement(writeByte("localTags", model.enableBlockScoping ? "localIndex" : "frameIndex - USER_LOCALS_START_INDEX", "tag"));
             } else {
                 // nothing to do
             }
@@ -12159,13 +12159,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             if (tier.isCached()) {
                 b.startReturn();
-                b.startGroup().string("localTags[");
-                if (model.enableBlockScoping) {
-                    b.string("localIndex");
-                } else {
-                    b.string("frameIndex - USER_LOCALS_START_INDEX");
-                }
-                b.string("]").end();
+                b.string(readByte("localTags", model.enableBlockScoping ? "localIndex" : "frameIndex - USER_LOCALS_START_INDEX"));
                 b.end();
             } else {
                 b.startReturn().staticReference(frameTagsElement.getObject()).end();

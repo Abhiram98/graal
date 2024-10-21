@@ -7770,12 +7770,12 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
 
         @Override
         byte getCachedLocalTagInternal(byte[] localTags, int localIndex) {
-            return localTags[localIndex];
+            return BYTES.getByte(localTags, localIndex);
         }
 
         @Override
         void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
-            localTags[localIndex] = tag;
+            BYTES.putByte(localTags, localIndex, tag);
         }
 
         @Override
