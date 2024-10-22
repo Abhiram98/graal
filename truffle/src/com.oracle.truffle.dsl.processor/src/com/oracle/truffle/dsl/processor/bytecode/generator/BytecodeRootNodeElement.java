@@ -5732,7 +5732,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     case CONSTANT -> constantOperandIndices.get(constantIndex++);
                     case NODE_PROFILE -> "allocateNode()";
                     case TAG_NODE -> "node";
-                    case LOCAL_OFFSET, LOCAL_INDEX, LOCAL_ROOT, SHORT, BRANCH_PROFILE, STACK_POINTER -> throw new AssertionError(
+                    case FRAME_INDEX, LOCAL_INDEX, LOCAL_ROOT, SHORT, BRANCH_PROFILE, STACK_POINTER -> throw new AssertionError(
                                     "Operation " + operation.name + " takes an immediate " + immediate.name() + " with unexpected kind " + immediate.kind() +
                                                     ". This is a bug in the Bytecode DSL processor.");
                 };
@@ -9220,8 +9220,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             Set<String> generated = new HashSet<>();
             for (ImmediateKind kind : ImmediateKind.values()) {
-                if (kind == ImmediateKind.LOCAL_INDEX && !(model.usesBoxingElimination() || model.enableBlockScoping)) {
-                    // Local index is only used when block scoping or BE are enabled.
+                if (kind == ImmediateKind.LOCAL_INDEX && !model.localAccessesNeedLocalIndex() && !model.materializedLocalAccessesNeedLocalIndex()) {
+                    // Only generate immediate class for LocalIndex when needed.
                     continue;
                 }
 
@@ -9385,7 +9385,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     return "BytecodeIndexArgument";
                 case CONSTANT:
                     return "ConstantArgument";
-                case LOCAL_OFFSET:
+                case FRAME_INDEX:
                     return "LocalOffsetArgument";
                 case LOCAL_INDEX:
                     return "LocalIndexArgument";
@@ -9468,7 +9468,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     case STACK_POINTER:
                         this.add(createAsInteger());
                         break;
-                    case LOCAL_OFFSET:
+                    case FRAME_INDEX:
                         this.add(createAsLocalOffset());
                         break;
                     case LOCAL_INDEX:
@@ -9544,7 +9544,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 CodeTreeBuilder b = ex.createBuilder();
                 b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
                 b.startReturn();
-                if (ImmediateKind.LOCAL_OFFSET.width != ImmediateWidth.SHORT) {
+                if (ImmediateKind.FRAME_INDEX.width != ImmediateWidth.SHORT) {
                     throw new AssertionError("encoding changed");
                 }
                 b.string(readShortSafe("bc", "bci")).string(" - USER_LOCALS_START_INDEX");
@@ -9657,7 +9657,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     case BRANCH_PROFILE -> "BRANCH_PROFILE";
                     case BYTECODE_INDEX -> "BYTECODE_INDEX";
                     case CONSTANT -> "CONSTANT";
-                    case LOCAL_OFFSET -> "LOCAL_OFFSET";
+                    case FRAME_INDEX -> "LOCAL_OFFSET";
                     case LOCAL_INDEX -> "LOCAL_INDEX";
                     case SHORT, LOCAL_ROOT, STACK_POINTER -> "INTEGER";
                     case NODE_PROFILE -> "NODE_PROFILE";
@@ -10068,14 +10068,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(createSetLocalValue());
                 this.add(createGetLocalValueInternal());
                 this.add(createSetLocalValueInternal());
+            } else {
+                this.add(createAbstractSetLocalValueInternal());
             }
 
             if (model.enableBlockScoping) {
-                this.add(createLocalIndexToTableIndex());
                 this.add(createLocalOffsetToTableIndex());
-                if (model.storeBciInFrame) {
-                    this.add(createValidateLocalLivenessInternal());
-                }
+            }
+            if (model.canValidateMaterializedLocalLiveness()) {
+                this.add(createValidateMaterializedLocalLivenessInternal());
+                this.add(createLocalIndexToTableIndex());
             }
 
             this.add(createGetLocalName());
@@ -10214,6 +10216,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
+        private CodeExecutableElement createAbstractSetLocalValueInternal() {
+            // Redeclare the method so it is visible on the AbstractBytecodeNode.
+            if (!model.usesBoxingElimination()) {
+                throw new AssertionError();
+            }
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeNode, "setLocalValueInternal",
+                            new String[]{"frame", "localOffset", "localIndex", "value"},
+                            new TypeMirror[]{types.Frame, type(int.class), type(int.class), type(Object.class)});
+            ex.getModifiers().add(ABSTRACT);
+            return ex;
+        }
+
         private CodeExecutableElement createLocalOffsetToTableIndex() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PROTECTED, FINAL), type(int.class), "localOffsetToTableIndex");
             ex.addParameter(new CodeVariableElement(type(int.class), "bci"));
@@ -10254,8 +10268,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
-        private CodeExecutableElement createValidateLocalLivenessInternal() {
-            if (!(model.enableBlockScoping && model.storeBciInFrame)) {
+        private CodeExecutableElement createValidateMaterializedLocalLivenessInternal() {
+            if (!model.canValidateMaterializedLocalLiveness()) {
                 throw new AssertionError("Not supported.");
             }
 
@@ -10462,7 +10476,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.tree(createValidationErrorWithBci("stack pointer is out of bounds"));
                             b.end();
                             break;
-                        case LOCAL_OFFSET: {
+                        case FRAME_INDEX: {
                             b.tree(declareImmediate);
                             if (!rootNodeAvailable) {
                                 rootNodeAvailable = tryEmitRootNodeForLocalInstruction(b, group);
@@ -13701,7 +13715,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement("sp += 1");
                     break;
                 case CLEAR_LOCAL:
-                    String index = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_OFFSET)).toString();
+                    String index = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX)).toString();
                     if (model.defaultLocalValueExpression != null) {
                         b.statement(setFrameObject("frame", index, "DEFAULT_LOCAL_VALUE"));
                     } else {
@@ -14720,7 +14734,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = method.createBuilder();
 
-            CodeTree readSlot = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_OFFSET));
+            CodeTree readSlot = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX));
             if (materialized) {
                 b.declaration(type(int.class), "slot", readSlot);
                 b.declaration(type(int.class), "localRootIndex", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_ROOT)));
@@ -14820,7 +14834,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             String stackFrame = needsStackFrame ? "stackFrame" : "frame";
-            b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_OFFSET)));
+            b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX)));
             if (materialized) {
                 b.declaration(type(int.class), "localRootIndex", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_ROOT)));
             }
@@ -15151,26 +15165,48 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             boolean generic = ElementUtils.typeEquals(type(Object.class), inputType);
 
-            CodeTree readSlot = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_OFFSET));
+            CodeTree readSlot = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX));
             if (generic && !ElementUtils.needsCastTo(inputType, slotType)) {
                 if (materialized) {
                     b.declaration(type(int.class), "slot", readSlot);
+                    readSlot = CodeTreeBuilder.singleString("slot");
                     b.declaration(type(int.class), "localRootIndex", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_ROOT)));
                     if (instr.hasImmediate(ImmediateKind.LOCAL_INDEX)) {
                         b.declaration(type(int.class), "localIndex", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_INDEX)));
                     }
-                    emitValidateMaterializedAccess(b, "localRootIndex", "localRoot", null, "localIndex");
-                    readSlot = CodeTreeBuilder.singleString("slot");
-                }
 
-                b.startStatement();
-                startSetFrame(b, slotType).string("frame").tree(readSlot);
-                b.string("local");
-                b.end();
-                b.end();
-                b.statement(clearFrame(stackFrame, "sp - 1"));
-                if (materialized) {
+                    if (model.usesBoxingElimination()) {
+                        b.declaration(type(int.class), "localOffset", "slot - " + USER_LOCALS_START_INDEX);
+                        emitValidateMaterializedAccess(b, "localRootIndex", "localRoot", "bytecodeNode", "localIndex");
+                        // We need to update the tags. Call the setter method on the bytecodeNode.
+                        b.startStatement().startCall("bytecodeNode.setLocalValueInternal");
+                        b.string("frame");
+                        b.string("localOffset");
+                        if (instr.hasImmediate(ImmediateKind.LOCAL_INDEX)) {
+                            b.string("localIndex");
+                        } else {
+                            b.string("localOffset");
+                        }
+                        b.string("local");
+                        b.end(2);
+                    } else {
+                        emitValidateMaterializedAccess(b, "localRootIndex", "localRoot", null, "localIndex");
+                        b.startStatement();
+                        startSetFrame(b, slotType).string("frame").tree(readSlot);
+                        b.string("local");
+                        b.end();
+                        b.end();
+                    }
+
+                    b.statement(clearFrame(stackFrame, "sp - 1"));
                     b.statement(clearFrame(stackFrame, "sp - 2"));
+                } else {
+                    b.startStatement();
+                    startSetFrame(b, slotType).string("frame").tree(readSlot);
+                    b.string("local");
+                    b.end();
+                    b.end();
+                    b.statement(clearFrame(stackFrame, "sp - 1"));
                 }
             } else {
                 if (!model.usesBoxingElimination()) {
@@ -15297,7 +15333,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeTreeBuilder b = method.createBuilder();
 
             b.declaration(type(short.class), "newInstruction");
-            b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_OFFSET)));
+            b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX)));
             if (materialized) {
                 b.declaration(type(int.class), "localRootIndex", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.LOCAL_ROOT)));
             }

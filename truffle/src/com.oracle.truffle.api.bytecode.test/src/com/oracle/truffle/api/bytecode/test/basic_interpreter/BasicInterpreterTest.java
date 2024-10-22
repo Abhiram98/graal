@@ -1569,14 +1569,12 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
     @Test
     public void testLocalsNonlocalWriteBoxingElimination() {
         /*
-         * With BE, uncached store.mat always stores locals as objects. If the outer root is cached,
-         * it may quicken local reads, but if an uncached inner root uses store.mat, the outer
-         * should gracefully unquicken local loads to generic.
+         * With BE, store.mat should not break BE when the same type as the cached type is stored.
          */
-        assumeTrue(run.hasBoxingElimination() && run.hasUncachedInterpreter());
+        assumeTrue(run.hasBoxingElimination());
         BytecodeRootNodes<BasicInterpreter> nodes = createNodes(BytecodeConfig.DEFAULT, b -> {
             // x = 1
-            // if (arg0) (lambda: x = 41)()
+            // if (arg0) (lambda: x = arg1)()
             // return x + 1
             b.beginRoot();
 
@@ -1589,7 +1587,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
             b.beginStoreLocalMaterialized(xLoc);
             b.emitLoadArgument(0);
-            b.emitLoadConstant(41L);
+            b.emitLoadArgument(1);
             b.endStoreLocalMaterialized();
             BasicInterpreter inner = b.endRoot();
 
@@ -1599,6 +1597,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginCreateClosure();
             b.emitLoadConstant(inner);
             b.endCreateClosure();
+            b.emitLoadArgument(1);
             b.endInvoke();
             b.endIfThen();
 
@@ -1614,7 +1613,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         BasicInterpreter outer = nodes.getNode(0);
         outer.getBytecodeNode().setUncachedThreshold(0);
 
-        assertEquals(2L, outer.getCallTarget().call(false));
+        assertEquals(2L, outer.getCallTarget().call(false, null));
 
         AbstractInstructionTest.assertInstructions(outer,
                         "load.constant$Long",
@@ -1623,7 +1622,8 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "branch.false$Boolean",
                         "load.constant",
                         "c.CreateClosure",
-                        "load.variadic_0",
+                        "load.argument",
+                        "load.variadic_1",
                         "c.Invoke",
                         "pop",
                         "load.local$Long$unboxed", // load BE'd
@@ -1631,7 +1631,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "c.AddOperation$AddLongs",
                         "return");
 
-        assertEquals(42L, outer.getCallTarget().call(true));
+        assertEquals(42L, outer.getCallTarget().call(true, 41L));
 
         AbstractInstructionTest.assertInstructions(outer,
                         "load.constant$Long",
@@ -1640,10 +1640,29 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "branch.false$Boolean",
                         "load.constant",
                         "c.CreateClosure",
-                        "load.variadic_0",
+                        "load.argument",
+                        "load.variadic_1",
                         "c.Invoke",
                         "pop$generic",
-                        "load.local$generic", // load becomes generic
+                        "load.local$Long$unboxed", // load is not affected by long store.
+                        "load.constant$Long",
+                        "c.AddOperation$AddLongs",
+                        "return");
+
+        assertEquals("411", outer.getCallTarget().call(true, "41"));
+
+        AbstractInstructionTest.assertInstructions(outer,
+                        "load.constant$Long",
+                        "store.local$Long$Long",
+                        "load.argument$Boolean",
+                        "branch.false$Boolean",
+                        "load.constant",
+                        "c.CreateClosure",
+                        "load.argument",
+                        "load.variadic_1",
+                        "c.Invoke",
+                        "pop$generic",
+                        "load.local$generic", // load unquickens.
                         "load.constant",
                         "c.AddOperation",
                         "return");

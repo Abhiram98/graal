@@ -140,17 +140,20 @@ public final class InstructionModel implements PrettyPrintable {
 
     public enum ImmediateKind {
         /**
-         * Relative local offset into the frame. Without boxing elimination or block scoping
-         * localOffset == localIndex.
+         * Frame index of a local. Should not be directly exposed to users; instead we expose a
+         * local offset, which is the logical offset of the local (frame_index - n_reserved_slots).
          */
-        LOCAL_OFFSET("local_offset", ImmediateWidth.SHORT),
+        FRAME_INDEX("frame_index", ImmediateWidth.SHORT),
         /**
-         * Local index into the locals table. Without boxing elimination or block scoping
-         * localOffset == localIndex.
+         * Index into the locals table. When block scoping is enabled, the bytecode will encode the
+         * local index {@link BytecodeDSLModel#localAccessesNeedLocalIndex() local accesses} or
+         * {@link BytecodeDSLModel#materializedLocalAccessesNeedLocalIndex() materialized local
+         * accesses} may encode this . TODO
          */
         LOCAL_INDEX("local_index", ImmediateWidth.SHORT),
         /**
-         * Index into BytecodeRootNodes.nodes. Necessary for boxing elimination.
+         * Index into BytecodeRootNodes.nodes. Necessary for boxing elimination of materialized
+         * local accesses.
          */
         LOCAL_ROOT("local_root", ImmediateWidth.SHORT),
         SHORT("short", ImmediateWidth.SHORT),

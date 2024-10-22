@@ -501,7 +501,7 @@ public abstract class BytecodeNode extends Node {
      * @param localOffset the logical offset of the local. The offset should be between 0 and
      *            {@link #getLocalCount(int)} (and may come from
      *            {@link BytecodeLocal#getLocalOffset()} or {@link LocalVariable#getLocalOffset()}).
-     * @return the current local value, or null if the local never written to (and there is no
+     * @return the current local value, or null if the local was never written to (and there is no
      *         {@link GenerateBytecode#defaultLocalValue() default local value}).
      * @see GenerateBytecode#enableBlockScoping
      * @since 24.2

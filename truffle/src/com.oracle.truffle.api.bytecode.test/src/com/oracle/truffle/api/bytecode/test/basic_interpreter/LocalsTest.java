@@ -504,7 +504,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
     }
 
     @Test
-    public void testFrameSlotKind() {
+    public void testScopedLocals2() {
         // @formatter:off
         // // B0
         // l0 = 42L;
@@ -518,7 +518,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
         // }
         // return l0
         // @formatter:on
-        BasicInterpreter root = parseNode("scopedLocals", b -> {
+        BasicInterpreter root = parseNode("scopedLocals2", b -> {
             b.beginRoot();
 
             BytecodeLocal l0 = b.createLocal("l0", null);
@@ -653,6 +653,77 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
             assertNull(l1b.getTypeProfile());
             assertNull(l2b.getTypeProfile());
         }
+    }
+
+    @Test
+    public void testMaterializedAccessTagUpdates() {
+        // @formatter:off
+        // def outer(materializeFrame):
+        //   x = 42L
+        //   def inner(newValue):
+        //     x = newValue;
+        //   return materializeFrame ? materialize() : x
+        // @formatter:on
+        BytecodeRootNodes<BasicInterpreter> roots = createNodes(BytecodeConfig.DEFAULT, b -> {
+            b.beginRoot();
+
+            BytecodeLocal x = b.createLocal("x", null);
+            b.beginStoreLocal(x);
+            b.emitLoadConstant(42L);
+            b.endStoreLocal();
+
+            b.beginRoot();
+            b.beginStoreLocalMaterialized(x);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.endStoreLocalMaterialized();
+            b.endRoot();
+
+            b.beginReturn();
+            b.beginConditional();
+            b.emitLoadArgument(0);
+            b.emitMaterializeFrame();
+            b.emitLoadLocal(x);
+            b.endConditional();
+            b.endReturn();
+
+            b.endRoot();
+        });
+        BasicInterpreter outer = roots.getNode(0);
+        BasicInterpreter inner = roots.getNode(1);
+
+        List<LocalVariable> locals = outer.getBytecodeNode().getLocals();
+        assertEquals(1, locals.size());
+        LocalVariable x = locals.get(0);
+        assertEquals("x", x.getName());
+        assertNull(x.getTypeProfile());
+
+        // Force cached.
+        outer.getBytecodeNode().setUncachedThreshold(0);
+
+        assertEquals(42L, outer.getCallTarget().call(false));
+        if (run.hasBoxingElimination()) {
+            // The tag should be updated.
+            assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+        } else {
+            assertNull(outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+        }
+
+        MaterializedFrame outerFrame = (MaterializedFrame) outer.getCallTarget().call(true);
+        if (run.hasBoxingElimination()) {
+            // The tag should stay the same.
+            inner.getCallTarget().call(outerFrame, 123L);
+            assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+            // If we use a different type, it should reset the tag to Object.
+            inner.getCallTarget().call(outerFrame, "hello");
+            assertEquals(FrameSlotKind.Object, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+        } else {
+            assertNull(outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+        }
+
+        // Outer should still execute even with updated tags.
+        assertEquals(42L, outer.getCallTarget().call(false));
+
     }
 
     @Test

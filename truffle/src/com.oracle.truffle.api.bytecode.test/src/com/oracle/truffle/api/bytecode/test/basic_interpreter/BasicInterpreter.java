@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.bytecode.test.DebugBytecodeRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
@@ -240,6 +242,12 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         @TruffleBoundary
         public static String addStrings(String lhs, String rhs) {
             return lhs + rhs;
+        }
+
+        @Fallback
+        @TruffleBoundary
+        public static String addObjects(Object lhs, Object rhs) {
+            return lhs.toString() + rhs.toString();
         }
     }
 
@@ -438,15 +446,24 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
 
         @Specialization(guards = {"callTargetMatches(root.getCallTarget(), callNode.getCallTarget())"}, limit = "1")
-        public static Object doClosure(TestClosure root, @Variadic Object[] args, @Cached("create(root.getCallTarget())") DirectCallNode callNode) {
-            assert args.length == 0 : "not implemented";
-            return callNode.call(root.getFrame());
+        public static Object doClosure(TestClosure root, @Variadic Object[] args, @Cached("args.length") int length, @Cached("create(root.getCallTarget())") DirectCallNode callNode) {
+            CompilerAsserts.partialEvaluationConstant(length);
+            if (length == 0) {
+                return callNode.call(root.getFrame());
+            } else {
+                Object[] allArgs = new Object[length + 1];
+                allArgs[0] = root.getFrame();
+                System.arraycopy(args, 0, allArgs, 1, length);
+                return callNode.call(allArgs);
+            }
         }
 
         @Specialization(replaces = {"doClosure"})
         public static Object doClosureUncached(TestClosure root, @Variadic Object[] args, @Shared @Cached IndirectCallNode callNode) {
-            assert args.length == 0 : "not implemented";
-            return callNode.call(root.getCallTarget(), root.getFrame());
+            Object[] allArgs = new Object[args.length + 1];
+            allArgs[0] = root.getFrame();
+            System.arraycopy(args, 0, allArgs, 1, args.length);
+            return callNode.call(root.getCallTarget(), allArgs);
         }
 
         protected static boolean callTargetMatches(CallTarget left, CallTarget right) {

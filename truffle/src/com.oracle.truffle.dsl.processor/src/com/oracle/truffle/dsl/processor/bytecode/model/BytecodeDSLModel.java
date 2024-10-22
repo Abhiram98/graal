@@ -532,6 +532,11 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         return enableBlockScoping && (usesBoxingElimination() || storeBciInFrame);
     }
 
+    public boolean canValidateMaterializedLocalLiveness() {
+        // We can check local liveness in materialized accesses if the bci is stored in the frame.
+        return enableBlockScoping && storeBciInFrame;
+    }
+
     @Override
     public void pp(PrettyPrinter printer) {
         printer.field("operations", operations.values());

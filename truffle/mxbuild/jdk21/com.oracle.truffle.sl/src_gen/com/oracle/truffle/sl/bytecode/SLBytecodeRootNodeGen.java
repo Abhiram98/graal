@@ -270,27 +270,27 @@ import java.util.function.Supplier;
  *     signature: void (boolean)
  *   - Instruction store.local
  *     kind: STORE_LOCAL
- *     encoding: [12 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [12 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction store.local$Long
  *     kind: STORE_LOCAL
- *     encoding: [13 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [13 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction store.local$Long$Long
  *     kind: STORE_LOCAL
- *     encoding: [14 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [14 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (long)
  *   - Instruction store.local$Boolean
  *     kind: STORE_LOCAL
- *     encoding: [15 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [15 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction store.local$Boolean$Boolean
  *     kind: STORE_LOCAL
- *     encoding: [16 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [16 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (boolean)
  *   - Instruction store.local$generic
  *     kind: STORE_LOCAL
- *     encoding: [17 : short, local_offset : short, local_index : short, child0 (bci) : int]
+ *     encoding: [17 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction throw
  *     kind: THROW
@@ -330,75 +330,75 @@ import java.util.function.Supplier;
  *     signature: Object ()
  *   - Instruction load.local
  *     kind: LOAD_LOCAL
- *     encoding: [27 : short, local_offset : short, local_index : short]
+ *     encoding: [27 : short, frame_index : short, local_index : short]
  *     signature: Object ()
  *   - Instruction load.local$Long
  *     kind: LOAD_LOCAL
- *     encoding: [28 : short, local_offset : short, local_index : short]
+ *     encoding: [28 : short, frame_index : short, local_index : short]
  *     signature: Object ()
  *   - Instruction load.local$Long$unboxed
  *     kind: LOAD_LOCAL
- *     encoding: [29 : short, local_offset : short, local_index : short]
+ *     encoding: [29 : short, frame_index : short, local_index : short]
  *     signature: long ()
  *   - Instruction load.local$Boolean
  *     kind: LOAD_LOCAL
- *     encoding: [30 : short, local_offset : short, local_index : short]
+ *     encoding: [30 : short, frame_index : short, local_index : short]
  *     signature: Object ()
  *   - Instruction load.local$Boolean$unboxed
  *     kind: LOAD_LOCAL
- *     encoding: [31 : short, local_offset : short, local_index : short]
+ *     encoding: [31 : short, frame_index : short, local_index : short]
  *     signature: boolean ()
  *   - Instruction load.local$generic
  *     kind: LOAD_LOCAL
- *     encoding: [32 : short, local_offset : short, local_index : short]
+ *     encoding: [32 : short, frame_index : short, local_index : short]
  *     signature: Object ()
  *   - Instruction load.local.mat
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [33 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [33 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: Object (Object)
  *   - Instruction load.local.mat$Long
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [34 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [34 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: Object (Object)
  *   - Instruction load.local.mat$Long$unboxed
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [35 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [35 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: long (Object)
  *   - Instruction load.local.mat$Boolean
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [36 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [36 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: Object (Object)
  *   - Instruction load.local.mat$Boolean$unboxed
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [37 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [37 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: boolean (Object)
  *   - Instruction load.local.mat$generic
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [38 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+ *     encoding: [38 : short, frame_index : short, root_index (local_root) : short, local_index : short]
  *     signature: Object (Object)
  *   - Instruction store.local.mat
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [39 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [39 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object, Object)
  *   - Instruction store.local.mat$Long
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [40 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [40 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object, Object)
  *   - Instruction store.local.mat$Long$Long
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [41 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [41 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (long, Object)
  *   - Instruction store.local.mat$Boolean
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [42 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [42 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object, Object)
  *   - Instruction store.local.mat$Boolean$Boolean
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [43 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [43 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (boolean, Object)
  *   - Instruction store.local.mat$generic
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [44 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+ *     encoding: [44 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object, Object)
  *   - Instruction tag.enter
  *     kind: TAG_ENTER
@@ -478,7 +478,7 @@ import java.util.function.Supplier;
  *     signature: Object ()
  *   - Instruction clear.local
  *     kind: CLEAR_LOCAL
- *     encoding: [64 : short, local_offset : short]
+ *     encoding: [64 : short, frame_index : short]
  *     signature: void ()
  *   - Instruction c.SLAlwaysHalt
  *     kind: CUSTOM
@@ -1652,7 +1652,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
                 case Instructions.STORE_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.LOAD_CONSTANT :
@@ -1675,7 +1675,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
                 case Instructions.LOAD_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4));
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.LOAD_LOCAL_MAT$LONG :
@@ -1684,7 +1684,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
                 case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6));
                 case Instructions.STORE_LOCAL_MAT :
@@ -1694,7 +1694,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
                 case Instructions.STORE_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 8));
@@ -1713,7 +1713,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.CLEAR_LOCAL :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2));
                 case Instructions.SL_ALWAYS_HALT_ :
                 case Instructions.SL_INVOKE_ :
                 case Instructions.SL_READ_PROPERTY_ :
@@ -2929,9 +2929,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         case Instructions.STORE_LOCAL :
                         case Instructions.STORE_LOCAL$GENERIC :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             short local_index = BYTES.getShort(bc, bci + 4 /* imm local_index */);
@@ -2950,9 +2950,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         case Instructions.STORE_LOCAL$BOOLEAN :
                         case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             short local_index = BYTES.getShort(bc, bci + 4 /* imm local_index */);
@@ -3002,9 +3002,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
                         case Instructions.LOAD_LOCAL$GENERIC :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             short local_index = BYTES.getShort(bc, bci + 4 /* imm local_index */);
@@ -3021,9 +3021,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
                         case Instructions.LOAD_LOCAL_MAT$GENERIC :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             short local_index = BYTES.getShort(bc, bci + 6 /* imm local_index */);
@@ -3040,9 +3040,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
                         case Instructions.STORE_LOCAL_MAT$GENERIC :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             short local_index = BYTES.getShort(bc, bci + 6 /* imm local_index */);
@@ -3092,9 +3092,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         }
                         case Instructions.CLEAR_LOCAL :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 4;
@@ -3530,19 +3530,8 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             return FRAMES.getTag(frame, frameIndex) == FrameSlotKind.Illegal.tag;
         }
 
-        @ExplodeLoop
-        protected final int localIndexToTableIndex(int bci, int localIndex) {
-            for (int index = 0; index < locals.length; index += LOCALS_LENGTH) {
-                int startIndex = locals[index + LOCALS_OFFSET_START_BCI];
-                int endIndex = locals[index + LOCALS_OFFSET_END_BCI];
-                if (bci >= startIndex && bci < endIndex) {
-                    if (locals[index + LOCALS_OFFSET_LOCAL_INDEX] == localIndex) {
-                        return index;
-                    }
-                }
-            }
-            return -1;
-        }
+        @Override
+        protected abstract void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value);
 
         @ExplodeLoop
         protected final int localOffsetToTableIndex(int bci, int localOffset) {
@@ -4810,7 +4799,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         }
                         case Instructions.CLEAR_LOCAL :
                         {
-                            FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */));
+                            FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */));
                             bci += 4;
                             break;
                         }
@@ -5336,7 +5325,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doStoreLocal(Frame frame, byte[] bc, int bci, int sp, Object local, byte[] localTags) {
             short newInstruction;
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             int operandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
             short newOperand;
@@ -5409,7 +5398,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocal(frame, bc, bci, sp, ex.getResult(), localTags);
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             byte tag = this.getCachedLocalTagInternal(localTags, localIndex);
             if (tag == FrameTags.LONG) {
@@ -5437,7 +5426,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocal(frame, bc, bci, sp, ex.getResult(), localTags);
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             byte tag = this.getCachedLocalTagInternal(localTags, localIndex);
             if (tag == FrameTags.LONG) {
@@ -5460,7 +5449,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocal(frame, bc, bci, sp, ex.getResult(), localTags);
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             byte tag = this.getCachedLocalTagInternal(localTags, localIndex);
             if (tag == FrameTags.BOOLEAN) {
@@ -5488,7 +5477,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocal(frame, bc, bci, sp, ex.getResult(), localTags);
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             byte tag = this.getCachedLocalTagInternal(localTags, localIndex);
             if (tag == FrameTags.BOOLEAN) {
@@ -5511,7 +5500,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocal(frame, bc, bci, sp, ex.getResult(), localTags);
                 return;
             }
-            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */), local);
+            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(frame, sp - 1);
         }
 
@@ -5536,7 +5525,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocal(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localIndex = BYTES.getShort(bc, bci + 4 /* imm local_index */);
             byte tag = this.getCachedLocalTagInternal(localTags, localIndex);
             Object value;
@@ -5569,7 +5558,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doLoadLocal$Long(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
             try {
-                FRAMES.setObject(frame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+                FRAMES.setObject(frame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
             } catch (UnexpectedResultException ex) {
                 doLoadLocal(frame, bc, bci, sp, localTags);
             }
@@ -5577,7 +5566,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doLoadLocal$Long$unboxed(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
             try {
-                FRAMES.setLong(frame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+                FRAMES.setLong(frame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
             } catch (UnexpectedResultException ex) {
                 doLoadLocal(frame, bc, bci, sp, localTags);
             }
@@ -5585,7 +5574,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doLoadLocal$Boolean(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
             try {
-                FRAMES.setObject(frame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+                FRAMES.setObject(frame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
             } catch (UnexpectedResultException ex) {
                 doLoadLocal(frame, bc, bci, sp, localTags);
             }
@@ -5593,18 +5582,18 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doLoadLocal$Boolean$unboxed(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
             try {
-                FRAMES.setBoolean(frame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+                FRAMES.setBoolean(frame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
             } catch (UnexpectedResultException ex) {
                 doLoadLocal(frame, bc, bci, sp, localTags);
             }
         }
 
         private void doLoadLocal$generic(Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
-            FRAMES.setObject(frame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+            FRAMES.setObject(frame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5642,7 +5631,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocalMat$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5657,7 +5646,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocalMat$Long$unboxed(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5672,7 +5661,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocalMat$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5687,7 +5676,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocalMat$Boolean$unboxed(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5702,7 +5691,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         }
 
         private void doLoadLocalMat$generic(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5714,7 +5703,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, Object local) {
             short newInstruction;
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             int operandIndex = BYTES.getIntUnaligned(bc, bci + 8 /* imm child0 */);
@@ -5794,7 +5783,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5829,7 +5818,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5859,7 +5848,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5894,7 +5883,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -5924,14 +5913,16 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
                 return;
             }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
+            int localOffset = slot - USER_LOCALS_START_INDEX;
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
-            FRAMES.setObject(frame, slot, local);
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            bytecodeNode.setLocalValueInternal(frame, localOffset, localIndex, local);
             FRAMES.clear(stackFrame, sp - 1);
             FRAMES.clear(stackFrame, sp - 2);
         }
@@ -7846,7 +7837,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                             }
                             case Instructions.CLEAR_LOCAL :
                             {
-                                FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */));
+                                FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */));
                                 bci += 4;
                                 break;
                             }
@@ -8156,16 +8147,16 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doStoreLocal(Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(frame, sp - 1);
-            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */), local);
+            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(frame, sp - 1);
         }
 
         private void doLoadLocal(Frame frame, byte[] bc, int bci, int sp) {
-            FRAMES.setObject(frame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+            FRAMES.setObject(frame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
@@ -8177,14 +8168,16 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
+            int localOffset = slot - USER_LOCALS_START_INDEX;
             SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
-            FRAMES.setObject(frame, slot, local);
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            bytecodeNode.setLocalValueInternal(frame, localOffset, localIndex, local);
             FRAMES.clear(stackFrame, sp - 1);
             FRAMES.clear(stackFrame, sp - 2);
         }
@@ -14585,42 +14578,42 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         /*
          * Instruction store.local
          * kind: STORE_LOCAL
-         * encoding: [12 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [12 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (Object)
          */
         private static final short STORE_LOCAL = 12;
         /*
          * Instruction store.local$Long
          * kind: STORE_LOCAL
-         * encoding: [13 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [13 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (Object)
          */
         private static final short STORE_LOCAL$LONG = 13;
         /*
          * Instruction store.local$Long$Long
          * kind: STORE_LOCAL
-         * encoding: [14 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [14 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (long)
          */
         private static final short STORE_LOCAL$LONG$LONG = 14;
         /*
          * Instruction store.local$Boolean
          * kind: STORE_LOCAL
-         * encoding: [15 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [15 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (Object)
          */
         private static final short STORE_LOCAL$BOOLEAN = 15;
         /*
          * Instruction store.local$Boolean$Boolean
          * kind: STORE_LOCAL
-         * encoding: [16 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [16 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (boolean)
          */
         private static final short STORE_LOCAL$BOOLEAN$BOOLEAN = 16;
         /*
          * Instruction store.local$generic
          * kind: STORE_LOCAL
-         * encoding: [17 : short, local_offset : short, local_index : short, child0 (bci) : int]
+         * encoding: [17 : short, frame_index : short, local_index : short, child0 (bci) : int]
          * signature: void (Object)
          */
         private static final short STORE_LOCAL$GENERIC = 17;
@@ -14690,126 +14683,126 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         /*
          * Instruction load.local
          * kind: LOAD_LOCAL
-         * encoding: [27 : short, local_offset : short, local_index : short]
+         * encoding: [27 : short, frame_index : short, local_index : short]
          * signature: Object ()
          */
         private static final short LOAD_LOCAL = 27;
         /*
          * Instruction load.local$Long
          * kind: LOAD_LOCAL
-         * encoding: [28 : short, local_offset : short, local_index : short]
+         * encoding: [28 : short, frame_index : short, local_index : short]
          * signature: Object ()
          */
         private static final short LOAD_LOCAL$LONG = 28;
         /*
          * Instruction load.local$Long$unboxed
          * kind: LOAD_LOCAL
-         * encoding: [29 : short, local_offset : short, local_index : short]
+         * encoding: [29 : short, frame_index : short, local_index : short]
          * signature: long ()
          */
         private static final short LOAD_LOCAL$LONG$UNBOXED = 29;
         /*
          * Instruction load.local$Boolean
          * kind: LOAD_LOCAL
-         * encoding: [30 : short, local_offset : short, local_index : short]
+         * encoding: [30 : short, frame_index : short, local_index : short]
          * signature: Object ()
          */
         private static final short LOAD_LOCAL$BOOLEAN = 30;
         /*
          * Instruction load.local$Boolean$unboxed
          * kind: LOAD_LOCAL
-         * encoding: [31 : short, local_offset : short, local_index : short]
+         * encoding: [31 : short, frame_index : short, local_index : short]
          * signature: boolean ()
          */
         private static final short LOAD_LOCAL$BOOLEAN$UNBOXED = 31;
         /*
          * Instruction load.local$generic
          * kind: LOAD_LOCAL
-         * encoding: [32 : short, local_offset : short, local_index : short]
+         * encoding: [32 : short, frame_index : short, local_index : short]
          * signature: Object ()
          */
         private static final short LOAD_LOCAL$GENERIC = 32;
         /*
          * Instruction load.local.mat
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [33 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [33 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: Object (Object)
          */
         private static final short LOAD_LOCAL_MAT = 33;
         /*
          * Instruction load.local.mat$Long
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [34 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [34 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: Object (Object)
          */
         private static final short LOAD_LOCAL_MAT$LONG = 34;
         /*
          * Instruction load.local.mat$Long$unboxed
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [35 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [35 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: long (Object)
          */
         private static final short LOAD_LOCAL_MAT$LONG$UNBOXED = 35;
         /*
          * Instruction load.local.mat$Boolean
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [36 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [36 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: Object (Object)
          */
         private static final short LOAD_LOCAL_MAT$BOOLEAN = 36;
         /*
          * Instruction load.local.mat$Boolean$unboxed
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [37 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [37 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: boolean (Object)
          */
         private static final short LOAD_LOCAL_MAT$BOOLEAN$UNBOXED = 37;
         /*
          * Instruction load.local.mat$generic
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [38 : short, local_offset : short, root_index (local_root) : short, local_index : short]
+         * encoding: [38 : short, frame_index : short, root_index (local_root) : short, local_index : short]
          * signature: Object (Object)
          */
         private static final short LOAD_LOCAL_MAT$GENERIC = 38;
         /*
          * Instruction store.local.mat
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [39 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [39 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (Object, Object)
          */
         private static final short STORE_LOCAL_MAT = 39;
         /*
          * Instruction store.local.mat$Long
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [40 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [40 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (Object, Object)
          */
         private static final short STORE_LOCAL_MAT$LONG = 40;
         /*
          * Instruction store.local.mat$Long$Long
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [41 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [41 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (long, Object)
          */
         private static final short STORE_LOCAL_MAT$LONG$LONG = 41;
         /*
          * Instruction store.local.mat$Boolean
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [42 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [42 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (Object, Object)
          */
         private static final short STORE_LOCAL_MAT$BOOLEAN = 42;
         /*
          * Instruction store.local.mat$Boolean$Boolean
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [43 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [43 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (boolean, Object)
          */
         private static final short STORE_LOCAL_MAT$BOOLEAN$BOOLEAN = 43;
         /*
          * Instruction store.local.mat$generic
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [44 : short, local_offset : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
+         * encoding: [44 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
          * signature: void (Object, Object)
          */
         private static final short STORE_LOCAL_MAT$GENERIC = 44;
@@ -14949,7 +14942,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         /*
          * Instruction clear.local
          * kind: CLEAR_LOCAL
-         * encoding: [64 : short, local_offset : short]
+         * encoding: [64 : short, frame_index : short]
          * signature: void ()
          */
         private static final short CLEAR_LOCAL = 64;

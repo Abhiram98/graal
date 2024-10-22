@@ -258,7 +258,7 @@ import java.util.function.Supplier;
  *     signature: void (Object)
  *   - Instruction store.local
  *     kind: STORE_LOCAL
- *     encoding: [7 : short, local_offset : short]
+ *     encoding: [7 : short, frame_index : short]
  *     signature: void (Object)
  *   - Instruction throw
  *     kind: THROW
@@ -282,15 +282,15 @@ import java.util.function.Supplier;
  *     signature: Object ()
  *   - Instruction load.local
  *     kind: LOAD_LOCAL
- *     encoding: [13 : short, local_offset : short]
+ *     encoding: [13 : short, frame_index : short]
  *     signature: Object ()
  *   - Instruction load.local.mat
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [14 : short, local_offset : short, root_index (local_root) : short]
+ *     encoding: [14 : short, frame_index : short, root_index (local_root) : short]
  *     signature: Object (Object)
  *   - Instruction store.local.mat
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [15 : short, local_offset : short, root_index (local_root) : short]
+ *     encoding: [15 : short, frame_index : short, root_index (local_root) : short]
  *     signature: void (Object, Object)
  *   - Instruction yield
  *     kind: YIELD
@@ -362,7 +362,7 @@ import java.util.function.Supplier;
  *     signature: Object ()
  *   - Instruction clear.local
  *     kind: CLEAR_LOCAL
- *     encoding: [33 : short, local_offset : short]
+ *     encoding: [33 : short, frame_index : short]
  *     signature: void ()
  *   - Instruction c.EarlyReturn
  *     kind: CUSTOM
@@ -1140,7 +1140,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 case Instructions.LOAD_LOCAL :
                 case Instructions.CLEAR_LOCAL :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2));
                 case Instructions.LOAD_CONSTANT :
                     return List.of(
                         new ConstantArgument(bytecode, "constant", bci + 2));
@@ -1153,7 +1153,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.STORE_LOCAL_MAT :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2));
                 case Instructions.YIELD :
                     return List.of(
@@ -1498,7 +1498,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             return new InstructionImpl(bytecode, nextBci, bytecode.readValidBytecode(bytecode.bytecodes, nextBci));
         }
 
-        private abstract static sealed class AbstractArgument extends Argument permits LocalOffsetArgument, LocalIndexArgument, IntegerArgument, BytecodeIndexArgument, ConstantArgument, NodeProfileArgument, TagNodeArgument, BranchProfileArgument {
+        private abstract static sealed class AbstractArgument extends Argument permits LocalOffsetArgument, IntegerArgument, BytecodeIndexArgument, ConstantArgument, NodeProfileArgument, TagNodeArgument, BranchProfileArgument {
 
             protected static final BytecodeDSLAccess SAFE_ACCESS = BytecodeDSLAccess.lookup(BytecodeRootNodesImpl.VISIBLE_TOKEN, false);
             protected static final ByteArraySupport SAFE_BYTES = SAFE_ACCESS.getByteArraySupport();
@@ -1535,24 +1535,6 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             public int asLocalOffset() {
                 byte[] bc = this.bytecode.bytecodes;
                 return SAFE_BYTES.getShort(bc, bci) - USER_LOCALS_START_INDEX;
-            }
-
-        }
-        private static final class LocalIndexArgument extends AbstractArgument {
-
-            LocalIndexArgument(AbstractBytecodeNode bytecode, String name, int bci) {
-                super(bytecode, name, bci);
-            }
-
-            @Override
-            public Kind getKind() {
-                return Kind.LOCAL_INDEX;
-            }
-
-            @Override
-            public int asLocalIndex() {
-                byte[] bc = this.bytecode.bytecodes;
-                return SAFE_BYTES.getShort(bc, bci);
             }
 
         }
@@ -2123,9 +2105,9 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                         case Instructions.LOAD_LOCAL :
                         case Instructions.CLEAR_LOCAL :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 4;
@@ -2159,9 +2141,9 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                         case Instructions.LOAD_LOCAL_MAT :
                         case Instructions.STORE_LOCAL_MAT :
                         {
-                            short local_offset = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
-                            if (local_offset < USER_LOCALS_START_INDEX || local_offset >= root.maxLocals) {
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 6;
@@ -2566,20 +2548,6 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
         protected void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             frame.setObject(USER_LOCALS_START_INDEX + localOffset, value);
-        }
-
-        @ExplodeLoop
-        protected final int localIndexToTableIndex(int bci, int localIndex) {
-            for (int index = 0; index < locals.length; index += LOCALS_LENGTH) {
-                int startIndex = locals[index + LOCALS_OFFSET_START_BCI];
-                int endIndex = locals[index + LOCALS_OFFSET_END_BCI];
-                if (bci >= startIndex && bci < endIndex) {
-                    if (locals[index + LOCALS_OFFSET_LOCAL_INDEX] == localIndex) {
-                        return index;
-                    }
-                }
-            }
-            return -1;
         }
 
         @ExplodeLoop
@@ -3512,7 +3480,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                         }
                         case Instructions.CLEAR_LOCAL :
                         {
-                            FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */));
+                            FRAMES.clear(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */));
                             bci += 4;
                             break;
                         }
@@ -3913,16 +3881,16 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
 
         private void doStoreLocal(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
-            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */), local);
+            FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(stackFrame, sp - 1);
         }
 
         private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm local_offset */)));
+            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             BasicInterpreterUnsafe localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
@@ -3933,7 +3901,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
 
         private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
-            int slot = BYTES.getShort(bc, bci + 2 /* imm local_offset */);
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
             BasicInterpreterUnsafe localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
@@ -11906,7 +11874,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
         /*
          * Instruction store.local
          * kind: STORE_LOCAL
-         * encoding: [7 : short, local_offset : short]
+         * encoding: [7 : short, frame_index : short]
          * signature: void (Object)
          */
         private static final short STORE_LOCAL = 7;
@@ -11948,21 +11916,21 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
         /*
          * Instruction load.local
          * kind: LOAD_LOCAL
-         * encoding: [13 : short, local_offset : short]
+         * encoding: [13 : short, frame_index : short]
          * signature: Object ()
          */
         private static final short LOAD_LOCAL = 13;
         /*
          * Instruction load.local.mat
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [14 : short, local_offset : short, root_index (local_root) : short]
+         * encoding: [14 : short, frame_index : short, root_index (local_root) : short]
          * signature: Object (Object)
          */
         private static final short LOAD_LOCAL_MAT = 14;
         /*
          * Instruction store.local.mat
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [15 : short, local_offset : short, root_index (local_root) : short]
+         * encoding: [15 : short, frame_index : short, root_index (local_root) : short]
          * signature: void (Object, Object)
          */
         private static final short STORE_LOCAL_MAT = 15;
@@ -12088,7 +12056,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
         /*
          * Instruction clear.local
          * kind: CLEAR_LOCAL
-         * encoding: [33 : short, local_offset : short]
+         * encoding: [33 : short, frame_index : short]
          * signature: void ()
          */
         private static final short CLEAR_LOCAL = 33;
@@ -12945,11 +12913,14 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
     /**
      * Debug Info: <pre>
      *   Specialization {@link AddOperation#addLongs}
-     *     Activation probability: 0.65000
-     *     With/without class size: 11/0 bytes
+     *     Activation probability: 0.48333
+     *     With/without class size: 9/0 bytes
      *   Specialization {@link AddOperation#addStrings}
-     *     Activation probability: 0.35000
+     *     Activation probability: 0.33333
      *     With/without class size: 8/0 bytes
+     *   Specialization {@link AddOperation#addObjects}
+     *     Activation probability: 0.18333
+     *     With/without class size: 6/0 bytes
      * </pre> */
     @SuppressWarnings("javadoc")
     private static final class AddOperation_Node extends Node implements Introspection.Provider {
@@ -12958,6 +12929,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
          * State Info: <pre>
          *   0: SpecializationActive {@link AddOperation#addLongs}
          *   1: SpecializationActive {@link AddOperation#addStrings}
+         *   2: SpecializationActive {@link AddOperation#addObjects}
          * </pre> */
         @CompilationFinal private int state_0_;
 
@@ -12965,7 +12937,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             int state_0 = this.state_0_;
             Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
             Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) {
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] || SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
                     if (child1Value_ instanceof Long) {
@@ -12980,9 +12952,25 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                         return AddOperation.addStrings(child0Value__, child1Value__);
                     }
                 }
+                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+                    if (fallbackGuard_(state_0, child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp)) {
+                        return AddOperation.addObjects(child0Value_, child1Value_);
+                    }
+                }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        @SuppressWarnings("static-method")
+        private boolean fallbackGuard_(int state_0, Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
+                return false;
+            }
+            if (!((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) && child0Value instanceof String && child1Value instanceof String) {
+                return false;
+            }
+            return true;
         }
 
         private Object executeAndSpecialize(Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
@@ -13007,12 +12995,15 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                     return AddOperation.addStrings(child0Value_, child1Value_);
                 }
             }
-            throw new UnsupportedSpecializationException(this, null, child0Value, child1Value);
+            state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */;
+            this.state_0_ = state_0;
+            $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$Fallback");
+            return AddOperation.addObjects(child0Value, child1Value);
         }
 
         @Override
         public Introspection getIntrospectionData() {
-            Object[] data = new Object[3];
+            Object[] data = new Object[4];
             Object[] s;
             data[0] = 0;
             int state_0 = this.state_0_;
@@ -13034,6 +13025,15 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 s[1] = (byte)0b00 /* inactive */;
             }
             data[2] = s;
+            s = new Object[3];
+            s[0] = "addObjects";
+            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+                s[1] = (byte)0b01 /* active */;
+            }
+            if (s[1] == null) {
+                s[1] = (byte)0b00 /* inactive */;
+            }
+            data[3] = s;
             return Provider.create(data);
         }
 
@@ -13894,7 +13894,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
      *     With/without class size: 7/0 bytes
      *   Specialization {@link Invoke#doClosure}
      *     Activation probability: 0.20500
-     *     With/without class size: 8/4 bytes
+     *     With/without class size: 8/8 bytes
      *   Specialization {@link Invoke#doClosureUncached}
      *     Activation probability: 0.11500
      *     With/without class size: 5/0 bytes
@@ -13925,7 +13925,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             int state_0 = this.state_0_;
             Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
             Object[] child1Value_ = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doRootNode(BasicInterpreter, Object[], DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doRootNodeUncached(BasicInterpreter, Object[], IndirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosureUncached(TestClosure, Object[], IndirectCallNode)] */) {
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doRootNode(BasicInterpreter, Object[], DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doRootNodeUncached(BasicInterpreter, Object[], IndirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosureUncached(TestClosure, Object[], IndirectCallNode)] */) {
                 if ((state_0 & 0b11) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doRootNode(BasicInterpreter, Object[], DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doRootNodeUncached(BasicInterpreter, Object[], IndirectCallNode)] */ && child0Value_ instanceof BasicInterpreter) {
                     BasicInterpreter child0Value__ = (BasicInterpreter) child0Value_;
                     if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doRootNode(BasicInterpreter, Object[], DirectCallNode)] */) {
@@ -13945,13 +13945,13 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                         }
                     }
                 }
-                if ((state_0 & 0b1100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosureUncached(TestClosure, Object[], IndirectCallNode)] */ && child0Value_ instanceof TestClosure) {
+                if ((state_0 & 0b1100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] || SpecializationActive[BasicInterpreter.Invoke.doClosureUncached(TestClosure, Object[], IndirectCallNode)] */ && child0Value_ instanceof TestClosure) {
                     TestClosure child0Value__ = (TestClosure) child0Value_;
-                    if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] */) {
+                    if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] */) {
                         ClosureData s2_ = this.closure_cache;
                         if (s2_ != null) {
                             if ((Invoke.callTargetMatches(child0Value__.getCallTarget(), s2_.callNode_.getCallTarget()))) {
-                                return Invoke.doClosure(child0Value__, child1Value_, s2_.callNode_);
+                                return Invoke.doClosure(child0Value__, child1Value_, s2_.length_, s2_.callNode_);
                             }
                         }
                     }
@@ -14048,18 +14048,19 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                                 DirectCallNode callNode__1 = this.insert((DirectCallNode.create(child0Value_.getCallTarget())));
                                 if ((Invoke.callTargetMatches(child0Value_.getCallTarget(), callNode__1.getCallTarget()))) {
                                     s2_ = this.insert(new ClosureData());
+                                    s2_.length_ = (child1Value.length);
                                     s2_.callNode_ = s2_.insert(callNode__1);
                                     if (!CLOSURE_CACHE_UPDATER.compareAndSet(this, s2_original, s2_)) {
                                         continue;
                                     }
-                                    state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] */;
+                                    state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] */;
                                     this.state_0_ = state_0;
                                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Invoke$Closure");
                                 }
                             }
                         }
                         if (s2_ != null) {
-                            return Invoke.doClosure(child0Value_, child1Value, s2_.callNode_);
+                            return Invoke.doClosure(child0Value_, child1Value, s2_.length_, s2_.callNode_);
                         }
                         break;
                     }
@@ -14079,7 +14080,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                     this.callNode = callNode_1;
                 }
                 this.closure_cache = null;
-                state_0 = state_0 & 0xfffffffb /* remove SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] */;
+                state_0 = state_0 & 0xfffffffb /* remove SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] */;
                 state_0 = state_0 | 0b1000 /* add SpecializationActive[BasicInterpreter.Invoke.doClosureUncached(TestClosure, Object[], IndirectCallNode)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Invoke$ClosureUncached");
@@ -14132,12 +14133,12 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             data[2] = s;
             s = new Object[3];
             s[0] = "doClosure";
-            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], DirectCallNode)] */) {
+            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Invoke.doClosure(TestClosure, Object[], int, DirectCallNode)] */) {
                 s[1] = (byte)0b01 /* active */;
                 ArrayList<Object> cached = new ArrayList<>();
                 ClosureData s2_ = this.closure_cache;
                 if (s2_ != null) {
-                    cached.add(Arrays.<Object>asList(s2_.callNode_));
+                    cached.add(Arrays.<Object>asList(s2_.length_, s2_.callNode_));
                 }
                 s[2] = cached;
             }
@@ -14187,6 +14188,11 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
         @DenyReplace
         private static final class ClosureData extends Node implements SpecializationDataNode {
 
+            /**
+             * Source Info: <pre>
+             *   Specialization: {@link Invoke#doClosure}
+             *   Parameter: int length</pre> */
+            @CompilationFinal int length_;
             /**
              * Source Info: <pre>
              *   Specialization: {@link Invoke#doClosure}

@@ -317,8 +317,12 @@ public abstract class Instruction {
         }
 
         /**
-         * Returns the {@link Kind} of this argument. Depending on the kind you may use any of the
-         * as prefixed methods.
+         * Returns the {@link Kind} of this argument. The kind determines which {@code asX} method
+         * can be called on a given argument.
+         * <p>
+         * For example, if the kind is {@link Kind#INTEGER}, the {@link #asInteger} method will
+         * return the integer value. All other {@code asX} methods (e.g., {@link #asBranchProfile})
+         * will throw an exception.
          *
          * @since 24.2
          */
@@ -336,9 +340,9 @@ public abstract class Instruction {
         public abstract String getName();
 
         /**
-         * Converts this argument to an <code>int</code> value. This method is only supported for
-         * for the following kind: {@link Kind#INTEGER}. If called for arguments of other kinds then
-         * an {@link UnsupportedOperationException} is thrown.
+         * Converts this argument to an <code>int</code> value. This method is only supported if the
+         * argument {@link #getKind kind} is {@link Kind#INTEGER}. If called for arguments of other
+         * kinds then an {@link UnsupportedOperationException} is thrown.
          *
          * @since 24.2
          */
@@ -347,10 +351,10 @@ public abstract class Instruction {
         }
 
         /**
-         * Converts this argument to an bytecodeIndex. This method is only supported for for the
-         * following kind: {@link Kind#BYTECODE_INDEX}. If called for arguments of other kinds then
-         * an {@link UnsupportedOperationException} is thrown. If the returned value is >= 0 then
-         * the bytecode index can be used to be converted to a {@link BytecodeLocation}.
+         * Converts this argument to a bytecode index. This method is only supported if the argument
+         * {@link #getKind kind} is {@link Kind#BYTECODE_INDEX}. If called for arguments of other
+         * kinds then an {@link UnsupportedOperationException} is thrown. If the returned value is
+         * >= 0 then the bytecode index can be used to be converted to a {@link BytecodeLocation}.
          *
          * @since 24.2
          */
@@ -359,9 +363,9 @@ public abstract class Instruction {
         }
 
         /**
-         * Converts this argument to a object constant. This method is only supported for for the
-         * following kind: {@link Kind#CONSTANT}. If called for arguments of other kinds then an
-         * {@link UnsupportedOperationException} is thrown.
+         * Converts this argument to a object constant. This method is only supported if the
+         * argument {@link #getKind kind} is {@link Kind#CONSTANT}. If called for arguments of other
+         * kinds then an {@link UnsupportedOperationException} is thrown.
          *
          * @since 24.2
          */
@@ -370,10 +374,11 @@ public abstract class Instruction {
         }
 
         /**
-         * Converts this argument to a {@link Node cached node}. This method is only supported for
-         * for the following kind: {@link Kind#NODE_PROFILE}. If called for arguments of other kinds
-         * then an {@link UnsupportedOperationException} is thrown. The returned value is never
-         * <code>null</code> if the {@link BytecodeTier} is {@link BytecodeTier#CACHED}.
+         * Converts this argument to a {@link Node cached node}. This method is only supported if
+         * the argument {@link #getKind kind} is {@link Kind#NODE_PROFILE}. If called for arguments
+         * of other kinds then an {@link UnsupportedOperationException} is thrown. The returned
+         * value is never <code>null</code> if the {@link BytecodeTier} is
+         * {@link BytecodeTier#CACHED}.
          *
          * @since 24.2
          */
@@ -383,9 +388,9 @@ public abstract class Instruction {
 
         /**
          * Converts this argument to a {@link TagTreeNode tag tree node}. This method is only
-         * supported for for the following kind: {@link Kind#TAG_NODE}. If called for arguments of
-         * other kinds then an {@link UnsupportedOperationException} is thrown. The returned value
-         * is never <code>null</code>.
+         * supported if the argument {@link #getKind kind} is {@link Kind#TAG_NODE}. If called for
+         * arguments of other kinds then an {@link UnsupportedOperationException} is thrown. The
+         * returned value is never <code>null</code>.
          *
          * @since 24.2
          */
@@ -394,10 +399,10 @@ public abstract class Instruction {
         }
 
         /**
-         * Converts this argument to a localOffset. This method is only supported for for the
-         * following kind: {@link Kind#LOCAL_OFFSET}. If called for arguments of other kinds then an
-         * {@link UnsupportedOperationException} is thrown. This index may be used to access locals
-         * with the local local access methods in {@link BytecodeNode}.
+         * Converts this argument to a local offset. This method is only supported if the argument
+         * {@link #getKind kind} is {@link Kind#LOCAL_OFFSET}. If called for arguments of other
+         * kinds then an {@link UnsupportedOperationException} is thrown. This index may be used to
+         * access locals with the local local access methods in {@link BytecodeNode}.
          *
          * @see BytecodeNode#getLocalValue(int, com.oracle.truffle.api.frame.Frame, int)
          * @since 24.2
@@ -407,10 +412,10 @@ public abstract class Instruction {
         }
 
         /**
-         * Converts this argument to a localIndex. This method is only supported for for the
-         * following kind: {@link Kind#LOCAL_INDEX}. If called for arguments of other kinds then an
-         * {@link UnsupportedOperationException} is thrown. The local index can be used to index
-         * into the list of {@link BytecodeNode#getLocals() locals}.
+         * Converts this argument to a local index. This method is only supported if the argument
+         * {@link #getKind kind} is {@link Kind#LOCAL_INDEX}. If called for arguments of other kinds
+         * then an {@link UnsupportedOperationException} is thrown. The local index can be used to
+         * index into the list of {@link BytecodeNode#getLocals() locals}.
          *
          * @see BytecodeNode#getLocals()
          * @since 24.2
@@ -421,8 +426,8 @@ public abstract class Instruction {
 
         /**
          * Converts this argument to a {@link BranchProfile branch profile}. This method is only
-         * supported for for the following kind: {@link Kind#BRANCH_PROFILE}. If called for
-         * arguments of other kinds then an {@link UnsupportedOperationException} is thrown. The
+         * supported if the argument {@link #getKind kind} is {@link Kind#BRANCH_PROFILE}. If called
+         * for arguments of other kinds then an {@link UnsupportedOperationException} is thrown. The
          * returned value is never <code>null</code>.
          *
          * @since 24.2
@@ -433,9 +438,9 @@ public abstract class Instruction {
 
         /**
          * Converts this argument to a {@link SpecializationInfo specialization info}. This method
-         * is only supported for for the following kind: {@link Kind#NODE_PROFILE}. If called for
-         * arguments of other kinds then an {@link UnsupportedOperationException} is thrown. The
-         * specialization info is only available if
+         * is only supported if the argument {@link #getKind kind} is {@link Kind#NODE_PROFILE}. If
+         * called for arguments of other kinds then an {@link UnsupportedOperationException} is
+         * thrown. The specialization info is only available if
          * {@link GenerateBytecode#enableSpecializationIntrospection()} is set to <code>true</code>.
          *
          * @since 24.2
@@ -548,14 +553,14 @@ public abstract class Instruction {
         }
 
         /**
-         * Represents kind of an {@link Argument}.
+         * Represents the kind of an {@link Argument}.
          *
          * @since 24.2
          */
         public enum Kind {
             /**
-             * A constant argument to the instruction. Typically constants are used to encode
-             * {@link ConstantOperand} and loadConstant builtin operations.
+             * A constant value. Typically, constants are used to encode {@link ConstantOperand} and
+             * LoadConstant builtin operations.
              *
              * @see Argument#asConstant()
              * @since 24.2
@@ -563,8 +568,8 @@ public abstract class Instruction {
             CONSTANT,
 
             /**
-             * A bytecode index argument to the instruction. Typically a bytecode indices are used
-             * to encode branch targets.
+             * A bytecode index. Typically, bytecode indices are used to encode branch targets or
+             * the locations of child instructions.
              *
              * @see Argument#asBytecodeIndex()
              * @since 24.2
@@ -572,8 +577,8 @@ public abstract class Instruction {
             BYTECODE_INDEX,
 
             /**
-             * A integer argument to the instruction. Typically a integer arguments are used to
-             * encode argument indices and other constants.
+             * An integer value. Typically, integer arguments are used to encode argument indices
+             * and other integer constants.
              *
              * @see Argument#asInteger()
              * @since 24.2
@@ -581,8 +586,16 @@ public abstract class Instruction {
             INTEGER,
 
             /**
-             * A localOffset argument to the instruction. Typically a localOffset arguments are used
-             * to encode arguments of load local builtin instructions.
+             * The logical frame offset of a local variable. If
+             * {@link GenerateBytecode#enableBlockScoping() block scoping} is enabled, multiple
+             * locals can share an offset; otherwise, a local's offset is the same as its index.
+             * Typically, local offset arguments are used to encode local variable metadata in local
+             * variable instructions.
+             * <p>
+             * The local offset does <i>not</i> represent a frame index that can be used to directly
+             * access locals from the frame. Instead, use local accessor instructions,
+             * {@link LocalAccessor} operands, or the helper methods defined by the
+             * {@link BytecodeNode}.
              *
              * @see Argument#asLocalOffset()
              * @since 24.2
@@ -590,8 +603,8 @@ public abstract class Instruction {
             LOCAL_OFFSET,
 
             /**
-             * A localIndex argument to the instruction. Typically a localIndex arguments are used
-             * to encode arguments of load local builtin instructions.
+             * The unique index of a local variable. Typically, local index arguments are used to
+             * encode local variable metadata in local variable instructions.
              *
              * @see Argument#asLocalIndex()
              * @since 24.2
@@ -599,8 +612,8 @@ public abstract class Instruction {
             LOCAL_INDEX,
 
             /**
-             * A node profile argument to the instruction. Typically a node profile arguments are
-             * used to encode cached nodes.
+             * A node profile. Typically, node profile arguments are used to encode cached nodes for
+             * user-defined {@link Operation operations}.
              *
              * @see Argument#asCachedNode()
              * @since 24.2
@@ -608,13 +621,17 @@ public abstract class Instruction {
             NODE_PROFILE,
 
             /**
-             * A branch profile argument to the instruction. Typically a branch profile is used for
-             * branch instructions.
+             * A branch profile. Typically, branch profiles are used to profile the outcomes of
+             * conditional branch instructions.
              *
              * @see Argument#asBranchProfile()
              * @since 24.2
              */
             BRANCH_PROFILE,
+            /**
+             * A {@link TagTreeNode}. Typically, tag tree nodes are used to represent nodes in the
+             * logical tag tree defined by Tag operations.
+             */
             TAG_NODE;
         }
 

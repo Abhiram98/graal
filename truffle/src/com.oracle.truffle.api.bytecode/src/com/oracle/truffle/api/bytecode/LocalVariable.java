@@ -88,10 +88,17 @@ public abstract class LocalVariable {
     }
 
     /**
-     * Returns the local index used when accessing local values with a local accessor like
-     * {@link BytecodeNode#getLocalValue(int, Frame, int)}. Always returns an integer greater or
-     * equal to zero. Note that the local offset can only be read if the current bytecode index is
-     * between {@link #getStartIndex()} and {@link #getEndIndex()} (exclusive).
+     * Returns the logical frame offset of a local variable. The local index should be used with
+     * local accessor methods like {@link BytecodeNode#getLocalValue(int, Frame, int)} (it does
+     * <i>not</i> represent a frame index that can be used to directly access the frame). Always
+     * returns an integer greater or equal to zero.
+     * <P>
+     * If {@link GenerateBytecode#enableBlockScoping() block scoping} is enabled, multiple locals
+     * can share an offset; otherwise, the local offset is the same as the {@link #getLocalIndex()
+     * local index}.
+     * <p>
+     * Note that the local offset can only be read if the current bytecode index is between
+     * {@link #getStartIndex()} and {@link #getEndIndex()} (exclusive).
      *
      * @since 24.2
      */
