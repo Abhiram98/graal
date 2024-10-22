@@ -1825,7 +1825,7 @@ public final class BasicInterpreterWithStoreBytecodeIndexInFrame extends BasicIn
                 case Instructions.STORE_LOCAL$LONG$LONG :
                 case Instructions.STORE_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.LOAD_CONSTANT :
@@ -1848,7 +1848,7 @@ public final class BasicInterpreterWithStoreBytecodeIndexInFrame extends BasicIn
                 case Instructions.LOAD_LOCAL$LONG$UNBOXED :
                 case Instructions.LOAD_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4));
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
@@ -1857,7 +1857,7 @@ public final class BasicInterpreterWithStoreBytecodeIndexInFrame extends BasicIn
                 case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
                 case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6));
                 case Instructions.STORE_LOCAL_MAT :
@@ -1867,7 +1867,7 @@ public final class BasicInterpreterWithStoreBytecodeIndexInFrame extends BasicIn
                 case Instructions.STORE_LOCAL_MAT$LONG$LONG :
                 case Instructions.STORE_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 8));
@@ -1891,7 +1891,7 @@ public final class BasicInterpreterWithStoreBytecodeIndexInFrame extends BasicIn
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.CLEAR_LOCAL :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2));
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.EARLY_RETURN_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.READ_EXCEPTION_OPERATION_ :

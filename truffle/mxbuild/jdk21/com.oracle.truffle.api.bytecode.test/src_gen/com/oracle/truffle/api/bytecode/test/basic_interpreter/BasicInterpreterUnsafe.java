@@ -1140,7 +1140,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 case Instructions.LOAD_LOCAL :
                 case Instructions.CLEAR_LOCAL :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2));
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.LOAD_CONSTANT :
                     return List.of(
                         new ConstantArgument(bytecode, "constant", bci + 2));
@@ -1153,7 +1153,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.STORE_LOCAL_MAT :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2));
                 case Instructions.YIELD :
                     return List.of(

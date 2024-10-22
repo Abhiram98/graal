@@ -1652,7 +1652,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
                 case Instructions.STORE_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.LOAD_CONSTANT :
@@ -1675,7 +1675,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
                 case Instructions.LOAD_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4));
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.LOAD_LOCAL_MAT$LONG :
@@ -1684,7 +1684,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
                 case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6));
                 case Instructions.STORE_LOCAL_MAT :
@@ -1694,7 +1694,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
                 case Instructions.STORE_LOCAL_MAT$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2),
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 6),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 8));
@@ -1713,7 +1713,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.CLEAR_LOCAL :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "frame_index", bci + 2));
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.SL_ALWAYS_HALT_ :
                 case Instructions.SL_INVOKE_ :
                 case Instructions.SL_READ_PROPERTY_ :

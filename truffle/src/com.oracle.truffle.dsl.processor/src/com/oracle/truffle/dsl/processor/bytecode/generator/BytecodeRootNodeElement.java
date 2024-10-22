@@ -9344,7 +9344,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.startIndention();
                     b.startNew(getImmediateClassName(immediate.kind()));
                     b.string("bytecode");
-                    b.doubleQuote(immediate.name());
+                    b.doubleQuote(getIntrospectionArgumentName(immediate));
                     b.string("bci + " + immediate.offset());
                     for (String arg : getImmediateArgumentArgs(immediate.kind())) {
                         b.string(arg);
@@ -9360,6 +9360,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
             b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
             return ex;
+        }
+
+        private String getIntrospectionArgumentName(InstructionImmediate immediate) {
+            if (immediate.kind() == ImmediateKind.FRAME_INDEX) {
+                // We expose the frame_index as a local offset, so don't use the immediate name.
+                return "local_offset";
+            }
+            return immediate.name();
         }
 
         private Map<Boolean, List<InstructionModel>> groupInstructionsByInstrumentation(Collection<InstructionModel> models) {
