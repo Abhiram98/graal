@@ -656,7 +656,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
     }
 
     @Test
-    public void testMaterializedAccessTagUpdates() {
+    public void testMaterializedAccessUpdatesTag() {
         // @formatter:off
         // def outer(materializeFrame):
         //   x = 42L
@@ -723,7 +723,6 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
 
         // Outer should still execute even with updated tags.
         assertEquals(42L, outer.getCallTarget().call(false));
-
     }
 
     @Test

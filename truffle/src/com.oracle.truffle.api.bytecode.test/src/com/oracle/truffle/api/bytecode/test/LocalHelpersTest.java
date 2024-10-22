@@ -132,6 +132,11 @@ public class LocalHelpersTest {
                         interpreterClass == BytecodeNodeWithLocalIntrospectionWithBENullDefault.class;
     }
 
+    private boolean hasBoxingElimination() {
+        return interpreterClass == BytecodeNodeWithLocalIntrospectionWithBEObjectDefault.class || interpreterClass == BytecodeNodeWithLocalIntrospectionWithBENullDefault.class ||
+                        interpreterClass == BytecodeNodeWithLocalIntrospectionWithBEIllegal.class;
+    }
+
     public <T extends BytecodeNodeWithLocalIntrospectionBuilder> BytecodeNodeWithLocalIntrospection parseNode(BytecodeParser<T> builder) {
         return parseNode(interpreterClass, builder);
     }
@@ -716,13 +721,33 @@ public class LocalHelpersTest {
             b.endRoot();
         });
 
+        // Test uncached (if available).
         assertEquals(new Pair(777L, 123L), root.getCallTarget().call(0, 777L));
         assertEquals(new Pair(42L, 777L), root.getCallTarget().call(1, 777L));
-        // If BE enabled, local reads should succeed even if the type changes.
+
+        // Then, test cached.
+        root.getBytecodeNode().setUncachedThreshold(0);
+        assertEquals(new Pair(777L, 123L), root.getCallTarget().call(0, 777L));
+        assertEquals(new Pair(42L, 777L), root.getCallTarget().call(1, 777L));
+        if (hasBoxingElimination()) {
+            assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+            assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(1).getTypeProfile());
+        }
+
+        // If BE is enabled, the bytecode should gracefully handle these new types.
         assertEquals(new Pair(true, 123L), root.getCallTarget().call(0, true));
         assertEquals(new Pair(42L, false), root.getCallTarget().call(1, false));
-        assertEquals(new Pair("dog", 123L), root.getCallTarget().call(0, "dog"));
-        assertEquals(new Pair(42L, "cat"), root.getCallTarget().call(1, "cat"));
+        if (hasBoxingElimination()) {
+            assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+            assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(1).getTypeProfile());
+        }
+
+        assertEquals(new Pair(777L, 123L), root.getCallTarget().call(0, 777L));
+        assertEquals(new Pair(42L, 777L), root.getCallTarget().call(1, 777L));
+        if (hasBoxingElimination()) {
+            assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+            assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(1).getTypeProfile());
+        }
     }
 
     @Test
