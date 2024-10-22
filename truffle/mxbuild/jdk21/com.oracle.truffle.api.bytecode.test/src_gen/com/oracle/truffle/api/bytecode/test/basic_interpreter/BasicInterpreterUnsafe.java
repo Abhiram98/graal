@@ -2507,7 +2507,7 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
             if (frame.isObject(frameIndex)) {
-                return frame.getObject(USER_LOCALS_START_INDEX + localOffset);
+                return frame.getObject(frameIndex);
             }
             return null;
         }
@@ -2550,6 +2550,12 @@ public final class BasicInterpreterUnsafe extends BasicInterpreter {
                 }
             }
             return -1;
+        }
+
+        protected final int localOffsetToLocalIndex(int bci, int localOffset) {
+            int tableIndex = localOffsetToTableIndex(bci, localOffset);
+            assert locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] == localOffset + USER_LOCALS_START_INDEX : "Inconsistent indices.";
+            return locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX];
         }
 
         @Override

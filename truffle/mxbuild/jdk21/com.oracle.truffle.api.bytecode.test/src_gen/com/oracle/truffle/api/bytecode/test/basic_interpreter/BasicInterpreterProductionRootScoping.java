@@ -52,6 +52,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameExtensions;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnadoptableNode;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -234,352 +236,680 @@ import java.util.function.Supplier;
  * instructions:
  *   - Instruction pop
  *     kind: POP
- *     encoding: [1 : short]
+ *     encoding: [1 : short, child0 (bci) : int]
+ *     signature: void (Object)
+ *   - Instruction pop$Boolean
+ *     kind: POP
+ *     encoding: [2 : short, child0 (bci) : int]
+ *     signature: void (boolean)
+ *   - Instruction pop$Long
+ *     kind: POP
+ *     encoding: [3 : short, child0 (bci) : int]
+ *     signature: void (long)
+ *   - Instruction pop$generic
+ *     kind: POP
+ *     encoding: [4 : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction dup
  *     kind: DUP
- *     encoding: [2 : short]
+ *     encoding: [5 : short]
  *     signature: void ()
  *   - Instruction return
  *     kind: RETURN
- *     encoding: [3 : short]
+ *     encoding: [6 : short]
  *     signature: void (Object)
  *   - Instruction branch
  *     kind: BRANCH
- *     encoding: [4 : short, branch_target (bci) : int]
+ *     encoding: [7 : short, branch_target (bci) : int]
  *     signature: void ()
  *   - Instruction branch.backward
  *     kind: BRANCH_BACKWARD
- *     encoding: [5 : short, branch_target (bci) : int, loop_header_branch_profile (branch_profile) : int]
+ *     encoding: [8 : short, branch_target (bci) : int, loop_header_branch_profile (branch_profile) : int]
  *     signature: void ()
  *   - Instruction branch.false
  *     kind: BRANCH_FALSE
- *     encoding: [6 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [9 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
  *     signature: void (Object)
+ *   - Instruction branch.false$Generic
+ *     kind: BRANCH_FALSE
+ *     encoding: [10 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
+ *     signature: void (Object)
+ *   - Instruction branch.false$Boolean
+ *     kind: BRANCH_FALSE
+ *     encoding: [11 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
+ *     signature: void (boolean)
  *   - Instruction store.local
  *     kind: STORE_LOCAL
- *     encoding: [7 : short, frame_index : short]
+ *     encoding: [12 : short, frame_index : short, child0 (bci) : int]
+ *     signature: void (Object)
+ *   - Instruction store.local$Boolean
+ *     kind: STORE_LOCAL
+ *     encoding: [13 : short, frame_index : short, child0 (bci) : int]
+ *     signature: void (Object)
+ *   - Instruction store.local$Boolean$Boolean
+ *     kind: STORE_LOCAL
+ *     encoding: [14 : short, frame_index : short, child0 (bci) : int]
+ *     signature: void (boolean)
+ *   - Instruction store.local$Long
+ *     kind: STORE_LOCAL
+ *     encoding: [15 : short, frame_index : short, child0 (bci) : int]
+ *     signature: void (Object)
+ *   - Instruction store.local$Long$Long
+ *     kind: STORE_LOCAL
+ *     encoding: [16 : short, frame_index : short, child0 (bci) : int]
+ *     signature: void (long)
+ *   - Instruction store.local$generic
+ *     kind: STORE_LOCAL
+ *     encoding: [17 : short, frame_index : short, child0 (bci) : int]
  *     signature: void (Object)
  *   - Instruction throw
  *     kind: THROW
- *     encoding: [8 : short]
+ *     encoding: [18 : short]
  *     signature: void (Object)
  *   - Instruction load.constant
  *     kind: LOAD_CONSTANT
- *     encoding: [9 : short, constant (const) : int]
+ *     encoding: [19 : short, constant (const) : int]
  *     signature: Object ()
+ *   - Instruction load.constant$Boolean
+ *     kind: LOAD_CONSTANT
+ *     encoding: [20 : short, constant (const) : int]
+ *     signature: boolean ()
+ *   - Instruction load.constant$Long
+ *     kind: LOAD_CONSTANT
+ *     encoding: [21 : short, constant (const) : int]
+ *     signature: long ()
  *   - Instruction load.null
  *     kind: LOAD_NULL
- *     encoding: [10 : short]
+ *     encoding: [22 : short]
  *     signature: Object ()
  *   - Instruction load.argument
  *     kind: LOAD_ARGUMENT
- *     encoding: [11 : short, index (short) : short]
+ *     encoding: [23 : short, index (short) : short]
  *     signature: Object ()
+ *   - Instruction load.argument$Boolean
+ *     kind: LOAD_ARGUMENT
+ *     encoding: [24 : short, index (short) : short]
+ *     signature: boolean ()
+ *   - Instruction load.argument$Long
+ *     kind: LOAD_ARGUMENT
+ *     encoding: [25 : short, index (short) : short]
+ *     signature: long ()
  *   - Instruction load.exception
  *     kind: LOAD_EXCEPTION
- *     encoding: [12 : short, exception_sp (sp) : short]
+ *     encoding: [26 : short, exception_sp (sp) : short]
  *     signature: Object ()
  *   - Instruction load.local
  *     kind: LOAD_LOCAL
- *     encoding: [13 : short, frame_index : short]
+ *     encoding: [27 : short, frame_index : short]
+ *     signature: Object ()
+ *   - Instruction load.local$Boolean
+ *     kind: LOAD_LOCAL
+ *     encoding: [28 : short, frame_index : short]
+ *     signature: Object ()
+ *   - Instruction load.local$Boolean$unboxed
+ *     kind: LOAD_LOCAL
+ *     encoding: [29 : short, frame_index : short]
+ *     signature: boolean ()
+ *   - Instruction load.local$Long
+ *     kind: LOAD_LOCAL
+ *     encoding: [30 : short, frame_index : short]
+ *     signature: Object ()
+ *   - Instruction load.local$Long$unboxed
+ *     kind: LOAD_LOCAL
+ *     encoding: [31 : short, frame_index : short]
+ *     signature: long ()
+ *   - Instruction load.local$generic
+ *     kind: LOAD_LOCAL
+ *     encoding: [32 : short, frame_index : short]
  *     signature: Object ()
  *   - Instruction load.local.mat
  *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [14 : short, frame_index : short, root_index (local_root) : short]
+ *     encoding: [33 : short, frame_index : short, root_index (local_root) : short]
+ *     signature: Object (Object)
+ *   - Instruction load.local.mat$Boolean
+ *     kind: LOAD_LOCAL_MATERIALIZED
+ *     encoding: [34 : short, frame_index : short, root_index (local_root) : short]
+ *     signature: Object (Object)
+ *   - Instruction load.local.mat$Boolean$unboxed
+ *     kind: LOAD_LOCAL_MATERIALIZED
+ *     encoding: [35 : short, frame_index : short, root_index (local_root) : short]
+ *     signature: boolean (Object)
+ *   - Instruction load.local.mat$Long
+ *     kind: LOAD_LOCAL_MATERIALIZED
+ *     encoding: [36 : short, frame_index : short, root_index (local_root) : short]
+ *     signature: Object (Object)
+ *   - Instruction load.local.mat$Long$unboxed
+ *     kind: LOAD_LOCAL_MATERIALIZED
+ *     encoding: [37 : short, frame_index : short, root_index (local_root) : short]
+ *     signature: long (Object)
+ *   - Instruction load.local.mat$generic
+ *     kind: LOAD_LOCAL_MATERIALIZED
+ *     encoding: [38 : short, frame_index : short, root_index (local_root) : short]
  *     signature: Object (Object)
  *   - Instruction store.local.mat
  *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [15 : short, frame_index : short, root_index (local_root) : short]
+ *     encoding: [39 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+ *     signature: void (Object, Object)
+ *   - Instruction store.local.mat$Boolean
+ *     kind: STORE_LOCAL_MATERIALIZED
+ *     encoding: [40 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+ *     signature: void (Object, Object)
+ *   - Instruction store.local.mat$Boolean$Boolean
+ *     kind: STORE_LOCAL_MATERIALIZED
+ *     encoding: [41 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+ *     signature: void (boolean, Object)
+ *   - Instruction store.local.mat$Long
+ *     kind: STORE_LOCAL_MATERIALIZED
+ *     encoding: [42 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+ *     signature: void (Object, Object)
+ *   - Instruction store.local.mat$Long$Long
+ *     kind: STORE_LOCAL_MATERIALIZED
+ *     encoding: [43 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+ *     signature: void (long, Object)
+ *   - Instruction store.local.mat$generic
+ *     kind: STORE_LOCAL_MATERIALIZED
+ *     encoding: [44 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
  *     signature: void (Object, Object)
  *   - Instruction yield
  *     kind: YIELD
- *     encoding: [16 : short, location (const) : int]
+ *     encoding: [45 : short, location (const) : int]
  *     signature: void (Object)
  *   - Instruction tag.enter
  *     kind: TAG_ENTER
- *     encoding: [17 : short, tag : int]
+ *     encoding: [46 : short, tag : int]
  *     signature: void ()
  *   - Instruction tag.leave
  *     kind: TAG_LEAVE
- *     encoding: [18 : short, tag : int]
+ *     encoding: [47 : short, tag : int, child0 (bci) : int]
+ *     signature: Object (Object)
+ *   - Instruction tag.leave$Boolean
+ *     kind: TAG_LEAVE
+ *     encoding: [48 : short, tag : int, child0 (bci) : int]
+ *     signature: Object (boolean)
+ *   - Instruction tag.leave$Boolean$unboxed
+ *     kind: TAG_LEAVE
+ *     encoding: [49 : short, tag : int, child0 (bci) : int]
+ *     signature: boolean (Object)
+ *   - Instruction tag.leave$Long
+ *     kind: TAG_LEAVE
+ *     encoding: [50 : short, tag : int, child0 (bci) : int]
+ *     signature: Object (long)
+ *   - Instruction tag.leave$Long$unboxed
+ *     kind: TAG_LEAVE
+ *     encoding: [51 : short, tag : int, child0 (bci) : int]
+ *     signature: long (Object)
+ *   - Instruction tag.leave$generic
+ *     kind: TAG_LEAVE
+ *     encoding: [52 : short, tag : int, child0 (bci) : int]
  *     signature: Object (Object)
  *   - Instruction tag.leaveVoid
  *     kind: TAG_LEAVE_VOID
- *     encoding: [19 : short, tag : int]
+ *     encoding: [53 : short, tag : int]
  *     signature: Object ()
  *   - Instruction tag.yield
  *     kind: TAG_YIELD
- *     encoding: [20 : short, tag : int]
+ *     encoding: [54 : short, tag : int]
  *     signature: Object (Object)
  *   - Instruction tag.resume
  *     kind: TAG_RESUME
- *     encoding: [21 : short, tag : int]
+ *     encoding: [55 : short, tag : int]
  *     signature: void ()
  *   - Instruction load.variadic_0
  *     kind: LOAD_VARIADIC
- *     encoding: [22 : short]
+ *     encoding: [56 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_1
  *     kind: LOAD_VARIADIC
- *     encoding: [23 : short]
+ *     encoding: [57 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_2
  *     kind: LOAD_VARIADIC
- *     encoding: [24 : short]
+ *     encoding: [58 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_3
  *     kind: LOAD_VARIADIC
- *     encoding: [25 : short]
+ *     encoding: [59 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_4
  *     kind: LOAD_VARIADIC
- *     encoding: [26 : short]
+ *     encoding: [60 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_5
  *     kind: LOAD_VARIADIC
- *     encoding: [27 : short]
+ *     encoding: [61 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_6
  *     kind: LOAD_VARIADIC
- *     encoding: [28 : short]
+ *     encoding: [62 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_7
  *     kind: LOAD_VARIADIC
- *     encoding: [29 : short]
+ *     encoding: [63 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_8
  *     kind: LOAD_VARIADIC
- *     encoding: [30 : short]
+ *     encoding: [64 : short]
  *     signature: void (Object)
  *   - Instruction merge.variadic
  *     kind: MERGE_VARIADIC
- *     encoding: [31 : short]
+ *     encoding: [65 : short]
  *     signature: Object (Object)
  *   - Instruction constant_null
  *     kind: STORE_NULL
- *     encoding: [32 : short]
+ *     encoding: [66 : short]
  *     signature: Object ()
  *   - Instruction clear.local
  *     kind: CLEAR_LOCAL
- *     encoding: [33 : short, frame_index : short]
+ *     encoding: [67 : short, frame_index : short]
  *     signature: void ()
  *   - Instruction c.EarlyReturn
  *     kind: CUSTOM
- *     encoding: [34 : short, node : int]
+ *     encoding: [68 : short, node : int]
  *     nodeType: EarlyReturn
  *     signature: void (Object)
  *   - Instruction c.Add
  *     kind: CUSTOM
- *     encoding: [35 : short, node : int]
+ *     encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Add
  *     signature: Object (Object, Object)
+ *   - Instruction c.Add$AddLongs
+ *     kind: CUSTOM
+ *     encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Add
+ *     signature: long (long, long)
+ *   - Instruction c.Add$AddLongs$unboxed
+ *     kind: CUSTOM
+ *     encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Add
+ *     signature: long (long, long)
  *   - Instruction c.ToString
  *     kind: CUSTOM
- *     encoding: [36 : short, node : int]
+ *     encoding: [72 : short, node : int]
  *     nodeType: ToString
  *     signature: Object (Object)
  *   - Instruction c.Call
  *     kind: CUSTOM
- *     encoding: [37 : short, interpreter (const) : int, node : int]
+ *     encoding: [73 : short, interpreter (const) : int, node : int]
  *     nodeType: Call
  *     signature: Object (BasicInterpreter, Object[]...)
  *   - Instruction c.AddConstantOperation
  *     kind: CUSTOM
- *     encoding: [38 : short, constantLhs (const) : int, node : int]
+ *     encoding: [74 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
  *     nodeType: AddConstantOperation
  *     signature: Object (long, Object)
+ *   - Instruction c.AddConstantOperation$AddLongs
+ *     kind: CUSTOM
+ *     encoding: [75 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: AddConstantOperation
+ *     signature: long (long, long)
+ *   - Instruction c.AddConstantOperation$AddLongs$unboxed
+ *     kind: CUSTOM
+ *     encoding: [76 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: AddConstantOperation
+ *     signature: long (long, long)
  *   - Instruction c.AddConstantOperationAtEnd
  *     kind: CUSTOM
- *     encoding: [39 : short, constantRhs (const) : int, node : int]
+ *     encoding: [77 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
  *     nodeType: AddConstantOperationAtEnd
  *     signature: Object (Object, long)
+ *   - Instruction c.AddConstantOperationAtEnd$AddLongs
+ *     kind: CUSTOM
+ *     encoding: [78 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: AddConstantOperationAtEnd
+ *     signature: long (long, long)
+ *   - Instruction c.AddConstantOperationAtEnd$AddLongs$unboxed
+ *     kind: CUSTOM
+ *     encoding: [79 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: AddConstantOperationAtEnd
+ *     signature: long (long, long)
  *   - Instruction c.VeryComplexOperation
  *     kind: CUSTOM
- *     encoding: [40 : short, node : int]
+ *     encoding: [80 : short, node : int, child0 (bci) : int]
+ *     nodeType: VeryComplexOperation
+ *     signature: long (long, Object[]...)
+ *   - Instruction c.VeryComplexOperation$Bla
+ *     kind: CUSTOM
+ *     encoding: [81 : short, node : int, child0 (bci) : int]
+ *     nodeType: VeryComplexOperation
+ *     signature: long (long, Object[]...)
+ *   - Instruction c.VeryComplexOperation$Bla$unboxed
+ *     kind: CUSTOM
+ *     encoding: [82 : short, node : int, child0 (bci) : int]
+ *     nodeType: VeryComplexOperation
+ *     signature: long (long, Object[]...)
+ *   - Instruction c.VeryComplexOperation$unboxed
+ *     kind: CUSTOM
+ *     encoding: [83 : short, node : int, child0 (bci) : int]
  *     nodeType: VeryComplexOperation
  *     signature: long (long, Object[]...)
  *   - Instruction c.ThrowOperation
  *     kind: CUSTOM
- *     encoding: [41 : short, node : int]
+ *     encoding: [84 : short, node : int, child0 (bci) : int]
+ *     nodeType: ThrowOperation
+ *     signature: Object (long)
+ *   - Instruction c.ThrowOperation$Perform
+ *     kind: CUSTOM
+ *     encoding: [85 : short, node : int, child0 (bci) : int]
  *     nodeType: ThrowOperation
  *     signature: Object (long)
  *   - Instruction c.ReadExceptionOperation
  *     kind: CUSTOM
- *     encoding: [42 : short, node : int]
+ *     encoding: [86 : short, node : int]
+ *     nodeType: ReadExceptionOperation
+ *     signature: long (TestException)
+ *   - Instruction c.ReadExceptionOperation$unboxed
+ *     kind: CUSTOM
+ *     encoding: [87 : short, node : int]
  *     nodeType: ReadExceptionOperation
  *     signature: long (TestException)
  *   - Instruction c.AlwaysBoxOperation
  *     kind: CUSTOM
- *     encoding: [43 : short, node : int]
+ *     encoding: [88 : short, node : int]
  *     nodeType: AlwaysBoxOperation
  *     signature: Object (Object)
  *   - Instruction c.AppenderOperation
  *     kind: CUSTOM
- *     encoding: [44 : short, node : int]
+ *     encoding: [89 : short, node : int]
  *     nodeType: AppenderOperation
  *     signature: void (List<?>, Object)
  *   - Instruction c.TeeLocal
  *     kind: CUSTOM
- *     encoding: [45 : short, setter (const) : int, node : int]
+ *     encoding: [90 : short, setter (const) : int, node : int, child0 (bci) : int]
  *     nodeType: TeeLocal
  *     signature: Object (LocalAccessor, Object)
+ *   - Instruction c.TeeLocal$Long
+ *     kind: CUSTOM
+ *     encoding: [91 : short, setter (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: TeeLocal
+ *     signature: long (LocalAccessor, long)
+ *   - Instruction c.TeeLocal$Long$unboxed
+ *     kind: CUSTOM
+ *     encoding: [92 : short, setter (const) : int, node : int, child0 (bci) : int]
+ *     nodeType: TeeLocal
+ *     signature: long (LocalAccessor, long)
  *   - Instruction c.TeeLocalRange
  *     kind: CUSTOM
- *     encoding: [46 : short, setter (const) : int, node : int]
+ *     encoding: [93 : short, setter (const) : int, node : int]
  *     nodeType: TeeLocalRange
  *     signature: Object (LocalRangeAccessor, Object)
  *   - Instruction c.Invoke
  *     kind: CUSTOM
- *     encoding: [47 : short, node : int]
+ *     encoding: [94 : short, node : int]
  *     nodeType: Invoke
  *     signature: Object (Object, Object[]...)
  *   - Instruction c.MaterializeFrame
  *     kind: CUSTOM
- *     encoding: [48 : short, node : int]
+ *     encoding: [95 : short, node : int]
  *     nodeType: MaterializeFrame
  *     signature: MaterializedFrame ()
  *   - Instruction c.CreateClosure
  *     kind: CUSTOM
- *     encoding: [49 : short, node : int]
+ *     encoding: [96 : short, node : int]
  *     nodeType: CreateClosure
  *     signature: TestClosure (BasicInterpreter)
  *   - Instruction c.VoidOperation
  *     kind: CUSTOM
- *     encoding: [50 : short, node : int]
+ *     encoding: [97 : short, node : int]
  *     nodeType: VoidOperation
  *     signature: void ()
  *   - Instruction c.ToBoolean
  *     kind: CUSTOM
- *     encoding: [51 : short, node : int]
+ *     encoding: [98 : short, node : int, child0 (bci) : int]
+ *     nodeType: ToBoolean
+ *     signature: boolean (Object)
+ *   - Instruction c.ToBoolean$Long
+ *     kind: CUSTOM
+ *     encoding: [99 : short, node : int, child0 (bci) : int]
+ *     nodeType: ToBoolean
+ *     signature: boolean (long)
+ *   - Instruction c.ToBoolean$Long$unboxed
+ *     kind: CUSTOM
+ *     encoding: [100 : short, node : int, child0 (bci) : int]
+ *     nodeType: ToBoolean
+ *     signature: boolean (long)
+ *   - Instruction c.ToBoolean$Boolean
+ *     kind: CUSTOM
+ *     encoding: [101 : short, node : int, child0 (bci) : int]
+ *     nodeType: ToBoolean
+ *     signature: boolean (boolean)
+ *   - Instruction c.ToBoolean$Boolean$unboxed
+ *     kind: CUSTOM
+ *     encoding: [102 : short, node : int, child0 (bci) : int]
+ *     nodeType: ToBoolean
+ *     signature: boolean (boolean)
+ *   - Instruction c.ToBoolean$unboxed
+ *     kind: CUSTOM
+ *     encoding: [103 : short, node : int, child0 (bci) : int]
  *     nodeType: ToBoolean
  *     signature: boolean (Object)
  *   - Instruction c.GetSourcePosition
  *     kind: CUSTOM
- *     encoding: [52 : short, node : int]
+ *     encoding: [104 : short, node : int]
  *     nodeType: GetSourcePosition
  *     signature: SourceSection ()
  *   - Instruction c.EnsureAndGetSourcePosition
  *     kind: CUSTOM
- *     encoding: [53 : short, node : int]
+ *     encoding: [105 : short, node : int, child0 (bci) : int]
+ *     nodeType: EnsureAndGetSourcePosition
+ *     signature: SourceSection (boolean)
+ *   - Instruction c.EnsureAndGetSourcePosition$Operation
+ *     kind: CUSTOM
+ *     encoding: [106 : short, node : int, child0 (bci) : int]
  *     nodeType: EnsureAndGetSourcePosition
  *     signature: SourceSection (boolean)
  *   - Instruction c.GetSourcePositions
  *     kind: CUSTOM
- *     encoding: [54 : short, node : int]
+ *     encoding: [107 : short, node : int]
  *     nodeType: GetSourcePositions
  *     signature: SourceSection[] ()
  *   - Instruction c.CopyLocalsToFrame
  *     kind: CUSTOM
- *     encoding: [55 : short, node : int]
+ *     encoding: [108 : short, node : int, child0 (bci) : int]
  *     nodeType: CopyLocalsToFrame
  *     signature: Frame (Object)
+ *   - Instruction c.CopyLocalsToFrame$SomeLocals
+ *     kind: CUSTOM
+ *     encoding: [109 : short, node : int, child0 (bci) : int]
+ *     nodeType: CopyLocalsToFrame
+ *     signature: Frame (long)
  *   - Instruction c.GetBytecodeLocation
  *     kind: CUSTOM
- *     encoding: [56 : short, node : int]
+ *     encoding: [110 : short, node : int]
  *     nodeType: GetBytecodeLocation
  *     signature: BytecodeLocation ()
  *   - Instruction c.CollectBytecodeLocations
  *     kind: CUSTOM
- *     encoding: [57 : short, node : int]
+ *     encoding: [111 : short, node : int]
  *     nodeType: CollectBytecodeLocations
  *     signature: List<BytecodeLocation> ()
  *   - Instruction c.CollectSourceLocations
  *     kind: CUSTOM
- *     encoding: [58 : short, node : int]
+ *     encoding: [112 : short, node : int]
  *     nodeType: CollectSourceLocations
  *     signature: List<SourceSection> ()
  *   - Instruction c.CollectAllSourceLocations
  *     kind: CUSTOM
- *     encoding: [59 : short, node : int]
+ *     encoding: [113 : short, node : int]
  *     nodeType: CollectAllSourceLocations
  *     signature: List<SourceSection[]> ()
  *   - Instruction c.Continue
  *     kind: CUSTOM
- *     encoding: [60 : short, node : int]
+ *     encoding: [114 : short, node : int]
  *     nodeType: ContinueNode
  *     signature: Object (ContinuationResult, Object)
  *   - Instruction c.CurrentLocation
  *     kind: CUSTOM
- *     encoding: [61 : short, node : int]
+ *     encoding: [115 : short, node : int]
  *     nodeType: CurrentLocation
  *     signature: BytecodeLocation ()
  *   - Instruction c.PrintHere
  *     kind: CUSTOM
- *     encoding: [62 : short, node : int]
+ *     encoding: [116 : short, node : int]
  *     nodeType: PrintHere
  *     signature: void ()
  *   - Instruction c.IncrementValue
  *     kind: CUSTOM
- *     encoding: [63 : short, node : int]
+ *     encoding: [117 : short, node : int, child0 (bci) : int]
+ *     nodeType: IncrementValue
+ *     signature: long (long)
+ *   - Instruction c.IncrementValue$Increment
+ *     kind: CUSTOM
+ *     encoding: [118 : short, node : int, child0 (bci) : int]
+ *     nodeType: IncrementValue
+ *     signature: long (long)
+ *   - Instruction c.IncrementValue$Increment$unboxed
+ *     kind: CUSTOM
+ *     encoding: [119 : short, node : int, child0 (bci) : int]
+ *     nodeType: IncrementValue
+ *     signature: long (long)
+ *   - Instruction c.IncrementValue$unboxed
+ *     kind: CUSTOM
+ *     encoding: [120 : short, node : int, child0 (bci) : int]
  *     nodeType: IncrementValue
  *     signature: long (long)
  *   - Instruction c.DoubleValue
  *     kind: CUSTOM
- *     encoding: [64 : short, node : int]
+ *     encoding: [121 : short, node : int, child0 (bci) : int]
+ *     nodeType: DoubleValue
+ *     signature: long (long)
+ *   - Instruction c.DoubleValue$Double
+ *     kind: CUSTOM
+ *     encoding: [122 : short, node : int, child0 (bci) : int]
+ *     nodeType: DoubleValue
+ *     signature: long (long)
+ *   - Instruction c.DoubleValue$Double$unboxed
+ *     kind: CUSTOM
+ *     encoding: [123 : short, node : int, child0 (bci) : int]
+ *     nodeType: DoubleValue
+ *     signature: long (long)
+ *   - Instruction c.DoubleValue$unboxed
+ *     kind: CUSTOM
+ *     encoding: [124 : short, node : int, child0 (bci) : int]
  *     nodeType: DoubleValue
  *     signature: long (long)
  *   - Instruction c.EnableIncrementValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [65 : short, node : int]
+ *     encoding: [125 : short, node : int]
  *     nodeType: EnableIncrementValueInstrumentation
  *     signature: void ()
  *   - Instruction c.Mod
  *     kind: CUSTOM
- *     encoding: [66 : short, node : int]
+ *     encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Mod
+ *     signature: long (long, long)
+ *   - Instruction c.Mod$Ints
+ *     kind: CUSTOM
+ *     encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Mod
+ *     signature: long (long, long)
+ *   - Instruction c.Mod$Ints$unboxed
+ *     kind: CUSTOM
+ *     encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Mod
+ *     signature: long (long, long)
+ *   - Instruction c.Mod$unboxed
+ *     kind: CUSTOM
+ *     encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Less
  *     kind: CUSTOM
- *     encoding: [67 : short, node : int]
+ *     encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Less
+ *     signature: boolean (long, long)
+ *   - Instruction c.Less$Ints
+ *     kind: CUSTOM
+ *     encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Less
+ *     signature: boolean (long, long)
+ *   - Instruction c.Less$Ints$unboxed
+ *     kind: CUSTOM
+ *     encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     nodeType: Less
+ *     signature: boolean (long, long)
+ *   - Instruction c.Less$unboxed
+ *     kind: CUSTOM
+ *     encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.EnableDoubleValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [68 : short, node : int]
+ *     encoding: [134 : short, node : int]
  *     nodeType: EnableDoubleValueInstrumentation
  *     signature: void ()
  *   - Instruction c.ExplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [69 : short, node : int]
+ *     encoding: [135 : short, node : int]
  *     nodeType: ExplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction c.ImplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [70 : short, node : int]
+ *     encoding: [136 : short, node : int]
  *     nodeType: ImplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction sc.ScAnd
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [137 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction sc.ScOr
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [138 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
+ *   - Instruction merge.conditional
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [139 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: Object (boolean, Object)
+ *   - Instruction merge.conditional$Boolean
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [140 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: Object (boolean, boolean)
+ *   - Instruction merge.conditional$Boolean$unboxed
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [141 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: boolean (boolean, boolean)
+ *   - Instruction merge.conditional$Long
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [142 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: Object (boolean, long)
+ *   - Instruction merge.conditional$Long$unboxed
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: long (boolean, long)
+ *   - Instruction merge.conditional$generic
+ *     kind: MERGE_CONDITIONAL
+ *     encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
+ *     signature: Object (boolean, Object)
  *   - Instruction invalidate0
  *     kind: INVALIDATE
- *     encoding: [73 : short]
+ *     encoding: [145 : short]
  *     signature: void ()
  *   - Instruction invalidate1
  *     kind: INVALIDATE
- *     encoding: [74 : short, invalidated0 (short) : short]
+ *     encoding: [146 : short, invalidated0 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate2
  *     kind: INVALIDATE
- *     encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+ *     encoding: [147 : short, invalidated0 (short) : short, invalidated1 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate3
  *     kind: INVALIDATE
- *     encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+ *     encoding: [148 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate4
  *     kind: INVALIDATE
- *     encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     encoding: [149 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     signature: void ()
+ *   - Instruction invalidate5
+ *     kind: INVALIDATE
+ *     encoding: [150 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+ *     signature: void ()
+ *   - Instruction invalidate6
+ *     kind: INVALIDATE
+ *     encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
  *     signature: void ()
  */
 @SuppressWarnings({"javadoc", "unused", "deprecation", "static-method"})
-public final class BasicInterpreterWithUncached extends BasicInterpreter {
+public final class BasicInterpreterProductionRootScoping extends BasicInterpreter {
 
     private static final int[] EMPTY_INT_ARRAY = new int[0];
     private static final Object[] EMPTY_ARRAY = new Object[0];
@@ -589,7 +919,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     private static final int BCI_INDEX = 0;
     private static final int COROUTINE_FRAME_INDEX = 1;
     private static final int USER_LOCALS_START_INDEX = 2;
-    private static final AtomicReferenceFieldUpdater<BasicInterpreterWithUncached, AbstractBytecodeNode> BYTECODE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(BasicInterpreterWithUncached.class, AbstractBytecodeNode.class, "bytecode");
+    private static final AtomicReferenceFieldUpdater<BasicInterpreterProductionRootScoping, AbstractBytecodeNode> BYTECODE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(BasicInterpreterProductionRootScoping.class, AbstractBytecodeNode.class, "bytecode");
     private static final int EXCEPTION_HANDLER_OFFSET_START_BCI = 0;
     private static final int EXCEPTION_HANDLER_OFFSET_END_BCI = 1;
     private static final int EXCEPTION_HANDLER_OFFSET_KIND = 2;
@@ -602,17 +932,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     private static final int SOURCE_INFO_OFFSET_START = 3;
     private static final int SOURCE_INFO_OFFSET_LENGTH = 4;
     private static final int SOURCE_INFO_LENGTH = 5;
-    private static final int LOCALS_OFFSET_START_BCI = 0;
-    private static final int LOCALS_OFFSET_END_BCI = 1;
-    private static final int LOCALS_OFFSET_LOCAL_INDEX = 2;
-    private static final int LOCALS_OFFSET_FRAME_INDEX = 3;
-    private static final int LOCALS_OFFSET_NAME = 4;
-    private static final int LOCALS_OFFSET_INFO = 5;
-    private static final int LOCALS_LENGTH = 6;
+    private static final int LOCALS_OFFSET_NAME = 0;
+    private static final int LOCALS_OFFSET_INFO = 1;
+    private static final int LOCALS_LENGTH = 2;
     private static final int HANDLER_CUSTOM = 0;
     private static final int HANDLER_TAG_EXCEPTIONAL = 1;
     private static final ConcurrentHashMap<Integer, Class<? extends Tag>[]> TAG_MASK_TO_TAGS = new ConcurrentHashMap<>();
-    private static final ClassValue<Integer> CLASS_TO_TAG_MASK = BasicInterpreterWithUncached.initializeTagMaskToClass();
+    private static final ClassValue<Integer> CLASS_TO_TAG_MASK = BasicInterpreterProductionRootScoping.initializeTagMaskToClass();
     private static final LibraryFactory<InteropLibrary> INTEROP_LIBRARY_ = LibraryFactory.resolve(InteropLibrary.class);
 
     @Child private volatile AbstractBytecodeNode bytecode;
@@ -621,13 +947,18 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
      * The number of frame slots required for locals.
      */
     private final int maxLocals;
+    /**
+     * The total number of locals created.
+     */
+    private final int numLocals;
     private final int buildIndex;
-    private CloneReferenceList<BasicInterpreterWithUncached> clones;
+    private CloneReferenceList<BasicInterpreterProductionRootScoping> clones;
 
-    private BasicInterpreterWithUncached(BytecodeDSLTestLanguage language, com.oracle.truffle.api.frame.FrameDescriptor.Builder builder, BytecodeRootNodesImpl nodes, int maxLocals, int buildIndex, byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot) {
+    private BasicInterpreterProductionRootScoping(BytecodeDSLTestLanguage language, com.oracle.truffle.api.frame.FrameDescriptor.Builder builder, BytecodeRootNodesImpl nodes, int maxLocals, int numLocals, int buildIndex, byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot) {
         super(language, builder.build());
         this.nodes = nodes;
         this.maxLocals = maxLocals;
+        this.numLocals = numLocals;
         this.buildIndex = buildIndex;
         this.bytecode = insert(new UncachedBytecodeNode(bytecodes, constants, handlers, locals, sourceInfo, sources, numNodes, tagRoot));
     }
@@ -667,7 +998,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         AbstractBytecodeNode newBytecode;
         do {
             oldBytecode = this.bytecode;
-            newBytecode = insert(oldBytecode.toCached());
+            newBytecode = insert(oldBytecode.toCached(this.numLocals));
             if (bci > 0) {
                 // initialize local tags
                 int localCount = newBytecode.getLocalCount(bci);
@@ -764,14 +1095,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
     @Override
     protected RootNode cloneUninitialized() {
-        BasicInterpreterWithUncached clone;
+        BasicInterpreterProductionRootScoping clone;
         synchronized(nodes){
-            clone = (BasicInterpreterWithUncached) this.copy();
+            clone = (BasicInterpreterProductionRootScoping) this.copy();
             clone.clones = null;
             clone.bytecode = insert(this.bytecode.cloneUninitialized());
-            CloneReferenceList<BasicInterpreterWithUncached> localClones = this.clones;
+            CloneReferenceList<BasicInterpreterProductionRootScoping> localClones = this.clones;
             if (localClones == null) {
-                this.clones = localClones = new CloneReferenceList<BasicInterpreterWithUncached>();
+                this.clones = localClones = new CloneReferenceList<BasicInterpreterProductionRootScoping>();
             }
             localClones.add(clone);
         }
@@ -813,8 +1144,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         return bytecode;
     }
 
-    private BasicInterpreterWithUncached getBytecodeRootNodeImpl(int index) {
-        return (BasicInterpreterWithUncached) this.nodes.getNode(index);
+    private BasicInterpreterProductionRootScoping getBytecodeRootNodeImpl(int index) {
+        return (BasicInterpreterProductionRootScoping) this.nodes.getNode(index);
     }
 
     @Override
@@ -837,6 +1168,22 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         return AbstractBytecodeNode.createStackTraceElement(stackTraceElement);
     }
 
+    private static boolean expectBoolean(Object value) throws UnexpectedResultException {
+        if (value instanceof Boolean) {
+            return (boolean) value;
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new UnexpectedResultException(value);
+    }
+
+    private static long expectLong(Object value) throws UnexpectedResultException {
+        if (value instanceof Long) {
+            return (long) value;
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new UnexpectedResultException(value);
+    }
+
     public static com.oracle.truffle.api.bytecode.BytecodeConfig.Builder newConfigBuilder() {
         return BytecodeConfig.newBuilder(BytecodeConfigEncoderImpl.INSTANCE);
     }
@@ -853,13 +1200,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     }
 
     /**
-     * Creates one or more bytecode nodes. This is the entrypoint for creating new {@link BasicInterpreterWithUncached} instances.
+     * Creates one or more bytecode nodes. This is the entrypoint for creating new {@link BasicInterpreterProductionRootScoping} instances.
      *
      * @param language the Truffle language instance.
      * @param config indicates whether to parse metadata (e.g., source information).
      * @param parser the parser that invokes a series of builder instructions to generate bytecode.
      */
-    public static BytecodeRootNodes<BasicInterpreter> create(BytecodeDSLTestLanguage language, BytecodeConfig config, BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder> parser) {
+    public static BytecodeRootNodes<BasicInterpreter> create(BytecodeDSLTestLanguage language, BytecodeConfig config, BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder> parser) {
         BytecodeRootNodesImpl nodes = new BytecodeRootNodesImpl(parser, config);
         Builder builder = new Builder(language, nodes, config);
         parser.parse(builder);
@@ -879,13 +1226,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
      * @param parser the parser.
      */
     @TruffleBoundary
-    public static void serialize(DataOutput buffer, BytecodeSerializer callback, BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder> parser) throws IOException {
+    public static void serialize(DataOutput buffer, BytecodeSerializer callback, BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder> parser) throws IOException {
         Builder builder = new Builder(null, new BytecodeRootNodesImpl(parser, BytecodeConfig.COMPLETE), BytecodeConfig.COMPLETE);
         doSerialize(buffer, callback, builder, null);
     }
 
     @TruffleBoundary
-    private static void doSerialize(DataOutput buffer, BytecodeSerializer callback, com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder builder, List<BasicInterpreter> existingNodes) throws IOException {
+    private static void doSerialize(DataOutput buffer, BytecodeSerializer callback, com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder builder, List<BasicInterpreter> existingNodes) throws IOException {
         try {
             builder.serialize(buffer, callback, existingNodes);
         } catch (IOError e) {
@@ -987,6 +1334,225 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         return newArray;
     }
 
+    private static short applyQuickeningBoolean(short $operand) {
+        switch ($operand) {
+            case Instructions.LOAD_CONSTANT :
+            case Instructions.LOAD_CONSTANT$BOOLEAN :
+                return Instructions.LOAD_CONSTANT$BOOLEAN;
+            case Instructions.LOAD_ARGUMENT :
+            case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                return Instructions.LOAD_ARGUMENT$BOOLEAN;
+            case Instructions.LOAD_LOCAL$BOOLEAN :
+            case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                return Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED;
+            case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                return Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED;
+            case Instructions.TAG_LEAVE$BOOLEAN :
+            case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                return Instructions.TAG_LEAVE$BOOLEAN$UNBOXED;
+            case Instructions.TO_BOOLEAN$LONG_ :
+            case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                return Instructions.TO_BOOLEAN$LONG$UNBOXED_;
+            case Instructions.TO_BOOLEAN$BOOLEAN_ :
+            case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                return Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_;
+            case Instructions.TO_BOOLEAN_ :
+            case Instructions.TO_BOOLEAN$UNBOXED_ :
+                return Instructions.TO_BOOLEAN$UNBOXED_;
+            case Instructions.LESS$INTS_ :
+            case Instructions.LESS$INTS$UNBOXED_ :
+                return Instructions.LESS$INTS$UNBOXED_;
+            case Instructions.LESS_ :
+            case Instructions.LESS$UNBOXED_ :
+                return Instructions.LESS$UNBOXED_;
+            case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+            case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                return Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED;
+            default :
+                return -1;
+        }
+    }
+
+    private static boolean isQuickeningBoolean(short operand) {
+        switch (operand) {
+            case Instructions.LOAD_CONSTANT$BOOLEAN :
+            case Instructions.LOAD_ARGUMENT$BOOLEAN :
+            case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+            case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+            case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+            case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+            case Instructions.TO_BOOLEAN$UNBOXED_ :
+            case Instructions.LESS$INTS$UNBOXED_ :
+            case Instructions.LESS$UNBOXED_ :
+            case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                return true;
+            default :
+                return false;
+        }
+    }
+
+    private static short applyQuickeningLong(short $operand) {
+        switch ($operand) {
+            case Instructions.LOAD_CONSTANT :
+            case Instructions.LOAD_CONSTANT$LONG :
+                return Instructions.LOAD_CONSTANT$LONG;
+            case Instructions.LOAD_ARGUMENT :
+            case Instructions.LOAD_ARGUMENT$LONG :
+                return Instructions.LOAD_ARGUMENT$LONG;
+            case Instructions.LOAD_LOCAL$LONG :
+            case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                return Instructions.LOAD_LOCAL$LONG$UNBOXED;
+            case Instructions.LOAD_LOCAL_MAT$LONG :
+            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                return Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED;
+            case Instructions.TAG_LEAVE$LONG :
+            case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                return Instructions.TAG_LEAVE$LONG$UNBOXED;
+            case Instructions.ADD$ADD_LONGS_ :
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD$ADD_LONGS$UNBOXED_;
+            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_;
+            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_;
+            case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+            case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                return Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_;
+            case Instructions.VERY_COMPLEX_OPERATION_ :
+            case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                return Instructions.VERY_COMPLEX_OPERATION$UNBOXED_;
+            case Instructions.READ_EXCEPTION_OPERATION_ :
+            case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+                return Instructions.READ_EXCEPTION_OPERATION$UNBOXED_;
+            case Instructions.TEE_LOCAL$LONG_ :
+            case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                return Instructions.TEE_LOCAL$LONG$UNBOXED_;
+            case Instructions.INCREMENT_VALUE$INCREMENT_ :
+            case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                return Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_;
+            case Instructions.INCREMENT_VALUE_ :
+            case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                return Instructions.INCREMENT_VALUE$UNBOXED_;
+            case Instructions.DOUBLE_VALUE$DOUBLE_ :
+            case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                return Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_;
+            case Instructions.DOUBLE_VALUE_ :
+            case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                return Instructions.DOUBLE_VALUE$UNBOXED_;
+            case Instructions.MOD$INTS_ :
+            case Instructions.MOD$INTS$UNBOXED_ :
+                return Instructions.MOD$INTS$UNBOXED_;
+            case Instructions.MOD_ :
+            case Instructions.MOD$UNBOXED_ :
+                return Instructions.MOD$UNBOXED_;
+            case Instructions.MERGE_CONDITIONAL$LONG :
+            case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                return Instructions.MERGE_CONDITIONAL$LONG$UNBOXED;
+            default :
+                return -1;
+        }
+    }
+
+    private static boolean isQuickeningLong(short operand) {
+        switch (operand) {
+            case Instructions.LOAD_CONSTANT$LONG :
+            case Instructions.LOAD_ARGUMENT$LONG :
+            case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+            case Instructions.TAG_LEAVE$LONG$UNBOXED :
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+            case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+            case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+            case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+            case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+            case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+            case Instructions.INCREMENT_VALUE$UNBOXED_ :
+            case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+            case Instructions.DOUBLE_VALUE$UNBOXED_ :
+            case Instructions.MOD$INTS$UNBOXED_ :
+            case Instructions.MOD$UNBOXED_ :
+            case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                return true;
+            default :
+                return false;
+        }
+    }
+
+    private static short undoQuickening(short $operand) {
+        switch ($operand) {
+            case Instructions.BRANCH_FALSE$BOOLEAN :
+                return Instructions.BRANCH_FALSE;
+            case Instructions.LOAD_CONSTANT$BOOLEAN :
+                return Instructions.LOAD_CONSTANT;
+            case Instructions.LOAD_CONSTANT$LONG :
+                return Instructions.LOAD_CONSTANT;
+            case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                return Instructions.LOAD_ARGUMENT;
+            case Instructions.LOAD_ARGUMENT$LONG :
+                return Instructions.LOAD_ARGUMENT;
+            case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                return Instructions.LOAD_LOCAL$BOOLEAN;
+            case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                return Instructions.LOAD_LOCAL$LONG;
+            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                return Instructions.LOAD_LOCAL_MAT$BOOLEAN;
+            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                return Instructions.LOAD_LOCAL_MAT$LONG;
+            case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                return Instructions.TAG_LEAVE$BOOLEAN;
+            case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                return Instructions.TAG_LEAVE$LONG;
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD$ADD_LONGS_;
+            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_;
+            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_;
+            case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                return Instructions.VERY_COMPLEX_OPERATION$BLA_;
+            case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                return Instructions.VERY_COMPLEX_OPERATION_;
+            case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+                return Instructions.READ_EXCEPTION_OPERATION_;
+            case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                return Instructions.TEE_LOCAL$LONG_;
+            case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                return Instructions.TO_BOOLEAN$LONG_;
+            case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                return Instructions.TO_BOOLEAN$BOOLEAN_;
+            case Instructions.TO_BOOLEAN$UNBOXED_ :
+                return Instructions.TO_BOOLEAN_;
+            case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                return Instructions.INCREMENT_VALUE$INCREMENT_;
+            case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                return Instructions.INCREMENT_VALUE_;
+            case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                return Instructions.DOUBLE_VALUE$DOUBLE_;
+            case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                return Instructions.DOUBLE_VALUE_;
+            case Instructions.MOD$INTS$UNBOXED_ :
+                return Instructions.MOD$INTS_;
+            case Instructions.MOD$UNBOXED_ :
+                return Instructions.MOD_;
+            case Instructions.LESS$INTS$UNBOXED_ :
+                return Instructions.LESS$INTS_;
+            case Instructions.LESS$UNBOXED_ :
+                return Instructions.LESS_;
+            case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                return Instructions.MERGE_CONDITIONAL$BOOLEAN;
+            case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                return Instructions.MERGE_CONDITIONAL$LONG;
+            default :
+                return $operand;
+        }
+    }
+
     private static final class InstructionImpl extends Instruction {
 
         final AbstractBytecodeNode bytecode;
@@ -1018,7 +1584,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         @Override
         public int getLength() {
             switch (opcode) {
-                case Instructions.POP :
                 case Instructions.DUP :
                 case Instructions.RETURN :
                 case Instructions.THROW :
@@ -1036,40 +1601,50 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CONSTANT_NULL :
                 case Instructions.INVALIDATE0 :
                     return 2;
-                case Instructions.STORE_LOCAL :
                 case Instructions.LOAD_ARGUMENT :
+                case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                case Instructions.LOAD_ARGUMENT$LONG :
                 case Instructions.LOAD_EXCEPTION :
                 case Instructions.LOAD_LOCAL :
+                case Instructions.LOAD_LOCAL$BOOLEAN :
+                case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL$LONG :
+                case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL$GENERIC :
                 case Instructions.CLEAR_LOCAL :
                 case Instructions.INVALIDATE1 :
                     return 4;
+                case Instructions.POP :
+                case Instructions.POP$BOOLEAN :
+                case Instructions.POP$LONG :
+                case Instructions.POP$GENERIC :
                 case Instructions.BRANCH :
                 case Instructions.LOAD_CONSTANT :
+                case Instructions.LOAD_CONSTANT$BOOLEAN :
+                case Instructions.LOAD_CONSTANT$LONG :
                 case Instructions.LOAD_LOCAL_MAT :
-                case Instructions.STORE_LOCAL_MAT :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$LONG :
+                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$GENERIC :
                 case Instructions.YIELD :
                 case Instructions.TAG_ENTER :
-                case Instructions.TAG_LEAVE :
                 case Instructions.TAG_LEAVE_VOID :
                 case Instructions.TAG_YIELD :
                 case Instructions.TAG_RESUME :
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_ :
                 case Instructions.TO_STRING_ :
-                case Instructions.VERY_COMPLEX_OPERATION_ :
-                case Instructions.THROW_OPERATION_ :
                 case Instructions.READ_EXCEPTION_OPERATION_ :
+                case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                 case Instructions.ALWAYS_BOX_OPERATION_ :
                 case Instructions.APPENDER_OPERATION_ :
                 case Instructions.INVOKE_ :
                 case Instructions.MATERIALIZE_FRAME_ :
                 case Instructions.CREATE_CLOSURE_ :
                 case Instructions.VOID_OPERATION_ :
-                case Instructions.TO_BOOLEAN_ :
                 case Instructions.GET_SOURCE_POSITION_ :
-                case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                 case Instructions.GET_SOURCE_POSITIONS_ :
-                case Instructions.COPY_LOCALS_TO_FRAME_ :
                 case Instructions.GET_BYTECODE_LOCATION_ :
                 case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                 case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -1077,29 +1652,96 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CONTINUE_ :
                 case Instructions.CURRENT_LOCATION_ :
                 case Instructions.PRINT_HERE_ :
-                case Instructions.INCREMENT_VALUE_ :
-                case Instructions.DOUBLE_VALUE_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.MOD_ :
-                case Instructions.LESS_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                 case Instructions.EXPLICIT_BINDINGS_TEST_ :
                 case Instructions.IMPLICIT_BINDINGS_TEST_ :
                 case Instructions.INVALIDATE2 :
                     return 6;
+                case Instructions.STORE_LOCAL :
+                case Instructions.STORE_LOCAL$BOOLEAN :
+                case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL$LONG :
+                case Instructions.STORE_LOCAL$LONG$LONG :
+                case Instructions.STORE_LOCAL$GENERIC :
                 case Instructions.INVALIDATE3 :
                     return 8;
                 case Instructions.BRANCH_BACKWARD :
-                case Instructions.BRANCH_FALSE :
+                case Instructions.STORE_LOCAL_MAT :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$LONG :
+                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                case Instructions.STORE_LOCAL_MAT$GENERIC :
+                case Instructions.TAG_LEAVE :
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                case Instructions.TAG_LEAVE$LONG :
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                case Instructions.TAG_LEAVE$GENERIC :
                 case Instructions.CALL_ :
-                case Instructions.ADD_CONSTANT_OPERATION_ :
-                case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                case Instructions.TEE_LOCAL_ :
+                case Instructions.VERY_COMPLEX_OPERATION_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                case Instructions.THROW_OPERATION_ :
+                case Instructions.THROW_OPERATION$PERFORM_ :
                 case Instructions.TEE_LOCAL_RANGE_ :
+                case Instructions.TO_BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$LONG_ :
+                case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$UNBOXED_ :
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                case Instructions.COPY_LOCALS_TO_FRAME_ :
+                case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                case Instructions.INCREMENT_VALUE_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                case Instructions.DOUBLE_VALUE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                case Instructions.DOUBLE_VALUE$UNBOXED_ :
                 case Instructions.SC_AND_ :
                 case Instructions.SC_OR_ :
+                case Instructions.MERGE_CONDITIONAL :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$LONG :
+                case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$GENERIC :
                 case Instructions.INVALIDATE4 :
                     return 10;
+                case Instructions.INVALIDATE5 :
+                    return 12;
+                case Instructions.BRANCH_FALSE :
+                case Instructions.BRANCH_FALSE$GENERIC :
+                case Instructions.BRANCH_FALSE$BOOLEAN :
+                case Instructions.ADD_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                case Instructions.ADD_CONSTANT_OPERATION_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                case Instructions.TEE_LOCAL_ :
+                case Instructions.TEE_LOCAL$LONG_ :
+                case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                case Instructions.MOD_ :
+                case Instructions.MOD$INTS_ :
+                case Instructions.MOD$INTS$UNBOXED_ :
+                case Instructions.MOD$UNBOXED_ :
+                case Instructions.LESS_ :
+                case Instructions.LESS$INTS_ :
+                case Instructions.LESS$INTS$UNBOXED_ :
+                case Instructions.LESS$UNBOXED_ :
+                case Instructions.INVALIDATE6 :
+                    return 14;
             }
             throw CompilerDirectives.shouldNotReachHere("Invalid opcode");
         }
@@ -1108,6 +1750,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         public List<Argument> getArguments() {
             switch (opcode) {
                 case Instructions.POP :
+                case Instructions.POP$BOOLEAN :
+                case Instructions.POP$LONG :
+                case Instructions.POP$GENERIC :
+                    return List.of(
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 2));
                 case Instructions.DUP :
                 case Instructions.RETURN :
                 case Instructions.THROW :
@@ -1133,57 +1780,92 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         new BytecodeIndexArgument(bytecode, "branch_target", bci + 2),
                         new BranchProfileArgument(bytecode, "loop_header_branch_profile", bci + 6));
                 case Instructions.BRANCH_FALSE :
-                case Instructions.SC_AND_ :
-                case Instructions.SC_OR_ :
+                case Instructions.BRANCH_FALSE$GENERIC :
+                case Instructions.BRANCH_FALSE$BOOLEAN :
                     return List.of(
                         new BytecodeIndexArgument(bytecode, "branch_target", bci + 2),
-                        new BranchProfileArgument(bytecode, "branch_profile", bci + 6));
+                        new BranchProfileArgument(bytecode, "branch_profile", bci + 6),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 10));
                 case Instructions.STORE_LOCAL :
-                case Instructions.LOAD_LOCAL :
-                case Instructions.CLEAR_LOCAL :
+                case Instructions.STORE_LOCAL$BOOLEAN :
+                case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL$LONG :
+                case Instructions.STORE_LOCAL$LONG$LONG :
+                case Instructions.STORE_LOCAL$GENERIC :
                     return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 4));
                 case Instructions.LOAD_CONSTANT :
+                case Instructions.LOAD_CONSTANT$BOOLEAN :
+                case Instructions.LOAD_CONSTANT$LONG :
                     return List.of(
                         new ConstantArgument(bytecode, "constant", bci + 2));
                 case Instructions.LOAD_ARGUMENT :
+                case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                case Instructions.LOAD_ARGUMENT$LONG :
                     return List.of(
                         new IntegerArgument(bytecode, "index", bci + 2, 2));
                 case Instructions.LOAD_EXCEPTION :
                     return List.of(
                         new IntegerArgument(bytecode, "exception_sp", bci + 2, 2));
+                case Instructions.LOAD_LOCAL :
+                case Instructions.LOAD_LOCAL$BOOLEAN :
+                case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL$LONG :
+                case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL$GENERIC :
+                case Instructions.CLEAR_LOCAL :
+                    return List.of(
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.LOAD_LOCAL_MAT :
-                case Instructions.STORE_LOCAL_MAT :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$LONG :
+                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     return List.of(
                         new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new IntegerArgument(bytecode, "root_index", bci + 4, 2));
+                case Instructions.STORE_LOCAL_MAT :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$LONG :
+                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                case Instructions.STORE_LOCAL_MAT$GENERIC :
+                    return List.of(
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
+                        new IntegerArgument(bytecode, "root_index", bci + 4, 2),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.YIELD :
                     return List.of(
                         new ConstantArgument(bytecode, "location", bci + 2));
                 case Instructions.TAG_ENTER :
-                case Instructions.TAG_LEAVE :
                 case Instructions.TAG_LEAVE_VOID :
                 case Instructions.TAG_YIELD :
                 case Instructions.TAG_RESUME :
                     return List.of(
                         new TagNodeArgument(bytecode, "tag", bci + 2));
+                case Instructions.TAG_LEAVE :
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                case Instructions.TAG_LEAVE$LONG :
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                case Instructions.TAG_LEAVE$GENERIC :
+                    return List.of(
+                        new TagNodeArgument(bytecode, "tag", bci + 2),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_ :
                 case Instructions.TO_STRING_ :
-                case Instructions.VERY_COMPLEX_OPERATION_ :
-                case Instructions.THROW_OPERATION_ :
                 case Instructions.READ_EXCEPTION_OPERATION_ :
+                case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                 case Instructions.ALWAYS_BOX_OPERATION_ :
                 case Instructions.APPENDER_OPERATION_ :
                 case Instructions.INVOKE_ :
                 case Instructions.MATERIALIZE_FRAME_ :
                 case Instructions.CREATE_CLOSURE_ :
                 case Instructions.VOID_OPERATION_ :
-                case Instructions.TO_BOOLEAN_ :
                 case Instructions.GET_SOURCE_POSITION_ :
-                case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                 case Instructions.GET_SOURCE_POSITIONS_ :
-                case Instructions.COPY_LOCALS_TO_FRAME_ :
                 case Instructions.GET_BYTECODE_LOCATION_ :
                 case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                 case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -1191,33 +1873,97 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CONTINUE_ :
                 case Instructions.CURRENT_LOCATION_ :
                 case Instructions.PRINT_HERE_ :
-                case Instructions.INCREMENT_VALUE_ :
-                case Instructions.DOUBLE_VALUE_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.MOD_ :
-                case Instructions.LESS_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                 case Instructions.EXPLICIT_BINDINGS_TEST_ :
                 case Instructions.IMPLICIT_BINDINGS_TEST_ :
                     return List.of(
                         new NodeProfileArgument(bytecode, "node", bci + 2));
+                case Instructions.ADD_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                case Instructions.MOD_ :
+                case Instructions.MOD$INTS_ :
+                case Instructions.MOD$INTS$UNBOXED_ :
+                case Instructions.MOD$UNBOXED_ :
+                case Instructions.LESS_ :
+                case Instructions.LESS$INTS_ :
+                case Instructions.LESS$INTS$UNBOXED_ :
+                case Instructions.LESS$UNBOXED_ :
+                    return List.of(
+                        new NodeProfileArgument(bytecode, "node", bci + 2),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 6),
+                        new BytecodeIndexArgument(bytecode, "child1", bci + 10));
                 case Instructions.CALL_ :
                     return List.of(
                         new ConstantArgument(bytecode, "interpreter", bci + 2),
                         new NodeProfileArgument(bytecode, "node", bci + 6));
                 case Instructions.ADD_CONSTANT_OPERATION_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                     return List.of(
                         new ConstantArgument(bytecode, "constantLhs", bci + 2),
-                        new NodeProfileArgument(bytecode, "node", bci + 6));
+                        new NodeProfileArgument(bytecode, "node", bci + 6),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 10));
                 case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
                     return List.of(
                         new ConstantArgument(bytecode, "constantRhs", bci + 2),
-                        new NodeProfileArgument(bytecode, "node", bci + 6));
+                        new NodeProfileArgument(bytecode, "node", bci + 6),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 10));
+                case Instructions.VERY_COMPLEX_OPERATION_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                case Instructions.THROW_OPERATION_ :
+                case Instructions.THROW_OPERATION$PERFORM_ :
+                case Instructions.TO_BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$LONG_ :
+                case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$UNBOXED_ :
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                case Instructions.COPY_LOCALS_TO_FRAME_ :
+                case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                case Instructions.INCREMENT_VALUE_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                case Instructions.DOUBLE_VALUE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                    return List.of(
+                        new NodeProfileArgument(bytecode, "node", bci + 2),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 6));
                 case Instructions.TEE_LOCAL_ :
+                case Instructions.TEE_LOCAL$LONG_ :
+                case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    return List.of(
+                        new ConstantArgument(bytecode, "setter", bci + 2),
+                        new NodeProfileArgument(bytecode, "node", bci + 6),
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 10));
                 case Instructions.TEE_LOCAL_RANGE_ :
                     return List.of(
                         new ConstantArgument(bytecode, "setter", bci + 2),
                         new NodeProfileArgument(bytecode, "node", bci + 6));
+                case Instructions.SC_AND_ :
+                case Instructions.SC_OR_ :
+                    return List.of(
+                        new BytecodeIndexArgument(bytecode, "branch_target", bci + 2),
+                        new BranchProfileArgument(bytecode, "branch_profile", bci + 6));
+                case Instructions.MERGE_CONDITIONAL :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$LONG :
+                case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$GENERIC :
+                    return List.of(
+                        new BytecodeIndexArgument(bytecode, "child0", bci + 2),
+                        new BytecodeIndexArgument(bytecode, "child1", bci + 6));
                 case Instructions.INVALIDATE1 :
                     return List.of(
                         new IntegerArgument(bytecode, "invalidated0", bci + 2, 2));
@@ -1236,6 +1982,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         new IntegerArgument(bytecode, "invalidated1", bci + 4, 2),
                         new IntegerArgument(bytecode, "invalidated2", bci + 6, 2),
                         new IntegerArgument(bytecode, "invalidated3", bci + 8, 2));
+                case Instructions.INVALIDATE5 :
+                    return List.of(
+                        new IntegerArgument(bytecode, "invalidated0", bci + 2, 2),
+                        new IntegerArgument(bytecode, "invalidated1", bci + 4, 2),
+                        new IntegerArgument(bytecode, "invalidated2", bci + 6, 2),
+                        new IntegerArgument(bytecode, "invalidated3", bci + 8, 2),
+                        new IntegerArgument(bytecode, "invalidated4", bci + 10, 2));
+                case Instructions.INVALIDATE6 :
+                    return List.of(
+                        new IntegerArgument(bytecode, "invalidated0", bci + 2, 2),
+                        new IntegerArgument(bytecode, "invalidated1", bci + 4, 2),
+                        new IntegerArgument(bytecode, "invalidated2", bci + 6, 2),
+                        new IntegerArgument(bytecode, "invalidated3", bci + 8, 2),
+                        new IntegerArgument(bytecode, "invalidated4", bci + 10, 2),
+                        new IntegerArgument(bytecode, "invalidated5", bci + 12, 2));
             }
             throw CompilerDirectives.shouldNotReachHere("Invalid opcode");
         }
@@ -1245,6 +2006,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             switch (opcode) {
                 case Instructions.POP :
                     return "pop";
+                case Instructions.POP$BOOLEAN :
+                    return "pop$Boolean";
+                case Instructions.POP$LONG :
+                    return "pop$Long";
+                case Instructions.POP$GENERIC :
+                    return "pop$generic";
                 case Instructions.DUP :
                     return "dup";
                 case Instructions.RETURN :
@@ -1255,30 +2022,92 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "branch.backward";
                 case Instructions.BRANCH_FALSE :
                     return "branch.false";
+                case Instructions.BRANCH_FALSE$GENERIC :
+                    return "branch.false$Generic";
+                case Instructions.BRANCH_FALSE$BOOLEAN :
+                    return "branch.false$Boolean";
                 case Instructions.STORE_LOCAL :
                     return "store.local";
+                case Instructions.STORE_LOCAL$BOOLEAN :
+                    return "store.local$Boolean";
+                case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    return "store.local$Boolean$Boolean";
+                case Instructions.STORE_LOCAL$LONG :
+                    return "store.local$Long";
+                case Instructions.STORE_LOCAL$LONG$LONG :
+                    return "store.local$Long$Long";
+                case Instructions.STORE_LOCAL$GENERIC :
+                    return "store.local$generic";
                 case Instructions.THROW :
                     return "throw";
                 case Instructions.LOAD_CONSTANT :
                     return "load.constant";
+                case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    return "load.constant$Boolean";
+                case Instructions.LOAD_CONSTANT$LONG :
+                    return "load.constant$Long";
                 case Instructions.LOAD_NULL :
                     return "load.null";
                 case Instructions.LOAD_ARGUMENT :
                     return "load.argument";
+                case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    return "load.argument$Boolean";
+                case Instructions.LOAD_ARGUMENT$LONG :
+                    return "load.argument$Long";
                 case Instructions.LOAD_EXCEPTION :
                     return "load.exception";
                 case Instructions.LOAD_LOCAL :
                     return "load.local";
+                case Instructions.LOAD_LOCAL$BOOLEAN :
+                    return "load.local$Boolean";
+                case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    return "load.local$Boolean$unboxed";
+                case Instructions.LOAD_LOCAL$LONG :
+                    return "load.local$Long";
+                case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    return "load.local$Long$unboxed";
+                case Instructions.LOAD_LOCAL$GENERIC :
+                    return "load.local$generic";
                 case Instructions.LOAD_LOCAL_MAT :
                     return "load.local.mat";
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    return "load.local.mat$Boolean";
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    return "load.local.mat$Boolean$unboxed";
+                case Instructions.LOAD_LOCAL_MAT$LONG :
+                    return "load.local.mat$Long";
+                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    return "load.local.mat$Long$unboxed";
+                case Instructions.LOAD_LOCAL_MAT$GENERIC :
+                    return "load.local.mat$generic";
                 case Instructions.STORE_LOCAL_MAT :
                     return "store.local.mat";
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    return "store.local.mat$Boolean";
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    return "store.local.mat$Boolean$Boolean";
+                case Instructions.STORE_LOCAL_MAT$LONG :
+                    return "store.local.mat$Long";
+                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    return "store.local.mat$Long$Long";
+                case Instructions.STORE_LOCAL_MAT$GENERIC :
+                    return "store.local.mat$generic";
                 case Instructions.YIELD :
                     return "yield";
                 case Instructions.TAG_ENTER :
                     return "tag.enter";
                 case Instructions.TAG_LEAVE :
                     return "tag.leave";
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                    return "tag.leave$Boolean";
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    return "tag.leave$Boolean$unboxed";
+                case Instructions.TAG_LEAVE$LONG :
+                    return "tag.leave$Long";
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    return "tag.leave$Long$unboxed";
+                case Instructions.TAG_LEAVE$GENERIC :
+                    return "tag.leave$generic";
                 case Instructions.TAG_LEAVE_VOID :
                     return "tag.leaveVoid";
                 case Instructions.TAG_YIELD :
@@ -1313,26 +2142,52 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "c.EarlyReturn";
                 case Instructions.ADD_ :
                     return "c.Add";
+                case Instructions.ADD$ADD_LONGS_ :
+                    return "c.Add$AddLongs";
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    return "c.Add$AddLongs$unboxed";
                 case Instructions.TO_STRING_ :
                     return "c.ToString";
                 case Instructions.CALL_ :
                     return "c.Call";
                 case Instructions.ADD_CONSTANT_OPERATION_ :
                     return "c.AddConstantOperation";
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    return "c.AddConstantOperation$AddLongs";
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                    return "c.AddConstantOperation$AddLongs$unboxed";
                 case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     return "c.AddConstantOperationAtEnd";
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    return "c.AddConstantOperationAtEnd$AddLongs";
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                    return "c.AddConstantOperationAtEnd$AddLongs$unboxed";
                 case Instructions.VERY_COMPLEX_OPERATION_ :
                     return "c.VeryComplexOperation";
+                case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    return "c.VeryComplexOperation$Bla";
+                case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    return "c.VeryComplexOperation$Bla$unboxed";
+                case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                    return "c.VeryComplexOperation$unboxed";
                 case Instructions.THROW_OPERATION_ :
                     return "c.ThrowOperation";
+                case Instructions.THROW_OPERATION$PERFORM_ :
+                    return "c.ThrowOperation$Perform";
                 case Instructions.READ_EXCEPTION_OPERATION_ :
                     return "c.ReadExceptionOperation";
+                case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+                    return "c.ReadExceptionOperation$unboxed";
                 case Instructions.ALWAYS_BOX_OPERATION_ :
                     return "c.AlwaysBoxOperation";
                 case Instructions.APPENDER_OPERATION_ :
                     return "c.AppenderOperation";
                 case Instructions.TEE_LOCAL_ :
                     return "c.TeeLocal";
+                case Instructions.TEE_LOCAL$LONG_ :
+                    return "c.TeeLocal$Long";
+                case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    return "c.TeeLocal$Long$unboxed";
                 case Instructions.TEE_LOCAL_RANGE_ :
                     return "c.TeeLocalRange";
                 case Instructions.INVOKE_ :
@@ -1345,14 +2200,28 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "c.VoidOperation";
                 case Instructions.TO_BOOLEAN_ :
                     return "c.ToBoolean";
+                case Instructions.TO_BOOLEAN$LONG_ :
+                    return "c.ToBoolean$Long";
+                case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    return "c.ToBoolean$Long$unboxed";
+                case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    return "c.ToBoolean$Boolean";
+                case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    return "c.ToBoolean$Boolean$unboxed";
+                case Instructions.TO_BOOLEAN$UNBOXED_ :
+                    return "c.ToBoolean$unboxed";
                 case Instructions.GET_SOURCE_POSITION_ :
                     return "c.GetSourcePosition";
                 case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     return "c.EnsureAndGetSourcePosition";
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                    return "c.EnsureAndGetSourcePosition$Operation";
                 case Instructions.GET_SOURCE_POSITIONS_ :
                     return "c.GetSourcePositions";
                 case Instructions.COPY_LOCALS_TO_FRAME_ :
                     return "c.CopyLocalsToFrame";
+                case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                    return "c.CopyLocalsToFrame$SomeLocals";
                 case Instructions.GET_BYTECODE_LOCATION_ :
                     return "c.GetBytecodeLocation";
                 case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
@@ -1369,14 +2238,38 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "c.PrintHere";
                 case Instructions.INCREMENT_VALUE_ :
                     return "c.IncrementValue";
+                case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    return "c.IncrementValue$Increment";
+                case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    return "c.IncrementValue$Increment$unboxed";
+                case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    return "c.IncrementValue$unboxed";
                 case Instructions.DOUBLE_VALUE_ :
                     return "c.DoubleValue";
+                case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    return "c.DoubleValue$Double";
+                case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    return "c.DoubleValue$Double$unboxed";
+                case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                    return "c.DoubleValue$unboxed";
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                     return "c.EnableIncrementValueInstrumentation";
                 case Instructions.MOD_ :
                     return "c.Mod";
+                case Instructions.MOD$INTS_ :
+                    return "c.Mod$Ints";
+                case Instructions.MOD$INTS$UNBOXED_ :
+                    return "c.Mod$Ints$unboxed";
+                case Instructions.MOD$UNBOXED_ :
+                    return "c.Mod$unboxed";
                 case Instructions.LESS_ :
                     return "c.Less";
+                case Instructions.LESS$INTS_ :
+                    return "c.Less$Ints";
+                case Instructions.LESS$INTS$UNBOXED_ :
+                    return "c.Less$Ints$unboxed";
+                case Instructions.LESS$UNBOXED_ :
+                    return "c.Less$unboxed";
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     return "c.EnableDoubleValueInstrumentation";
                 case Instructions.EXPLICIT_BINDINGS_TEST_ :
@@ -1387,6 +2280,18 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "sc.ScAnd";
                 case Instructions.SC_OR_ :
                     return "sc.ScOr";
+                case Instructions.MERGE_CONDITIONAL :
+                    return "merge.conditional";
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    return "merge.conditional$Boolean";
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    return "merge.conditional$Boolean$unboxed";
+                case Instructions.MERGE_CONDITIONAL$LONG :
+                    return "merge.conditional$Long";
+                case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    return "merge.conditional$Long$unboxed";
+                case Instructions.MERGE_CONDITIONAL$GENERIC :
+                    return "merge.conditional$generic";
                 case Instructions.INVALIDATE0 :
                     return "invalidate0";
                 case Instructions.INVALIDATE1 :
@@ -1397,6 +2302,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "invalidate3";
                 case Instructions.INVALIDATE4 :
                     return "invalidate4";
+                case Instructions.INVALIDATE5 :
+                    return "invalidate5";
+                case Instructions.INVALIDATE6 :
+                    return "invalidate6";
             }
             throw CompilerDirectives.shouldNotReachHere("Invalid opcode");
         }
@@ -1405,20 +2314,49 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         public boolean isInstrumentation() {
             switch (opcode) {
                 case Instructions.POP :
+                case Instructions.POP$BOOLEAN :
+                case Instructions.POP$LONG :
+                case Instructions.POP$GENERIC :
                 case Instructions.DUP :
                 case Instructions.RETURN :
                 case Instructions.BRANCH :
                 case Instructions.BRANCH_BACKWARD :
                 case Instructions.BRANCH_FALSE :
+                case Instructions.BRANCH_FALSE$GENERIC :
+                case Instructions.BRANCH_FALSE$BOOLEAN :
                 case Instructions.STORE_LOCAL :
+                case Instructions.STORE_LOCAL$BOOLEAN :
+                case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL$LONG :
+                case Instructions.STORE_LOCAL$LONG$LONG :
+                case Instructions.STORE_LOCAL$GENERIC :
                 case Instructions.THROW :
                 case Instructions.LOAD_CONSTANT :
+                case Instructions.LOAD_CONSTANT$BOOLEAN :
+                case Instructions.LOAD_CONSTANT$LONG :
                 case Instructions.LOAD_NULL :
                 case Instructions.LOAD_ARGUMENT :
+                case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                case Instructions.LOAD_ARGUMENT$LONG :
                 case Instructions.LOAD_EXCEPTION :
                 case Instructions.LOAD_LOCAL :
+                case Instructions.LOAD_LOCAL$BOOLEAN :
+                case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL$LONG :
+                case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL$GENERIC :
                 case Instructions.LOAD_LOCAL_MAT :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$LONG :
+                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                case Instructions.LOAD_LOCAL_MAT$GENERIC :
                 case Instructions.STORE_LOCAL_MAT :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                case Instructions.STORE_LOCAL_MAT$LONG :
+                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                case Instructions.STORE_LOCAL_MAT$GENERIC :
                 case Instructions.YIELD :
                 case Instructions.LOAD_VARIADIC_0 :
                 case Instructions.LOAD_VARIADIC_1 :
@@ -1434,26 +2372,46 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CLEAR_LOCAL :
                 case Instructions.EARLY_RETURN_ :
                 case Instructions.ADD_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.CALL_ :
                 case Instructions.ADD_CONSTANT_OPERATION_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                 case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
                 case Instructions.VERY_COMPLEX_OPERATION_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
                 case Instructions.THROW_OPERATION_ :
+                case Instructions.THROW_OPERATION$PERFORM_ :
                 case Instructions.READ_EXCEPTION_OPERATION_ :
+                case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                 case Instructions.ALWAYS_BOX_OPERATION_ :
                 case Instructions.APPENDER_OPERATION_ :
                 case Instructions.TEE_LOCAL_ :
+                case Instructions.TEE_LOCAL$LONG_ :
+                case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
                 case Instructions.TEE_LOCAL_RANGE_ :
                 case Instructions.INVOKE_ :
                 case Instructions.MATERIALIZE_FRAME_ :
                 case Instructions.CREATE_CLOSURE_ :
                 case Instructions.VOID_OPERATION_ :
                 case Instructions.TO_BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$LONG_ :
+                case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                case Instructions.TO_BOOLEAN$UNBOXED_ :
                 case Instructions.GET_SOURCE_POSITION_ :
                 case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
                 case Instructions.GET_SOURCE_POSITIONS_ :
                 case Instructions.COPY_LOCALS_TO_FRAME_ :
+                case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
                 case Instructions.GET_BYTECODE_LOCATION_ :
                 case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                 case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -1462,26 +2420,51 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CURRENT_LOCATION_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                 case Instructions.MOD_ :
+                case Instructions.MOD$INTS_ :
+                case Instructions.MOD$INTS$UNBOXED_ :
+                case Instructions.MOD$UNBOXED_ :
                 case Instructions.LESS_ :
+                case Instructions.LESS$INTS_ :
+                case Instructions.LESS$INTS$UNBOXED_ :
+                case Instructions.LESS$UNBOXED_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                 case Instructions.EXPLICIT_BINDINGS_TEST_ :
                 case Instructions.IMPLICIT_BINDINGS_TEST_ :
                 case Instructions.SC_AND_ :
                 case Instructions.SC_OR_ :
+                case Instructions.MERGE_CONDITIONAL :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$LONG :
+                case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                case Instructions.MERGE_CONDITIONAL$GENERIC :
                 case Instructions.INVALIDATE0 :
                 case Instructions.INVALIDATE1 :
                 case Instructions.INVALIDATE2 :
                 case Instructions.INVALIDATE3 :
                 case Instructions.INVALIDATE4 :
+                case Instructions.INVALIDATE5 :
+                case Instructions.INVALIDATE6 :
                     return false;
                 case Instructions.TAG_ENTER :
                 case Instructions.TAG_LEAVE :
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                case Instructions.TAG_LEAVE$LONG :
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                case Instructions.TAG_LEAVE$GENERIC :
                 case Instructions.TAG_LEAVE_VOID :
                 case Instructions.TAG_YIELD :
                 case Instructions.TAG_RESUME :
                 case Instructions.PRINT_HERE_ :
                 case Instructions.INCREMENT_VALUE_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                case Instructions.INCREMENT_VALUE$UNBOXED_ :
                 case Instructions.DOUBLE_VALUE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                case Instructions.DOUBLE_VALUE$UNBOXED_ :
                     return true;
             }
             throw CompilerDirectives.shouldNotReachHere("Invalid opcode");
@@ -1872,6 +2855,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.INVALIDATE2 :
                 case Instructions.INVALIDATE3 :
                 case Instructions.INVALIDATE4 :
+                case Instructions.INVALIDATE5 :
+                case Instructions.INVALIDATE6 :
                     // While we were processing the exception handler the code invalidated.
                     // We need to re-read the op from the old bytecodes.
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1881,13 +2866,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
         }
 
-        abstract long continueAt(BasicInterpreterWithUncached $root, VirtualFrame frame, VirtualFrame localFrame, long startState);
+        abstract long continueAt(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, VirtualFrame localFrame, long startState);
 
-        final BasicInterpreterWithUncached getRoot() {
-            return (BasicInterpreterWithUncached) getParent();
+        final BasicInterpreterProductionRootScoping getRoot() {
+            return (BasicInterpreterProductionRootScoping) getParent();
         }
 
-        abstract AbstractBytecodeNode toCached();
+        abstract AbstractBytecodeNode toCached(int numLocals);
 
         abstract AbstractBytecodeNode update(byte[] bytecodes_, Object[] constants_, int[] handlers_, int[] locals_, int[] sourceInfo_, List<Source> sources_, int numNodes_, TagRootNode tagRoot_);
 
@@ -1900,7 +2885,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             while (bci < bc.length) {
                 short op = BYTES.getShort(bc, bci);
                 switch (op) {
-                    case Instructions.POP :
                     case Instructions.DUP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
@@ -1921,43 +2905,53 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE0));
                         bci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE1);
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE1));
                         bci += 4;
                         break;
+                    case Instructions.POP :
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
                     case Instructions.BRANCH :
                     case Instructions.LOAD_CONSTANT :
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
                     case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.YIELD :
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
-                    case Instructions.THROW_OPERATION_ :
                     case Instructions.READ_EXCEPTION_OPERATION_ :
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.INVOKE_ :
                     case Instructions.MATERIALIZE_FRAME_ :
                     case Instructions.CREATE_CLOSURE_ :
                     case Instructions.VOID_OPERATION_ :
-                    case Instructions.TO_BOOLEAN_ :
                     case Instructions.GET_SOURCE_POSITION_ :
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     case Instructions.GET_SOURCE_POSITIONS_ :
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
                     case Instructions.GET_BYTECODE_LOCATION_ :
                     case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                     case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -1965,11 +2959,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.MOD_ :
-                    case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     case Instructions.EXPLICIT_BINDINGS_TEST_ :
                     case Instructions.IMPLICIT_BINDINGS_TEST_ :
@@ -1978,24 +2968,101 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE2));
                         bci += 6;
                         break;
+                    case Instructions.STORE_LOCAL :
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
                     case Instructions.INVALIDATE3 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE3);
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE3));
                         bci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
-                    case Instructions.BRANCH_FALSE :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
                     case Instructions.CALL_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.THROW_OPERATION$PERFORM_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
+                    case Instructions.MERGE_CONDITIONAL :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
                     case Instructions.INVALIDATE4 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE4);
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE4));
                         bci += 10;
+                        break;
+                    case Instructions.INVALIDATE5 :
+                        BYTES.putShort(bc, bci, Instructions.INVALIDATE5);
+                        this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE5));
+                        bci += 12;
+                        break;
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    case Instructions.MOD_ :
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                    case Instructions.LESS_ :
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                    case Instructions.INVALIDATE6 :
+                        BYTES.putShort(bc, bci, Instructions.INVALIDATE6);
+                        this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE6));
+                        bci += 14;
                         break;
                 }
             }
@@ -2020,7 +3087,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         private final boolean validateBytecodes() {
-            BasicInterpreterWithUncached root;
+            BasicInterpreterProductionRootScoping root;
             byte[] bc = this.bytecodes;
             if (bc == null) {
                 // bc is null for serialization root nodes.
@@ -2037,6 +3104,25 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 try {
                     switch (BYTES.getShort(bc, bci)) {
                         case Instructions.POP :
+                        case Instructions.POP$GENERIC :
+                        {
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+                            if (child0 < -1 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 6;
+                            break;
+                        }
+                        case Instructions.POP$BOOLEAN :
+                        case Instructions.POP$LONG :
+                        {
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 6;
+                            break;
+                        }
                         case Instructions.DUP :
                         case Instructions.RETURN :
                         case Instructions.THROW :
@@ -2082,8 +3168,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             break;
                         }
                         case Instructions.BRANCH_FALSE :
-                        case Instructions.SC_AND_ :
-                        case Instructions.SC_OR_ :
+                        case Instructions.BRANCH_FALSE$GENERIC :
+                        case Instructions.BRANCH_FALSE$BOOLEAN :
                         {
                             int branch_target = BYTES.getIntUnaligned(bc, bci + 2 /* imm branch_target */);
                             if (branch_target < 0 || branch_target >= bc.length) {
@@ -2095,22 +3181,48 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                     throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. branch profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                                 }
                             }
-                            bci = bci + 10;
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 10 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 14;
                             break;
                         }
                         case Instructions.STORE_LOCAL :
-                        case Instructions.LOAD_LOCAL :
-                        case Instructions.CLEAR_LOCAL :
+                        case Instructions.STORE_LOCAL$GENERIC :
                         {
                             short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot();
                             if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
-                            bci = bci + 4;
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 4 /* imm child0 */);
+                            if (child0 < -1 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$BOOLEAN :
+                        case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                        case Instructions.STORE_LOCAL$LONG :
+                        case Instructions.STORE_LOCAL$LONG$LONG :
+                        {
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+                            root = this.getRoot();
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 4 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 8;
                             break;
                         }
                         case Instructions.LOAD_CONSTANT :
+                        case Instructions.LOAD_CONSTANT$BOOLEAN :
+                        case Instructions.LOAD_CONSTANT$LONG :
                         {
                             int constant = BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */);
                             if (constant < 0 || constant >= constants.length) {
@@ -2120,6 +3232,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             break;
                         }
                         case Instructions.LOAD_ARGUMENT :
+                        case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                        case Instructions.LOAD_ARGUMENT$LONG :
                         {
                             bci = bci + 4;
                             break;
@@ -2135,8 +3249,28 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             bci = bci + 4;
                             break;
                         }
+                        case Instructions.LOAD_LOCAL :
+                        case Instructions.LOAD_LOCAL$BOOLEAN :
+                        case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                        case Instructions.LOAD_LOCAL$LONG :
+                        case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                        case Instructions.LOAD_LOCAL$GENERIC :
+                        case Instructions.CLEAR_LOCAL :
+                        {
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+                            root = this.getRoot();
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 4;
+                            break;
+                        }
                         case Instructions.LOAD_LOCAL_MAT :
-                        case Instructions.STORE_LOCAL_MAT :
+                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                        case Instructions.LOAD_LOCAL_MAT$LONG :
+                        case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                        case Instructions.LOAD_LOCAL_MAT$GENERIC :
                         {
                             short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
                             root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
@@ -2144,6 +3278,25 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 6;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT :
+                        case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                        case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                        case Instructions.STORE_LOCAL_MAT$LONG :
+                        case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                        case Instructions.STORE_LOCAL_MAT$GENERIC :
+                        {
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+                            root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
                             break;
                         }
                         case Instructions.YIELD :
@@ -2156,7 +3309,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             break;
                         }
                         case Instructions.TAG_ENTER :
-                        case Instructions.TAG_LEAVE :
                         case Instructions.TAG_LEAVE_VOID :
                         case Instructions.TAG_YIELD :
                         case Instructions.TAG_RESUME :
@@ -2171,23 +3323,39 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             bci = bci + 6;
                             break;
                         }
+                        case Instructions.TAG_LEAVE :
+                        case Instructions.TAG_LEAVE$BOOLEAN :
+                        case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                        case Instructions.TAG_LEAVE$LONG :
+                        case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                        case Instructions.TAG_LEAVE$GENERIC :
+                        {
+                            int tag = BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */);
+                            if (tagNodes != null) {
+                                TagNode node = tagRoot.tagNodes[tag];
+                                if (node == null) {
+                                    throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. tagNode is null%n%s", bci, dumpInvalid(findLocation(bci))));
+                                }
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
                         case Instructions.EARLY_RETURN_ :
-                        case Instructions.ADD_ :
                         case Instructions.TO_STRING_ :
-                        case Instructions.VERY_COMPLEX_OPERATION_ :
-                        case Instructions.THROW_OPERATION_ :
                         case Instructions.READ_EXCEPTION_OPERATION_ :
+                        case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                         case Instructions.ALWAYS_BOX_OPERATION_ :
                         case Instructions.APPENDER_OPERATION_ :
                         case Instructions.INVOKE_ :
                         case Instructions.MATERIALIZE_FRAME_ :
                         case Instructions.CREATE_CLOSURE_ :
                         case Instructions.VOID_OPERATION_ :
-                        case Instructions.TO_BOOLEAN_ :
                         case Instructions.GET_SOURCE_POSITION_ :
-                        case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                         case Instructions.GET_SOURCE_POSITIONS_ :
-                        case Instructions.COPY_LOCALS_TO_FRAME_ :
                         case Instructions.GET_BYTECODE_LOCATION_ :
                         case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                         case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -2195,11 +3363,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.CONTINUE_ :
                         case Instructions.CURRENT_LOCATION_ :
                         case Instructions.PRINT_HERE_ :
-                        case Instructions.INCREMENT_VALUE_ :
-                        case Instructions.DOUBLE_VALUE_ :
                         case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                        case Instructions.MOD_ :
-                        case Instructions.LESS_ :
                         case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                         case Instructions.EXPLICIT_BINDINGS_TEST_ :
                         case Instructions.IMPLICIT_BINDINGS_TEST_ :
@@ -2209,6 +3373,33 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 6;
+                            break;
+                        }
+                        case Instructions.ADD_ :
+                        case Instructions.ADD$ADD_LONGS_ :
+                        case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                        case Instructions.MOD_ :
+                        case Instructions.MOD$INTS_ :
+                        case Instructions.MOD$INTS$UNBOXED_ :
+                        case Instructions.MOD$UNBOXED_ :
+                        case Instructions.LESS_ :
+                        case Instructions.LESS$INTS_ :
+                        case Instructions.LESS$INTS$UNBOXED_ :
+                        case Instructions.LESS$UNBOXED_ :
+                        {
+                            int node = BYTES.getIntUnaligned(bc, bci + 2 /* imm node */);
+                            if (node < 0 || node >= numNodes) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child1 = BYTES.getIntUnaligned(bc, bci + 10 /* imm child1 */);
+                            if (child1 < 0 || child1 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 14;
                             break;
                         }
                         case Instructions.CALL_ :
@@ -2225,6 +3416,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             break;
                         }
                         case Instructions.ADD_CONSTANT_OPERATION_ :
+                        case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                        case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                         {
                             int constantLhs = BYTES.getIntUnaligned(bc, bci + 2 /* imm constantLhs */);
                             if (constantLhs < 0 || constantLhs >= constants.length) {
@@ -2234,10 +3427,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             if (node < 0 || node >= numNodes) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
-                            bci = bci + 10;
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 10 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 14;
                             break;
                         }
                         case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                        case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                        case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
                         {
                             int constantRhs = BYTES.getIntUnaligned(bc, bci + 2 /* imm constantRhs */);
                             if (constantRhs < 0 || constantRhs >= constants.length) {
@@ -2247,10 +3446,67 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             if (node < 0 || node >= numNodes) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 10 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 14;
+                            break;
+                        }
+                        case Instructions.VERY_COMPLEX_OPERATION_ :
+                        case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                        case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                        case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                        case Instructions.THROW_OPERATION_ :
+                        case Instructions.THROW_OPERATION$PERFORM_ :
+                        case Instructions.TO_BOOLEAN$LONG_ :
+                        case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                        case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                        case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                        case Instructions.TO_BOOLEAN$UNBOXED_ :
+                        case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                        case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                        case Instructions.COPY_LOCALS_TO_FRAME_ :
+                        case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                        case Instructions.INCREMENT_VALUE_ :
+                        case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                        case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                        case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                        case Instructions.DOUBLE_VALUE_ :
+                        case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                        case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                        case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        {
+                            int node = BYTES.getIntUnaligned(bc, bci + 2 /* imm node */);
+                            if (node < 0 || node >= numNodes) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
                             bci = bci + 10;
                             break;
                         }
                         case Instructions.TEE_LOCAL_ :
+                        case Instructions.TEE_LOCAL$LONG_ :
+                        case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                        {
+                            int setter = BYTES.getIntUnaligned(bc, bci + 2 /* imm setter */);
+                            if (setter < 0 || setter >= constants.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. constant is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int node = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
+                            if (node < 0 || node >= numNodes) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 10 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 14;
+                            break;
+                        }
                         case Instructions.TEE_LOCAL_RANGE_ :
                         {
                             int setter = BYTES.getIntUnaligned(bc, bci + 2 /* imm setter */);
@@ -2260,6 +3516,65 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             int node = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
                             if (node < 0 || node >= numNodes) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN_ :
+                        {
+                            int node = BYTES.getIntUnaligned(bc, bci + 2 /* imm node */);
+                            if (node < 0 || node >= numNodes) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+                            if (child0 < -1 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
+                        case Instructions.SC_AND_ :
+                        case Instructions.SC_OR_ :
+                        {
+                            int branch_target = BYTES.getIntUnaligned(bc, bci + 2 /* imm branch_target */);
+                            if (branch_target < 0 || branch_target >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int branch_profile = BYTES.getIntUnaligned(bc, bci + 6 /* imm branch_profile */);
+                            if (branchProfiles != null) {
+                                if (branch_profile < 0 || branch_profile >= branchProfiles.length) {
+                                    throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. branch profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                                }
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL :
+                        case Instructions.MERGE_CONDITIONAL$GENERIC :
+                        {
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+                            if (child0 < -1 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child1 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child1 */);
+                            if (child1 < -1 || child1 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                        case Instructions.MERGE_CONDITIONAL$LONG :
+                        case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                        {
+                            int child0 = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+                            if (child0 < 0 || child0 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int child1 = BYTES.getIntUnaligned(bc, bci + 6 /* imm child1 */);
+                            if (child1 < 0 || child1 >= bc.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 10;
                             break;
@@ -2282,6 +3597,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.INVALIDATE4 :
                         {
                             bci = bci + 10;
+                            break;
+                        }
+                        case Instructions.INVALIDATE5 :
+                        {
+                            bci = bci + 12;
+                            break;
+                        }
+                        case Instructions.INVALIDATE6 :
+                        {
+                            bci = bci + 14;
                             break;
                         }
                         default :
@@ -2362,6 +3687,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         abstract int[] getBranchProfiles();
 
+        abstract byte[] getLocalTags();
+
+        abstract byte getCachedLocalTagInternal(byte[] localTags, int localIndex);
+
+        abstract void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag);
+
         @Override
         @TruffleBoundary
         public SourceSection getSourceSection() {
@@ -2437,7 +3768,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 throw new IllegalArgumentException("Bytecode index out of range " + bci);
             }
             int op = readValidBytecode(bc, bci);
-            if (op < 0 || op > 77) {
+            if (op < 0 || op > 151) {
                 throw new IllegalArgumentException("Invalid op at bytecode index " + op);
             }
             return true;
@@ -2482,16 +3813,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         public final int getLocalCount(int bci) {
             assert validateBytecodeIndex(bci);
             CompilerAsserts.partialEvaluationConstant(bci);
-            int count = 0;
-            for (int index = 0; index < locals.length; index += LOCALS_LENGTH) {
-                int startIndex = locals[index + LOCALS_OFFSET_START_BCI];
-                int endIndex = locals[index + LOCALS_OFFSET_END_BCI];
-                if (bci >= startIndex && bci < endIndex) {
-                    count++;
-                }
-            }
-            CompilerAsserts.partialEvaluationConstant(count);
-            return count;
+            return locals.length / LOCALS_LENGTH;
         }
 
         @Override
@@ -2509,64 +3831,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @Override
-        public final Object getLocalValue(int bci, Frame frame, int localOffset) {
-            assert validateBytecodeIndex(bci);
-            CompilerAsserts.partialEvaluationConstant(bci);
-            CompilerAsserts.partialEvaluationConstant(localOffset);
-            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            if (frame.isObject(frameIndex)) {
-                return frame.getObject(frameIndex);
-            }
-            return null;
-        }
-
-        @Override
-        public void setLocalValue(int bci, Frame frame, int localOffset, Object value) {
-            assert validateBytecodeIndex(bci);
-            CompilerAsserts.partialEvaluationConstant(bci);
-            CompilerAsserts.partialEvaluationConstant(localOffset);
-            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            frame.setObject(frameIndex, value);
-        }
-
-        @Override
-        protected final Object getLocalValueInternal(Frame frame, int localOffset, int localIndex) {
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            return frame.getObject(frameIndex);
-        }
-
-        @Override
-        protected void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value) {
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            frame.setObject(USER_LOCALS_START_INDEX + localOffset, value);
-        }
-
-        @ExplodeLoop
-        protected final int localOffsetToTableIndex(int bci, int localOffset) {
-            int count = 0;
-            for (int index = 0; index < locals.length; index += LOCALS_LENGTH) {
-                int startIndex = locals[index + LOCALS_OFFSET_START_BCI];
-                int endIndex = locals[index + LOCALS_OFFSET_END_BCI];
-                if (bci >= startIndex && bci < endIndex) {
-                    if (count == localOffset) {
-                        return index;
-                    }
-                    count++;
-                }
-            }
-            return -1;
-        }
-
-        protected final int localOffsetToLocalIndex(int bci, int localOffset) {
-            int tableIndex = localOffsetToTableIndex(bci, localOffset);
-            assert locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] == localOffset + USER_LOCALS_START_INDEX : "Inconsistent indices.";
-            return locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX];
-        }
+        protected abstract void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value);
 
         @Override
         public Object getLocalName(int bci, int localOffset) {
@@ -2574,11 +3839,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            int index = localOffsetToTableIndex(bci, localOffset);
-            if (index == -1) {
-                return null;
-            }
-            int nameId = locals[index + LOCALS_OFFSET_NAME];
+            int nameId = locals[(localOffset * LOCALS_LENGTH) + LOCALS_OFFSET_NAME];
             if (nameId == -1) {
                 return null;
             } else {
@@ -2592,11 +3853,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            int index = localOffsetToTableIndex(bci, localOffset);
-            if (index == -1) {
-                return null;
-            }
-            int infoId = locals[index + LOCALS_OFFSET_INFO];
+            int infoId = locals[(localOffset * LOCALS_LENGTH) + LOCALS_OFFSET_INFO];
             if (infoId == -1) {
                 return null;
             } else {
@@ -2661,7 +3918,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             int stableBci = 0;
             while (bci != searchBci && bci < bc.length) {
                 switch (BYTES.getShort(bc, bci)) {
-                    case Instructions.POP :
                     case Instructions.DUP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
@@ -2681,37 +3937,48 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 2;
                         stableBci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
                         stableBci += 4;
                         break;
+                    case Instructions.POP :
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
                     case Instructions.BRANCH :
                     case Instructions.LOAD_CONSTANT :
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
                     case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.YIELD :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
-                    case Instructions.THROW_OPERATION_ :
                     case Instructions.READ_EXCEPTION_OPERATION_ :
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.INVOKE_ :
                     case Instructions.MATERIALIZE_FRAME_ :
                     case Instructions.CREATE_CLOSURE_ :
                     case Instructions.VOID_OPERATION_ :
-                    case Instructions.TO_BOOLEAN_ :
                     case Instructions.GET_SOURCE_POSITION_ :
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     case Instructions.GET_SOURCE_POSITIONS_ :
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
                     case Instructions.GET_BYTECODE_LOCATION_ :
                     case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                     case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -2719,8 +3986,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.MOD_ :
-                    case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     case Instructions.EXPLICIT_BINDINGS_TEST_ :
                     case Instructions.IMPLICIT_BINDINGS_TEST_ :
@@ -2728,32 +3993,106 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 6;
                         stableBci += 6;
                         break;
+                    case Instructions.STORE_LOCAL :
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         stableBci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
-                    case Instructions.BRANCH_FALSE :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.CALL_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.THROW_OPERATION$PERFORM_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
+                    case Instructions.MERGE_CONDITIONAL :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
                     case Instructions.INVALIDATE4 :
                         bci += 10;
                         stableBci += 10;
                         break;
+                    case Instructions.INVALIDATE5 :
+                        bci += 12;
+                        stableBci += 12;
+                        break;
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    case Instructions.MOD_ :
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                    case Instructions.LESS_ :
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                    case Instructions.INVALIDATE6 :
+                        bci += 14;
+                        stableBci += 14;
+                        break;
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                         bci += 6;
+                        break;
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        bci += 10;
                         break;
                     default :
                         throw CompilerDirectives.shouldNotReachHere("Invalid bytecode.");
@@ -2770,7 +4109,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             int stableBci = 0;
             while (stableBci != stableSearchBci && bci < bc.length) {
                 switch (BYTES.getShort(bc, bci)) {
-                    case Instructions.POP :
                     case Instructions.DUP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
@@ -2790,37 +4128,48 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 2;
                         stableBci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
                         stableBci += 4;
                         break;
+                    case Instructions.POP :
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
                     case Instructions.BRANCH :
                     case Instructions.LOAD_CONSTANT :
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
                     case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.YIELD :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
-                    case Instructions.THROW_OPERATION_ :
                     case Instructions.READ_EXCEPTION_OPERATION_ :
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.INVOKE_ :
                     case Instructions.MATERIALIZE_FRAME_ :
                     case Instructions.CREATE_CLOSURE_ :
                     case Instructions.VOID_OPERATION_ :
-                    case Instructions.TO_BOOLEAN_ :
                     case Instructions.GET_SOURCE_POSITION_ :
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     case Instructions.GET_SOURCE_POSITIONS_ :
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
                     case Instructions.GET_BYTECODE_LOCATION_ :
                     case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                     case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -2828,8 +4177,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.MOD_ :
-                    case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     case Instructions.EXPLICIT_BINDINGS_TEST_ :
                     case Instructions.IMPLICIT_BINDINGS_TEST_ :
@@ -2837,32 +4184,106 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 6;
                         stableBci += 6;
                         break;
+                    case Instructions.STORE_LOCAL :
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         stableBci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
-                    case Instructions.BRANCH_FALSE :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.CALL_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.THROW_OPERATION$PERFORM_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
+                    case Instructions.MERGE_CONDITIONAL :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
                     case Instructions.INVALIDATE4 :
                         bci += 10;
                         stableBci += 10;
                         break;
+                    case Instructions.INVALIDATE5 :
+                        bci += 12;
+                        stableBci += 12;
+                        break;
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    case Instructions.MOD_ :
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                    case Instructions.LESS_ :
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                    case Instructions.INVALIDATE6 :
+                        bci += 14;
+                        stableBci += 14;
+                        break;
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                         bci += 6;
+                        break;
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        bci += 10;
                         break;
                     default :
                         throw CompilerDirectives.shouldNotReachHere("Invalid bytecode.");
@@ -2884,18 +4305,35 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 searchOp = op;
                 switch (op) {
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                         searchTags = -1;
                         oldBci += 6;
                         break;
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        searchTags = -1;
+                        oldBci += 10;
+                        break;
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                         searchTags = ACCESS.uncheckedCast(ACCESS.readObject(oldTagNodes, BYTES.getIntUnaligned(oldBc, oldBci + 2 /* imm tag */)), TagNode.class).tags;
                         oldBci += 6;
+                        break;
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                        searchTags = ACCESS.uncheckedCast(ACCESS.readObject(oldTagNodes, BYTES.getIntUnaligned(oldBc, oldBci + 2 /* imm tag */)), TagNode.class).tags;
+                        oldBci += 10;
                         break;
                     default :
                         throw CompilerDirectives.shouldNotReachHere("Unexpected bytecode.");
@@ -2908,8 +4346,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 short op = BYTES.getShort(oldBc, oldBci);
                 switch (op) {
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                     {
                         if (searchOp == op) {
                             opCounter++;
@@ -2917,8 +4353,22 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         oldBci += 6;
                         break;
                     }
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                    {
+                        if (searchOp == op) {
+                            opCounter++;
+                        }
+                        oldBci += 10;
+                        break;
+                    }
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
@@ -2930,6 +4380,20 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         oldBci += 6;
                         break;
                     }
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                    {
+                        int opTags = ACCESS.uncheckedCast(ACCESS.readObject(oldTagNodes, BYTES.getIntUnaligned(oldBc, oldBci + 2 /* imm tag */)), TagNode.class).tags;
+                        if (searchOp == op && searchTags == opTags) {
+                            opCounter++;
+                        }
+                        oldBci += 10;
+                        break;
+                    }
                     default :
                         throw CompilerDirectives.shouldNotReachHere("Unexpected bytecode.");
                 }
@@ -2939,8 +4403,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 short op = BYTES.getShort(newBc, newBci);
                 switch (op) {
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                     {
                         if (searchOp == op) {
                             opCounter--;
@@ -2948,8 +4410,22 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         newBci += 6;
                         break;
                     }
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                    {
+                        if (searchOp == op) {
+                            opCounter--;
+                        }
+                        newBci += 10;
+                        break;
+                    }
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
@@ -2959,6 +4435,20 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             opCounter--;
                         }
                         newBci += 6;
+                        break;
+                    }
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                    {
+                        int opTags = ACCESS.uncheckedCast(ACCESS.readObject(newTagNodes, BYTES.getIntUnaligned(newBc, newBci + 2 /* imm tag */)), TagNode.class).tags;
+                        if (searchOp == op && searchTags == opTags) {
+                            opCounter--;
+                        }
+                        newBci += 10;
                         break;
                     }
                     default :
@@ -2992,10 +4482,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         @CompilationFinal(dimensions = 1) private Node[] cachedNodes_;
         @CompilationFinal(dimensions = 1) private final boolean[] exceptionProfiles_;
+        @CompilationFinal(dimensions = 1) private final byte[] localTags_;
         @CompilationFinal(dimensions = 1) private final int[] branchProfiles_;
         @CompilationFinal private Object osrMetadata_;
 
-        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot) {
+        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot, int numLocals) {
             super(bytecodes, constants, handlers, locals, sourceInfo, sources, numNodes, tagRoot);
             CompilerAsserts.neverPartOfCompilation();
             Node[] result = new Node[this.numNodes];
@@ -3004,7 +4495,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             int numConditionalBranches = 0;
             loop: while (bci < bc.length) {
                 switch (BYTES.getShort(bc, bci)) {
-                    case Instructions.POP :
                     case Instructions.DUP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
@@ -3023,55 +4513,89 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.INVALIDATE0 :
                         bci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
                         break;
+                    case Instructions.POP :
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
                     case Instructions.BRANCH :
                     case Instructions.LOAD_CONSTANT :
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
                     case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.YIELD :
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                     case Instructions.INVALIDATE2 :
                         bci += 6;
                         break;
+                    case Instructions.STORE_LOCAL :
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                    case Instructions.MERGE_CONDITIONAL :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
                     case Instructions.INVALIDATE4 :
                         bci += 10;
                         break;
+                    case Instructions.INVALIDATE5 :
+                        bci += 12;
+                        break;
+                    case Instructions.INVALIDATE6 :
+                        bci += 14;
+                        break;
                     case Instructions.EARLY_RETURN_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EarlyReturn_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.ADD_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
                         bci += 6;
                         break;
                     case Instructions.TO_STRING_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ToString_Node());
                         bci += 6;
                         break;
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new VeryComplexOperation_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.THROW_OPERATION_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ThrowOperation_Node());
-                        bci += 6;
-                        break;
                     case Instructions.READ_EXCEPTION_OPERATION_ :
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ReadExceptionOperation_Node());
                         bci += 6;
                         break;
@@ -3099,24 +4623,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new VoidOperation_Node());
                         bci += 6;
                         break;
-                    case Instructions.TO_BOOLEAN_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ToBoolean_Node());
-                        bci += 6;
-                        break;
                     case Instructions.GET_SOURCE_POSITION_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new GetSourcePosition_Node());
                         bci += 6;
                         break;
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EnsureAndGetSourcePosition_Node());
-                        bci += 6;
-                        break;
                     case Instructions.GET_SOURCE_POSITIONS_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new GetSourcePositions_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new CopyLocalsToFrame_Node());
                         bci += 6;
                         break;
                     case Instructions.GET_BYTECODE_LOCATION_ :
@@ -3147,24 +4659,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new PrintHere_Node());
                         bci += 6;
                         break;
-                    case Instructions.INCREMENT_VALUE_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new IncrementValue_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.DOUBLE_VALUE_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new DoubleValue_Node());
-                        bci += 6;
-                        break;
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EnableIncrementValueInstrumentation_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.MOD_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Mod_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.LESS_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Less_Node());
                         bci += 6;
                         break;
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -3183,27 +4679,103 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new Call_Node());
                         bci += 10;
                         break;
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new AddConstantOperation_Node());
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new VeryComplexOperation_Node());
                         bci += 10;
                         break;
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new AddConstantOperationAtEnd_Node());
-                        bci += 10;
-                        break;
-                    case Instructions.TEE_LOCAL_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeLocal_Node());
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.THROW_OPERATION$PERFORM_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ThrowOperation_Node());
                         bci += 10;
                         break;
                     case Instructions.TEE_LOCAL_RANGE_ :
                         result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeLocalRange_Node());
                         bci += 10;
                         break;
-                    case Instructions.BRANCH_FALSE :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new ToBoolean_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EnsureAndGetSourcePosition_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new CopyLocalsToFrame_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new IncrementValue_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new DoubleValue_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
+                        bci += 14;
+                        break;
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new AddConstantOperation_Node());
+                        bci += 14;
+                        break;
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new AddConstantOperationAtEnd_Node());
+                        bci += 14;
+                        break;
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeLocal_Node());
+                        bci += 14;
+                        break;
+                    case Instructions.MOD_ :
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Mod_Node());
+                        bci += 14;
+                        break;
+                    case Instructions.LESS_ :
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Less_Node());
+                        bci += 14;
+                        break;
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
                         numConditionalBranches++;
                         bci += 10;
+                        break;
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                        numConditionalBranches++;
+                        bci += 14;
                         break;
                     default :
                     {
@@ -3215,12 +4787,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             this.cachedNodes_ = result;
             this.branchProfiles_ = allocateBranchProfiles(numConditionalBranches);
             this.exceptionProfiles_ = handlers.length == 0 ? EMPTY_EXCEPTION_PROFILES : new boolean[handlers.length / 5];
+            byte[] localTags = new byte[numLocals];
+            Arrays.fill(localTags, FrameSlotKind.Illegal.tag);
+            this.localTags_ = localTags;
         }
 
-        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot, Node[] cachedNodes_, boolean[] exceptionProfiles_, int[] branchProfiles_, Object osrMetadata_) {
+        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot, Node[] cachedNodes_, boolean[] exceptionProfiles_, byte[] localTags_, int[] branchProfiles_, Object osrMetadata_) {
             super(bytecodes, constants, handlers, locals, sourceInfo, sources, numNodes, tagRoot);
             this.cachedNodes_ = cachedNodes_;
             this.exceptionProfiles_ = exceptionProfiles_;
+            this.localTags_ = localTags_;
             this.branchProfiles_ = branchProfiles_;
             this.osrMetadata_ = osrMetadata_;
         }
@@ -3228,10 +4804,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         @Override
         @BytecodeInterpreterSwitch
         @ExplodeLoop(kind = LoopExplosionKind.MERGE_EXPLODE)
-        long continueAt(BasicInterpreterWithUncached $root, VirtualFrame frame, VirtualFrame localFrame, long startState) {
+        long continueAt(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, VirtualFrame localFrame, long startState) {
             byte[] bc = this.bytecodes;
             Node[] cachedNodes = this.cachedNodes_;
             int[] branchProfiles = this.branchProfiles_;
+            byte[] localTags = this.localTags_;
             int bci = (int) startState;
             int sp = (short) (startState >>> 32);
             int op;
@@ -3247,9 +4824,31 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     switch (op) {
                         case Instructions.POP :
                         {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             doPop(this, frame, bc, bci, sp);
                             sp -= 1;
-                            bci += 2;
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.POP$BOOLEAN :
+                        {
+                            doPop$Boolean(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.POP$LONG :
+                        {
+                            doPop$Long(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.POP$GENERIC :
+                        {
+                            doPop$generic(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 6;
                             break;
                         }
                         case Instructions.DUP :
@@ -3287,9 +4886,33 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                         case Instructions.BRANCH_FALSE :
                         {
-                            if (profileBranch(branchProfiles, BYTES.getIntUnaligned(bc, bci + 6 /* imm branch_profile */), (boolean) FRAMES.uncheckedGetObject(frame, sp - 1))) {
+                            if (profileBranch(branchProfiles, BYTES.getIntUnaligned(bc, bci + 6 /* imm branch_profile */), doBranchFalse(this, frame, bc, bci, sp))) {
                                 sp -= 1;
-                                bci += 10;
+                                bci += 14;
+                                break;
+                            } else {
+                                sp -= 1;
+                                bci = BYTES.getIntUnaligned(bc, bci + 2 /* imm branch_target */);
+                                break;
+                            }
+                        }
+                        case Instructions.BRANCH_FALSE$GENERIC :
+                        {
+                            if (profileBranch(branchProfiles, BYTES.getIntUnaligned(bc, bci + 6 /* imm branch_profile */), doBranchFalse$Generic(this, frame, bc, bci, sp))) {
+                                sp -= 1;
+                                bci += 14;
+                                break;
+                            } else {
+                                sp -= 1;
+                                bci = BYTES.getIntUnaligned(bc, bci + 2 /* imm branch_target */);
+                                break;
+                            }
+                        }
+                        case Instructions.BRANCH_FALSE$BOOLEAN :
+                        {
+                            if (profileBranch(branchProfiles, BYTES.getIntUnaligned(bc, bci + 6 /* imm branch_profile */), doBranchFalse$Boolean(this, frame, bc, bci, sp))) {
+                                sp -= 1;
+                                bci += 14;
                                 break;
                             } else {
                                 sp -= 1;
@@ -3299,10 +4922,51 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                         case Instructions.STORE_LOCAL :
                         {
-                            doStoreLocal(frame, localFrame, bc, bci, sp);
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            doStoreLocal(frame, localFrame, bc, bci, sp, FRAMES.getObject(frame, sp - 1), localTags);
                             FRAMES.clear(frame, sp - 1);
                             sp -= 1;
-                            bci += 4;
+                            bci += 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$BOOLEAN :
+                        {
+                            doStoreLocal$Boolean(frame, localFrame, bc, bci, sp, localTags);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
+                            bci += 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                        {
+                            doStoreLocal$Boolean$Boolean(frame, localFrame, bc, bci, sp, localTags);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
+                            bci += 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$LONG :
+                        {
+                            doStoreLocal$Long(frame, localFrame, bc, bci, sp, localTags);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
+                            bci += 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$LONG$LONG :
+                        {
+                            doStoreLocal$Long$Long(frame, localFrame, bc, bci, sp, localTags);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
+                            bci += 8;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL$GENERIC :
+                        {
+                            doStoreLocal$generic(frame, localFrame, bc, bci, sp, localTags);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
+                            bci += 8;
                             break;
                         }
                         case Instructions.THROW :
@@ -3316,6 +4980,20 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             } else {
                                 FRAMES.setObject(frame, sp, ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */)));
                             }
+                            sp += 1;
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_CONSTANT$BOOLEAN :
+                        {
+                            FRAMES.setBoolean(frame, sp, ACCESS.uncheckedCast(ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */)), Boolean.class));
+                            sp += 1;
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_CONSTANT$LONG :
+                        {
+                            FRAMES.setLong(frame, sp, ACCESS.uncheckedCast(ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */)), Long.class));
                             sp += 1;
                             bci += 6;
                             break;
@@ -3334,6 +5012,20 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             bci += 4;
                             break;
                         }
+                        case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                        {
+                            doLoadArgument$Boolean(frame, localFrame, bc, bci, sp);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_ARGUMENT$LONG :
+                        {
+                            doLoadArgument$Long(frame, localFrame, bc, bci, sp);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
                         case Instructions.LOAD_EXCEPTION :
                         {
                             FRAMES.setObject(frame, sp, FRAMES.getObject(frame, $root.maxLocals + BYTES.getShort(bc, bci + 2 /* imm exception_sp */)));
@@ -3343,22 +5035,125 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                         case Instructions.LOAD_LOCAL :
                         {
-                            doLoadLocal(this, frame, localFrame, bc, bci, sp);
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            doLoadLocal(this, frame, localFrame, bc, bci, sp, localTags);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL$BOOLEAN :
+                        {
+                            doLoadLocal$Boolean(this, frame, localFrame, bc, bci, sp, localTags);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                        {
+                            doLoadLocal$Boolean$unboxed(this, frame, localFrame, bc, bci, sp, localTags);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL$LONG :
+                        {
+                            doLoadLocal$Long(this, frame, localFrame, bc, bci, sp, localTags);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                        {
+                            doLoadLocal$Long$unboxed(this, frame, localFrame, bc, bci, sp, localTags);
+                            sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL$GENERIC :
+                        {
+                            doLoadLocal$generic(this, frame, localFrame, bc, bci, sp, localTags);
                             sp += 1;
                             bci += 4;
                             break;
                         }
                         case Instructions.LOAD_LOCAL_MAT :
                         {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             doLoadLocalMat(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                        {
+                            doLoadLocalMat$Boolean(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                        {
+                            doLoadLocalMat$Boolean$unboxed(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL_MAT$LONG :
+                        {
+                            doLoadLocalMat$Long(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                        {
+                            doLoadLocalMat$Long$unboxed(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL_MAT$GENERIC :
+                        {
+                            doLoadLocalMat$generic(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
                             bci += 6;
                             break;
                         }
                         case Instructions.STORE_LOCAL_MAT :
                         {
-                            doStoreLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            doStoreLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp, FRAMES.getObject(localFrame, sp - 1));
                             sp -= 2;
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                        {
+                            doStoreLocalMat$Boolean(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            sp -= 2;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                        {
+                            doStoreLocalMat$Boolean$Boolean(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            sp -= 2;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT$LONG :
+                        {
+                            doStoreLocalMat$Long(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            sp -= 2;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                        {
+                            doStoreLocalMat$Long$Long(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            sp -= 2;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL_MAT$GENERIC :
+                        {
+                            doStoreLocalMat$generic(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
+                            sp -= 2;
+                            bci += 10;
                             break;
                         }
                         case Instructions.YIELD :
@@ -3378,8 +5173,39 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                         case Instructions.TAG_LEAVE :
                         {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
                             doTagLeave(this, frame, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TAG_LEAVE$BOOLEAN :
+                        {
+                            doTagLeave$Boolean(this, frame, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                        {
+                            doTagLeave$Boolean$unboxed(this, frame, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TAG_LEAVE$LONG :
+                        {
+                            doTagLeave$Long(this, frame, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                        {
+                            doTagLeave$Long$unboxed(this, frame, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TAG_LEAVE$GENERIC :
+                        {
+                            doTagLeave$generic(this, frame, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.TAG_LEAVE_VOID :
@@ -3492,7 +5318,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         {
                             doAdd_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
-                            bci += 6;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD$ADD_LONGS_ :
+                        {
+                            doAdd$AddLongs_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                        {
+                            doAdd$AddLongs$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
                             break;
                         }
                         case Instructions.TO_STRING_ :
@@ -3510,31 +5350,88 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.ADD_CONSTANT_OPERATION_ :
                         {
                             doAddConstantOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 10;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                        {
+                            doAddConstantOperation$AddLongs_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                        {
+                            doAddConstantOperation$AddLongs$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
                             break;
                         }
                         case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                         {
                             doAddConstantOperationAtEnd_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 10;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                        {
+                            doAddConstantOperationAtEnd$AddLongs_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                        {
+                            doAddConstantOperationAtEnd$AddLongs$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
                             break;
                         }
                         case Instructions.VERY_COMPLEX_OPERATION_ :
                         {
                             doVeryComplexOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                        {
+                            doVeryComplexOperation$Bla_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                        {
+                            doVeryComplexOperation$Bla$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                        {
+                            doVeryComplexOperation$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
                             break;
                         }
                         case Instructions.THROW_OPERATION_ :
                         {
                             doThrowOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.THROW_OPERATION$PERFORM_ :
+                        {
+                            doThrowOperation$Perform_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.READ_EXCEPTION_OPERATION_ :
                         {
                             doReadExceptionOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 6;
+                            break;
+                        }
+                        case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+                        {
+                            doReadExceptionOperation$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
                             bci += 6;
                             break;
                         }
@@ -3554,7 +5451,19 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.TEE_LOCAL_ :
                         {
                             doTeeLocal_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 10;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.TEE_LOCAL$LONG_ :
+                        {
+                            doTeeLocal$Long_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                        {
+                            doTeeLocal$Long$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 14;
                             break;
                         }
                         case Instructions.TEE_LOCAL_RANGE_ :
@@ -3592,7 +5501,37 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.TO_BOOLEAN_ :
                         {
                             doToBoolean_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN$LONG_ :
+                        {
+                            doToBoolean$Long_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                        {
+                            doToBoolean$Long$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                        {
+                            doToBoolean$Boolean_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                        {
+                            doToBoolean$Boolean$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TO_BOOLEAN$UNBOXED_ :
+                        {
+                            doToBoolean$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.GET_SOURCE_POSITION_ :
@@ -3605,7 +5544,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                         {
                             doEnsureAndGetSourcePosition_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                        {
+                            doEnsureAndGetSourcePosition$Operation_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.GET_SOURCE_POSITIONS_ :
@@ -3618,7 +5563,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.COPY_LOCALS_TO_FRAME_ :
                         {
                             doCopyLocalsToFrame_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                        {
+                            doCopyLocalsToFrame$SomeLocals_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.GET_BYTECODE_LOCATION_ :
@@ -3672,13 +5623,49 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case Instructions.INCREMENT_VALUE_ :
                         {
                             doIncrementValue_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                        {
+                            doIncrementValue$Increment_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                        {
+                            doIncrementValue$Increment$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                        {
+                            doIncrementValue$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.DOUBLE_VALUE_ :
                         {
                             doDoubleValue_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                        {
+                            doDoubleValue$Double_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                        {
+                            doDoubleValue$Double$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        {
+                            doDoubleValue$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
                             break;
                         }
                         case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
@@ -3691,14 +5678,56 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         {
                             doMod_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
-                            bci += 6;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.MOD$INTS_ :
+                        {
+                            doMod$Ints_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.MOD$INTS$UNBOXED_ :
+                        {
+                            doMod$Ints$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.MOD$UNBOXED_ :
+                        {
+                            doMod$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
                             break;
                         }
                         case Instructions.LESS_ :
                         {
                             doLess_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
-                            bci += 6;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.LESS$INTS_ :
+                        {
+                            doLess$Ints_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.LESS$INTS$UNBOXED_ :
+                        {
+                            doLess$Ints$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
+                            break;
+                        }
+                        case Instructions.LESS$UNBOXED_ :
+                        {
+                            doLess$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
+                            bci += 14;
                             break;
                         }
                         case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -3751,6 +5780,49 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                         }
+                        case Instructions.MERGE_CONDITIONAL :
+                        {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            doMergeConditional(this, frame, bc, bci, sp, FRAMES.requireObject(frame, sp - 1));
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                        {
+                            doMergeConditional$Boolean(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                        {
+                            doMergeConditional$Boolean$unboxed(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$LONG :
+                        {
+                            doMergeConditional$Long(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                        {
+                            doMergeConditional$Long$unboxed(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.MERGE_CONDITIONAL$GENERIC :
+                        {
+                            doMergeConditional$generic(this, frame, bc, bci, sp);
+                            sp -= 1;
+                            bci += 10;
+                            break;
+                        }
                         case Instructions.INVALIDATE0 :
                         {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -3772,6 +5844,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
                         }
                         case Instructions.INVALIDATE4 :
+                        {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
+                        }
+                        case Instructions.INVALIDATE5 :
+                        {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
+                        }
+                        case Instructions.INVALIDATE6 :
                         {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
@@ -3812,9 +5894,30 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                     } else {
                                         switch (readValidBytecode(bc, node.returnBci)) {
                                             case Instructions.TAG_LEAVE :
+                                            case Instructions.TAG_LEAVE$BOOLEAN :
+                                            case Instructions.TAG_LEAVE$LONG :
+                                            case Instructions.TAG_LEAVE$GENERIC :
                                                 FRAMES.setObject(frame, (int)temp, result);
                                                 temp = temp + 1;
-                                                bci = node.returnBci + 6;
+                                                bci = node.returnBci + 10;
+                                                break;
+                                            case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                                                try {
+                                                    FRAMES.setBoolean(frame, (int)temp, BasicInterpreterProductionRootScoping.expectBoolean(result));
+                                                } catch (UnexpectedResultException e) {
+                                                    FRAMES.setObject(frame, (int)temp, e.getResult());
+                                                }
+                                                temp = temp + 1;
+                                                bci = node.returnBci + 10;
+                                                break;
+                                            case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                                                try {
+                                                    FRAMES.setLong(frame, (int)temp, BasicInterpreterProductionRootScoping.expectLong(result));
+                                                } catch (UnexpectedResultException e) {
+                                                    FRAMES.setObject(frame, (int)temp, e.getResult());
+                                                }
+                                                temp = temp + 1;
+                                                bci = node.returnBci + 10;
                                                 break;
                                             case Instructions.TAG_LEAVE_VOID :
                                                 bci = node.returnBci + 6;
@@ -3869,40 +5972,637 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return -1;
         }
 
-        private void doStoreLocal(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local = FRAMES.requireObject(stackFrame, sp - 1);
+        private void doStoreLocal(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, Object local, byte[] localTags) {
+            short newInstruction;
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int operandIndex = BYTES.getIntUnaligned(bc, bci + 4 /* imm child0 */);
+            short newOperand;
+            short operand = BYTES.getShort(bc, operandIndex);
+            byte oldTag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            byte newTag;
+            if (local instanceof Boolean) {
+                switch (oldTag) {
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL$BOOLEAN;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
+                        newTag = FrameTags.BOOLEAN;
+                        FRAMES.setBoolean(frame, slot, (boolean) local);
+                        break;
+                    case FrameTags.LONG :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } else if (local instanceof Long) {
+                switch (oldTag) {
+                    case FrameTags.LONG :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningLong(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL$LONG$LONG;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL$LONG;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
+                        newTag = FrameTags.LONG;
+                        FRAMES.setLong(frame, slot, (long) local);
+                        break;
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } else {
+                newInstruction = Instructions.STORE_LOCAL$GENERIC;
+                newOperand = undoQuickening(operand);
+                newTag = FrameTags.OBJECT;
+                this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                FRAMES.setObject(frame, slot, local);
+            }
+            this.setCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX, newTag);
+            BYTES.putShort(bc, operandIndex, newOperand);
+            this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                this.getRoot().onQuicken(oldInstruction, new InstructionImpl(this, bci, newInstruction));
+            }
+            FRAMES.clear(stackFrame, sp - 1);
+        }
+
+        private void doStoreLocal$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocal(stackFrame, frame, bc, bci, sp, ex.getResult(), localTags);
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            byte tag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.BOOLEAN) {
+                try {
+                    FRAMES.setBoolean(frame, slot, BasicInterpreterProductionRootScoping.expectBoolean(local));
+                    if (CompilerDirectives.inCompiledCode()) {
+                        // Clear primitive for compiler liveness analysis
+                        FRAMES.clear(stackFrame, sp - 1);
+                    }
+                    return;
+                } catch (UnexpectedResultException ex) {
+                    local = ex.getResult();
+                    // fall through to slow-path
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocal(stackFrame, frame, bc, bci, sp, local, localTags);
+        }
+
+        private void doStoreLocal$Boolean$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            boolean local;
+            try {
+                local = FRAMES.expectBoolean(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocal(stackFrame, frame, bc, bci, sp, ex.getResult(), localTags);
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            byte tag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.BOOLEAN) {
+                FRAMES.setBoolean(frame, slot, local);
+                if (CompilerDirectives.inCompiledCode()) {
+                    // Clear primitive for compiler liveness analysis
+                    FRAMES.clear(stackFrame, sp - 1);
+                }
+                return;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocal(stackFrame, frame, bc, bci, sp, local, localTags);
+        }
+
+        private void doStoreLocal$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocal(stackFrame, frame, bc, bci, sp, ex.getResult(), localTags);
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            byte tag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.LONG) {
+                try {
+                    FRAMES.setLong(frame, slot, BasicInterpreterProductionRootScoping.expectLong(local));
+                    if (CompilerDirectives.inCompiledCode()) {
+                        // Clear primitive for compiler liveness analysis
+                        FRAMES.clear(stackFrame, sp - 1);
+                    }
+                    return;
+                } catch (UnexpectedResultException ex) {
+                    local = ex.getResult();
+                    // fall through to slow-path
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocal(stackFrame, frame, bc, bci, sp, local, localTags);
+        }
+
+        private void doStoreLocal$Long$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            long local;
+            try {
+                local = FRAMES.expectLong(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocal(stackFrame, frame, bc, bci, sp, ex.getResult(), localTags);
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            byte tag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.LONG) {
+                FRAMES.setLong(frame, slot, local);
+                if (CompilerDirectives.inCompiledCode()) {
+                    // Clear primitive for compiler liveness analysis
+                    FRAMES.clear(stackFrame, sp - 1);
+                }
+                return;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocal(stackFrame, frame, bc, bci, sp, local, localTags);
+        }
+
+        private void doStoreLocal$generic(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocal(stackFrame, frame, bc, bci, sp, ex.getResult(), localTags);
+                return;
+            }
             FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(stackFrame, sp - 1);
         }
 
-        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+        private void doLoadArgument$Boolean(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp) {
+            try {
+                FRAMES.setBoolean(frame, sp, BasicInterpreterProductionRootScoping.expectBoolean(localFrame.getArguments()[BYTES.getShort(bc, bci + 2 /* imm index */)]));
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                {
+                    InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
+                    BYTES.putShort(bc, bci, Instructions.LOAD_ARGUMENT);
+                    this.getRoot().onQuicken(oldInstruction, new InstructionImpl(this, bci, Instructions.LOAD_ARGUMENT));
+                }
+                FRAMES.setObject(frame, sp, e.getResult());
+            }
+        }
+
+        private void doLoadArgument$Long(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp) {
+            try {
+                FRAMES.setLong(frame, sp, BasicInterpreterProductionRootScoping.expectLong(localFrame.getArguments()[BYTES.getShort(bc, bci + 2 /* imm index */)]));
+            } catch (UnexpectedResultException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                {
+                    InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
+                    BYTES.putShort(bc, bci, Instructions.LOAD_ARGUMENT);
+                    this.getRoot().onQuicken(oldInstruction, new InstructionImpl(this, bci, Instructions.LOAD_ARGUMENT));
+                }
+                FRAMES.setObject(frame, sp, e.getResult());
+            }
+        }
+
+        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            byte tag = this.getCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX);
+            Object value;
+            short newInstruction;
+            try {
+                switch (tag) {
+                    case FrameTags.BOOLEAN :
+                        newInstruction = Instructions.LOAD_LOCAL$BOOLEAN;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$Boolean");
+                        value = FRAMES.expectBoolean(frame, slot);
+                        break;
+                    case FrameTags.LONG :
+                        newInstruction = Instructions.LOAD_LOCAL$LONG;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$Long");
+                        value = FRAMES.expectLong(frame, slot);
+                        break;
+                    case FrameTags.OBJECT :
+                    case FrameTags.ILLEGAL :
+                        newInstruction = Instructions.LOAD_LOCAL$GENERIC;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$generic");
+                        value = FRAMES.expectObject(frame, slot);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } catch (UnexpectedResultException ex) {
+                newInstruction = Instructions.LOAD_LOCAL$GENERIC;
+                $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$generic");
+                value = ex.getResult();
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            FRAMES.setObject(stackFrame, sp, value);
+        }
+
+        private void doLoadLocal$Boolean(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            try {
+                FRAMES.setObject(stackFrame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocal($this, stackFrame, frame, bc, bci, sp, localTags);
+            }
+        }
+
+        private void doLoadLocal$Boolean$unboxed(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            try {
+                FRAMES.setBoolean(stackFrame, sp, FRAMES.expectBoolean(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocal($this, stackFrame, frame, bc, bci, sp, localTags);
+            }
+        }
+
+        private void doLoadLocal$Long(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            try {
+                FRAMES.setObject(stackFrame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocal($this, stackFrame, frame, bc, bci, sp, localTags);
+            }
+        }
+
+        private void doLoadLocal$Long$unboxed(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
+            try {
+                FRAMES.setLong(stackFrame, sp, FRAMES.expectLong(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocal($this, stackFrame, frame, bc, bci, sp, localTags);
+            }
+        }
+
+        private void doLoadLocal$generic(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, byte[] localTags) {
             FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            BasicInterpreterWithUncached localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            Object value;
+            short newInstruction;
+            try {
+                switch (tag) {
+                    case FrameTags.BOOLEAN :
+                        newInstruction = Instructions.LOAD_LOCAL_MAT$BOOLEAN;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$Boolean");
+                        value = FRAMES.expectBoolean(frame, slot);
+                        break;
+                    case FrameTags.LONG :
+                        newInstruction = Instructions.LOAD_LOCAL_MAT$LONG;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$Long");
+                        value = FRAMES.expectLong(frame, slot);
+                        break;
+                    case FrameTags.OBJECT :
+                    case FrameTags.ILLEGAL :
+                        newInstruction = Instructions.LOAD_LOCAL_MAT$GENERIC;
+                        $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$generic");
+                        value = FRAMES.expectObject(frame, slot);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } catch (UnexpectedResultException ex) {
+                newInstruction = Instructions.LOAD_LOCAL_MAT$GENERIC;
+                $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "LoadLocal$generic");
+                value = ex.getResult();
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            FRAMES.setObject(stackFrame, sp - 1, value);
+        }
+
+        private void doLoadLocalMat$Boolean(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            try {
+                FRAMES.setObject(stackFrame, sp - 1, FRAMES.expectBoolean(frame, slot));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocalMat($this, stackFrame, frame, bc, bci, sp);
+            }
+        }
+
+        private void doLoadLocalMat$Boolean$unboxed(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            try {
+                FRAMES.setBoolean(stackFrame, sp - 1, FRAMES.expectBoolean(frame, slot));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocalMat($this, stackFrame, frame, bc, bci, sp);
+            }
+        }
+
+        private void doLoadLocalMat$Long(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            try {
+                FRAMES.setObject(stackFrame, sp - 1, FRAMES.expectLong(frame, slot));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocalMat($this, stackFrame, frame, bc, bci, sp);
+            }
+        }
+
+        private void doLoadLocalMat$Long$unboxed(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            try {
+                FRAMES.setLong(stackFrame, sp - 1, FRAMES.expectLong(frame, slot));
+            } catch (UnexpectedResultException ex) {
+                doLoadLocalMat($this, stackFrame, frame, bc, bci, sp);
+            }
+        }
+
+        private void doLoadLocalMat$generic(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
             FRAMES.setObject(stackFrame, sp - 1, FRAMES.requireObject(frame, slot));
         }
 
-        private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local = FRAMES.requireObject(stackFrame, sp - 1);
+        private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, Object local) {
+            short newInstruction;
             int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            BasicInterpreterWithUncached localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            int operandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
-            FRAMES.setObject(frame, slot, local);
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            short newOperand;
+            short operand = BYTES.getShort(bc, operandIndex);
+            byte oldTag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            byte newTag;
+            if (local instanceof Boolean) {
+                switch (oldTag) {
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Boolean");
+                        newTag = FrameTags.BOOLEAN;
+                        FRAMES.setBoolean(frame, slot, (boolean) local);
+                        break;
+                    case FrameTags.LONG :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } else if (local instanceof Long) {
+                switch (oldTag) {
+                    case FrameTags.LONG :
+                    case FrameTags.ILLEGAL :
+                        if ((newOperand = applyQuickeningLong(operand)) != -1) {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG$LONG;
+                        } else {
+                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG;
+                            newOperand = operand;
+                        }
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$Long");
+                        newTag = FrameTags.LONG;
+                        FRAMES.setLong(frame, slot, (long) local);
+                        break;
+                    case FrameTags.BOOLEAN :
+                    case FrameTags.OBJECT :
+                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                        newOperand = undoQuickening(operand);
+                        newTag = FrameTags.OBJECT;
+                        this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                        FRAMES.setObject(frame, slot, local);
+                        break;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
+                }
+            } else {
+                newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
+                newOperand = undoQuickening(operand);
+                newTag = FrameTags.OBJECT;
+                this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
+                FRAMES.setObject(frame, slot, local);
+            }
+            bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX, newTag);
+            BYTES.putShort(bc, operandIndex, newOperand);
+            this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl(this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                this.getRoot().onQuicken(oldInstruction, new InstructionImpl(this, bci, newInstruction));
+            }
             FRAMES.clear(stackFrame, sp - 1);
             FRAMES.clear(stackFrame, sp - 2);
         }
 
-        private void doYield(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp, BasicInterpreterWithUncached $root) {
+        private void doStoreLocalMat$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.BOOLEAN) {
+                try {
+                    FRAMES.setBoolean(frame, slot, BasicInterpreterProductionRootScoping.expectBoolean(local));
+                    FRAMES.clear(stackFrame, sp - 1);
+                    if (CompilerDirectives.inCompiledCode()) {
+                        // Clear primitive for compiler liveness analysis
+                        FRAMES.clear(stackFrame, sp - 2);
+                    }
+                    return;
+                } catch (UnexpectedResultException ex) {
+                    local = ex.getResult();
+                    // fall through to slow-path
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
+        }
+
+        private void doStoreLocalMat$Boolean$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            boolean local;
+            try {
+                local = FRAMES.expectBoolean(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.BOOLEAN) {
+                FRAMES.setBoolean(frame, slot, local);
+                FRAMES.clear(stackFrame, sp - 1);
+                if (CompilerDirectives.inCompiledCode()) {
+                    // Clear primitive for compiler liveness analysis
+                    FRAMES.clear(stackFrame, sp - 2);
+                }
+                return;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
+        }
+
+        private void doStoreLocalMat$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.LONG) {
+                try {
+                    FRAMES.setLong(frame, slot, BasicInterpreterProductionRootScoping.expectLong(local));
+                    FRAMES.clear(stackFrame, sp - 1);
+                    if (CompilerDirectives.inCompiledCode()) {
+                        // Clear primitive for compiler liveness analysis
+                        FRAMES.clear(stackFrame, sp - 2);
+                    }
+                    return;
+                } catch (UnexpectedResultException ex) {
+                    local = ex.getResult();
+                    // fall through to slow-path
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
+        }
+
+        private void doStoreLocalMat$Long$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            long local;
+            try {
+                local = FRAMES.expectLong(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX);
+            if (tag == FrameTags.LONG) {
+                FRAMES.setLong(frame, slot, local);
+                FRAMES.clear(stackFrame, sp - 1);
+                if (CompilerDirectives.inCompiledCode()) {
+                    // Clear primitive for compiler liveness analysis
+                    FRAMES.clear(stackFrame, sp - 2);
+                }
+                return;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
+        }
+
+        private void doStoreLocalMat$generic(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            Object local;
+            try {
+                local = FRAMES.expectObject(stackFrame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
+            int localOffset = slot - USER_LOCALS_START_INDEX;
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
+            }
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            bytecodeNode.setLocalValueInternal(frame, localOffset, localOffset, local);
+            FRAMES.clear(stackFrame, sp - 1);
+            FRAMES.clear(stackFrame, sp - 2);
+        }
+
+        private void doYield(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp, BasicInterpreterProductionRootScoping $root) {
             int maxLocals = $root.maxLocals;
             FRAMES.copyTo(frame, maxLocals, localFrame, maxLocals, (sp - 1 - maxLocals));
             ContinuationRootNodeImpl continuationRootNode = ACCESS.uncheckedCast(ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm location */)), ContinuationRootNodeImpl.class);
@@ -3917,6 +6617,84 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         private void doTagLeave(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            short newInstruction;
+            short newOperand;
+            int operandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child0 */);
+            short operand = BYTES.getShort(bc, operandIndex);
+            Object value = FRAMES.requireObject(frame, sp - 1);
+            if (value instanceof Boolean &&
+                 (newOperand = applyQuickeningBoolean(operand)) != -1) {
+                newInstruction = Instructions.TAG_LEAVE$BOOLEAN;
+            } else if (value instanceof Long &&
+                 (newOperand = applyQuickeningLong(operand)) != -1) {
+                newInstruction = Instructions.TAG_LEAVE$LONG;
+            } else {
+                newOperand = undoQuickening(operand);
+                newInstruction = Instructions.TAG_LEAVE$GENERIC;
+            }
+            BYTES.putShort(bc, operandIndex, newOperand);
+            $this.getRoot().onQuickenOperand(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl($this, operandIndex, operand), new InstructionImpl($this, operandIndex, newOperand));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
+            tagNode.findProbe().onReturnValue(frame, value);
+        }
+
+        private void doTagLeave$Boolean(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
+            boolean returnValue;
+            try {
+                returnValue = FRAMES.expectBoolean(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doTagLeave($this, frame, bc, bci, sp);
+                return;
+            }
+            TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
+            tagNode.findProbe().onReturnValue(frame, returnValue);
+            FRAMES.setObject(frame, sp - 1, returnValue);
+        }
+
+        private void doTagLeave$Boolean$unboxed(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
+            boolean returnValue;
+            try {
+                returnValue = FRAMES.expectBoolean(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doTagLeave($this, frame, bc, bci, sp);
+                return;
+            }
+            TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
+            tagNode.findProbe().onReturnValue(frame, returnValue);
+        }
+
+        private void doTagLeave$Long(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
+            long returnValue;
+            try {
+                returnValue = FRAMES.expectLong(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doTagLeave($this, frame, bc, bci, sp);
+                return;
+            }
+            TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
+            tagNode.findProbe().onReturnValue(frame, returnValue);
+            FRAMES.setObject(frame, sp - 1, returnValue);
+        }
+
+        private void doTagLeave$Long$unboxed(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
+            long returnValue;
+            try {
+                returnValue = FRAMES.expectLong(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doTagLeave($this, frame, bc, bci, sp);
+                return;
+            }
+            TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
+            tagNode.findProbe().onReturnValue(frame, returnValue);
+        }
+
+        private void doTagLeave$generic(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
             Object returnValue;
             returnValue = FRAMES.requireObject(frame, sp - 1);
             TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
@@ -3955,6 +6733,30 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
+        private void doAdd$AddLongs_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
+            try {
+                long result = node.executeAddLongs(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setObject(frame, sp - 2, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 2, ex.getResult());
+            }
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doAdd$AddLongs$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
+            try {
+                long result = node.executeAddLongs$unboxed(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setLong(frame, sp - 2, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 2, ex.getResult());
+            }
+            FRAMES.clear(frame, sp - 1);
+        }
+
         private void doToString_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             ToString_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToString_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
@@ -3973,10 +6775,54 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.setObject(frame, sp - 1, result);
         }
 
+        private void doAddConstantOperation$AddLongs_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            AddConstantOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), AddConstantOperation_Node.class);
+            try {
+                long result = node.executeAddLongs(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setObject(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
+        }
+
+        private void doAddConstantOperation$AddLongs$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            AddConstantOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), AddConstantOperation_Node.class);
+            try {
+                long result = node.executeAddLongs$unboxed(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setLong(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
+        }
+
         private void doAddConstantOperationAtEnd_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             AddConstantOperationAtEnd_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), AddConstantOperationAtEnd_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doAddConstantOperationAtEnd$AddLongs_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            AddConstantOperationAtEnd_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), AddConstantOperationAtEnd_Node.class);
+            try {
+                long result = node.executeAddLongs(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setObject(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
+        }
+
+        private void doAddConstantOperationAtEnd$AddLongs$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            AddConstantOperationAtEnd_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), AddConstantOperationAtEnd_Node.class);
+            try {
+                long result = node.executeAddLongs$unboxed(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setLong(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
         }
 
         private void doVeryComplexOperation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -3986,9 +6832,36 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
+        private void doVeryComplexOperation$Bla_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            VeryComplexOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), VeryComplexOperation_Node.class);
+            long result = node.executeBla(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doVeryComplexOperation$Bla$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            VeryComplexOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), VeryComplexOperation_Node.class);
+            long result = node.executeBla$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doVeryComplexOperation$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            VeryComplexOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), VeryComplexOperation_Node.class);
+            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
         private void doThrowOperation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             ThrowOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ThrowOperation_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doThrowOperation$Perform_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ThrowOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ThrowOperation_Node.class);
+            Object result = node.executePerform(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
         }
 
@@ -3996,6 +6869,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             ReadExceptionOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ReadExceptionOperation_Node.class);
             long result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doReadExceptionOperation$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ReadExceptionOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ReadExceptionOperation_Node.class);
+            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 1, result);
         }
 
         private void doAlwaysBoxOperation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -4015,6 +6894,28 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             TeeLocal_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), TeeLocal_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doTeeLocal$Long_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            TeeLocal_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), TeeLocal_Node.class);
+            try {
+                long result = node.executeLong(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setObject(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
+        }
+
+        private void doTeeLocal$Long$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            TeeLocal_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), TeeLocal_Node.class);
+            try {
+                long result = node.executeLong$unboxed(localFrame, frame, this, bc, bci, sp);
+                FRAMES.setLong(frame, sp - 1, result);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                FRAMES.setObject(frame, sp - 1, ex.getResult());
+            }
         }
 
         private void doTeeLocalRange_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -4053,6 +6954,36 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.setObject(frame, sp - 1, result);
         }
 
+        private void doToBoolean$Long_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ToBoolean_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToBoolean_Node.class);
+            boolean result = node.executeLong(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doToBoolean$Long$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ToBoolean_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToBoolean_Node.class);
+            boolean result = node.executeLong$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setBoolean(frame, sp - 1, result);
+        }
+
+        private void doToBoolean$Boolean_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ToBoolean_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToBoolean_Node.class);
+            boolean result = node.executeBoolean(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doToBoolean$Boolean$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ToBoolean_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToBoolean_Node.class);
+            boolean result = node.executeBoolean$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setBoolean(frame, sp - 1, result);
+        }
+
+        private void doToBoolean$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            ToBoolean_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), ToBoolean_Node.class);
+            boolean result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setBoolean(frame, sp - 1, result);
+        }
+
         private void doGetSourcePosition_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             GetSourcePosition_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), GetSourcePosition_Node.class);
             SourceSection result = node.execute(localFrame, frame, this, bc, bci, sp);
@@ -4065,6 +6996,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.setObject(frame, sp - 1, result);
         }
 
+        private void doEnsureAndGetSourcePosition$Operation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            EnsureAndGetSourcePosition_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), EnsureAndGetSourcePosition_Node.class);
+            SourceSection result = node.executeOperation(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
         private void doGetSourcePositions_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             GetSourcePositions_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), GetSourcePositions_Node.class);
             SourceSection[] result = node.execute(localFrame, frame, this, bc, bci, sp);
@@ -4074,6 +7011,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private void doCopyLocalsToFrame_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             CopyLocalsToFrame_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), CopyLocalsToFrame_Node.class);
             Frame result = node.execute(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doCopyLocalsToFrame$SomeLocals_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            CopyLocalsToFrame_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), CopyLocalsToFrame_Node.class);
+            Frame result = node.executeSomeLocals(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
         }
 
@@ -4125,10 +7068,46 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.setObject(frame, sp - 1, result);
         }
 
+        private void doIncrementValue$Increment_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            IncrementValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), IncrementValue_Node.class);
+            long result = node.executeIncrement(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doIncrementValue$Increment$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            IncrementValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), IncrementValue_Node.class);
+            long result = node.executeIncrement$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 1, result);
+        }
+
+        private void doIncrementValue$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            IncrementValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), IncrementValue_Node.class);
+            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 1, result);
+        }
+
         private void doDoubleValue_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             DoubleValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), DoubleValue_Node.class);
             long result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doDoubleValue$Double_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            DoubleValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), DoubleValue_Node.class);
+            long result = node.executeDouble(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 1, result);
+        }
+
+        private void doDoubleValue$Double$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            DoubleValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), DoubleValue_Node.class);
+            long result = node.executeDouble$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 1, result);
+        }
+
+        private void doDoubleValue$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            DoubleValue_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), DoubleValue_Node.class);
+            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 1, result);
         }
 
         private void doEnableIncrementValueInstrumentation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -4143,10 +7122,52 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
+        private void doMod$Ints_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Mod_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Mod_Node.class);
+            long result = node.executeInts(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doMod$Ints$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Mod_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Mod_Node.class);
+            long result = node.executeInts$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doMod$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Mod_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Mod_Node.class);
+            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setLong(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
         private void doLess_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             Less_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Less_Node.class);
             boolean result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doLess$Ints_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Less_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Less_Node.class);
+            boolean result = node.executeInts(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doLess$Ints$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Less_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Less_Node.class);
+            boolean result = node.executeInts$unboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setBoolean(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private void doLess$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Less_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Less_Node.class);
+            boolean result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setBoolean(frame, sp - 2, result);
             FRAMES.clear(frame, sp - 1);
         }
 
@@ -4226,7 +7247,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @InliningCutoff
-        private Throwable resolveThrowable(BasicInterpreterWithUncached $root, VirtualFrame frame, int bci, Throwable throwable) {
+        private Throwable resolveThrowable(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, int bci, Throwable throwable) {
             if (throwable instanceof AbstractTruffleException ate) {
                 return ate;
             } else if (throwable instanceof ControlFlowException cfe) {
@@ -4262,6 +7283,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             boolean wasOnReturnExecuted;
             switch (readValidBytecode(bc, bci)) {
                 case Instructions.TAG_LEAVE :
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                case Instructions.TAG_LEAVE$LONG :
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                case Instructions.TAG_LEAVE$GENERIC :
+                    wasOnReturnExecuted = BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */) == nodeId;
+                    break;
                 case Instructions.TAG_LEAVE_VOID :
                     wasOnReturnExecuted = BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */) == nodeId;
                     break;
@@ -4272,7 +7300,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return node.findProbe().onReturnExceptionalOrUnwind(frame, exception, wasOnReturnExecuted);
         }
 
-        private long resolveControlFlowException(BasicInterpreterWithUncached $root, VirtualFrame frame, int bci, ControlFlowException cfe) throws Throwable {
+        private long resolveControlFlowException(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, int bci, ControlFlowException cfe) throws Throwable {
             Object result = $root.interceptControlFlowException(cfe, frame, this, bci);
             FRAMES.setObject(frame, $root.maxLocals, result);
             int sp = $root.maxLocals + 1;
@@ -4280,7 +7308,229 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @Override
-        AbstractBytecodeNode toCached() {
+        byte[] getLocalTags() {
+            return this.localTags_;
+        }
+
+        @Override
+        public Object getLocalValue(int bci, Frame frame, int localOffset) {
+            assert validateBytecodeIndex(bci);
+            CompilerAsserts.partialEvaluationConstant(bci);
+            CompilerAsserts.partialEvaluationConstant(localOffset);
+            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            try {
+                byte tag;
+                if (CompilerDirectives.inInterpreter()) {
+                    // Resolving the local index is expensive. Don't do it in the interpreter.
+                    tag = frame.getTag(frameIndex);
+                } else {
+                    tag = getCachedLocalTag(localOffset);
+                }
+                switch (tag) {
+                    case FrameTags.BOOLEAN :
+                        return frame.expectBoolean(frameIndex);
+                    case FrameTags.LONG :
+                        return frame.expectLong(frameIndex);
+                    case FrameTags.OBJECT :
+                        return frame.expectObject(frameIndex);
+                    case FrameTags.ILLEGAL :
+                        return null;
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("Unexpected tag");
+                }
+            } catch (UnexpectedResultException ex) {
+                return ex.getResult();
+            }
+        }
+
+        @Override
+        public void setLocalValue(int bci, Frame frame, int localOffset, Object value) {
+            assert validateBytecodeIndex(bci);
+            CompilerAsserts.partialEvaluationConstant(bci);
+            CompilerAsserts.partialEvaluationConstant(localOffset);
+            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            setLocalValueImpl(frame, localOffset, value);
+        }
+
+        @Override
+        protected Object getLocalValueInternal(Frame frame, int localOffset, int localIndex) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            try {
+                byte tag = getCachedLocalTagInternal(this.localTags_, localIndex);
+                switch (tag) {
+                    case FrameTags.BOOLEAN :
+                        return frame.expectBoolean(frameIndex);
+                    case FrameTags.LONG :
+                        return frame.expectLong(frameIndex);
+                    case FrameTags.OBJECT :
+                        return frame.expectObject(frameIndex);
+                    case FrameTags.ILLEGAL :
+                        throw new FrameSlotTypeException();
+                    default :
+                        throw CompilerDirectives.shouldNotReachHere("unexpected tag");
+                }
+            } catch (UnexpectedResultException ex) {
+                return ex.getResult();
+            }
+        }
+
+        @Override
+        protected void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte newTag;
+            switch (oldTag) {
+                case FrameTags.BOOLEAN :
+                    if (value instanceof Boolean booleanValue) {
+                        frame.setBoolean(frameIndex, booleanValue);
+                        return;
+                    } else {
+                        newTag = FrameTags.OBJECT;
+                    }
+                    break;
+                case FrameTags.LONG :
+                    if (value instanceof Long longValue) {
+                        frame.setLong(frameIndex, longValue);
+                        return;
+                    } else {
+                        newTag = FrameTags.OBJECT;
+                    }
+                    break;
+                case FrameTags.OBJECT :
+                    frame.setObject(frameIndex, value);
+                    return;
+                default :
+                    newTag = specializeSlotTag(value);
+                    break;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCachedLocalTagInternal(this.localTags_, localIndex, newTag);
+            setLocalValueInternal(frame, localOffset, localIndex, value);
+        }
+
+        @Override
+        protected boolean getLocalValueInternalBoolean(Frame frame, int localOffset, int localIndex) throws UnexpectedResultException {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            return frame.expectBoolean(USER_LOCALS_START_INDEX + localOffset);
+        }
+
+        @Override
+        protected void setLocalValueInternalBoolean(Frame frame, int localOffset, int localIndex, boolean value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte newTag;
+            switch (oldTag) {
+                case FrameTags.BOOLEAN :
+                    frame.setBoolean(frameIndex, value);
+                    return;
+                case FrameTags.OBJECT :
+                    frame.setObject(frameIndex, value);
+                    return;
+                default :
+                    newTag = specializeSlotTag(value);
+                    break;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCachedLocalTagInternal(this.localTags_, localIndex, newTag);
+            setLocalValueInternal(frame, localOffset, localIndex, value);
+        }
+
+        @Override
+        protected long getLocalValueInternalLong(Frame frame, int localOffset, int localIndex) throws UnexpectedResultException {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            return frame.expectLong(USER_LOCALS_START_INDEX + localOffset);
+        }
+
+        @Override
+        protected void setLocalValueInternalLong(Frame frame, int localOffset, int localIndex, long value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte newTag;
+            switch (oldTag) {
+                case FrameTags.LONG :
+                    frame.setLong(frameIndex, value);
+                    return;
+                case FrameTags.OBJECT :
+                    frame.setObject(frameIndex, value);
+                    return;
+                default :
+                    newTag = specializeSlotTag(value);
+                    break;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCachedLocalTagInternal(this.localTags_, localIndex, newTag);
+            setLocalValueInternal(frame, localOffset, localIndex, value);
+        }
+
+        private void setLocalValueImpl(Frame frame, int localOffset, Object value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = localOffset + USER_LOCALS_START_INDEX;
+            byte oldTag = getCachedLocalTag(localOffset);
+            byte newTag;
+            switch (oldTag) {
+                case FrameTags.BOOLEAN :
+                    if (value instanceof Boolean booleanValue) {
+                        frame.setBoolean(frameIndex, booleanValue);
+                        return;
+                    } else {
+                        newTag = FrameTags.OBJECT;
+                    }
+                    break;
+                case FrameTags.LONG :
+                    if (value instanceof Long longValue) {
+                        frame.setLong(frameIndex, longValue);
+                        return;
+                    } else {
+                        newTag = FrameTags.OBJECT;
+                    }
+                    break;
+                case FrameTags.OBJECT :
+                    frame.setObject(frameIndex, value);
+                    return;
+                default :
+                    newTag = specializeSlotTag(value);
+                    break;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            setCachedLocalTag(localOffset, newTag);
+            setLocalValueImpl(frame, localOffset, value);
+        }
+
+        byte getCachedLocalTag(int localIndex) {
+            byte[] localTags = this.localTags_;
+            if (localIndex < 0 || localIndex >= localTags.length) {
+                throw new IllegalArgumentException("Invalid local offset");
+            }
+            return getCachedLocalTagInternal(localTags, localIndex);
+        }
+
+        private void setCachedLocalTag(int localIndex, byte tag) {
+            byte[] localTags = this.localTags_;
+            if (localIndex < 0 || localIndex >= localTags.length) {
+                throw new IllegalArgumentException("Invalid local offset");
+            }
+            setCachedLocalTagInternal(localTags, localIndex, tag);
+        }
+
+        @Override
+        byte getCachedLocalTagInternal(byte[] localTags, int localIndex) {
+            return BYTES.getByte(localTags, localIndex);
+        }
+
+        @Override
+        void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
+            BYTES.putByte(localTags, localIndex, tag);
+        }
+
+        @Override
+        AbstractBytecodeNode toCached(int numLocals) {
             return this;
         }
 
@@ -4319,16 +7569,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             if (bytecodes_ != null) {
                 // Can't reuse profile if bytecodes are changed.
-                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__);
+                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.localTags_.length);
             } else {
                 // Can reuse profile if bytecodes are unchanged.
-                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.cachedNodes_, this.exceptionProfiles_, this.branchProfiles_, this.osrMetadata_);
+                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.cachedNodes_, this.exceptionProfiles_, this.localTags_, this.branchProfiles_, this.osrMetadata_);
             }
         }
 
         @Override
         AbstractBytecodeNode cloneUninitialized() {
-            return new CachedBytecodeNode(unquickenBytecode(this.bytecodes), this.constants, this.handlers, this.locals, this.sourceInfo, this.sources, this.numNodes, tagRoot != null ? (TagRootNode) tagRoot.deepCopy() : null);
+            return new CachedBytecodeNode(unquickenBytecode(this.bytecodes), this.constants, this.handlers, this.locals, this.sourceInfo, this.sources, this.numNodes, tagRoot != null ? (TagRootNode) tagRoot.deepCopy() : null, this.localTags_.length);
         }
 
         @Override
@@ -4373,6 +7623,29 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 int nodeIndex;
                 switch (BYTES.getShort(bc, bci)) {
                     case Instructions.POP :
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
+                    case Instructions.BRANCH :
+                    case Instructions.LOAD_CONSTANT :
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
+                    case Instructions.YIELD :
+                    case Instructions.TAG_ENTER :
+                    case Instructions.TAG_LEAVE_VOID :
+                    case Instructions.TAG_YIELD :
+                    case Instructions.TAG_RESUME :
+                    case Instructions.INVALIDATE2 :
+                    {
+                        bci += 6;
+                        continue loop;
+                    }
                     case Instructions.DUP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
@@ -4393,62 +7666,84 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 2;
                         continue loop;
                     }
-                    case Instructions.BRANCH :
-                    case Instructions.LOAD_CONSTANT :
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.YIELD :
-                    case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
-                    case Instructions.TAG_LEAVE_VOID :
-                    case Instructions.TAG_YIELD :
-                    case Instructions.TAG_RESUME :
-                    case Instructions.INVALIDATE2 :
-                    {
-                        bci += 6;
-                        continue loop;
-                    }
                     case Instructions.BRANCH_BACKWARD :
-                    case Instructions.BRANCH_FALSE :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
+                    case Instructions.TAG_LEAVE :
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
+                    case Instructions.MERGE_CONDITIONAL :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
                     case Instructions.INVALIDATE4 :
                     {
                         bci += 10;
                         continue loop;
                     }
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                    case Instructions.INVALIDATE6 :
+                    {
+                        bci += 14;
+                        continue loop;
+                    }
                     case Instructions.STORE_LOCAL :
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
+                    case Instructions.INVALIDATE3 :
+                    {
+                        bci += 8;
+                        continue loop;
+                    }
                     case Instructions.LOAD_ARGUMENT :
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                     {
                         bci += 4;
                         continue loop;
                     }
-                    case Instructions.INVALIDATE3 :
+                    case Instructions.INVALIDATE5 :
                     {
-                        bci += 8;
+                        bci += 12;
                         continue loop;
                     }
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
-                    case Instructions.THROW_OPERATION_ :
                     case Instructions.READ_EXCEPTION_OPERATION_ :
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.INVOKE_ :
                     case Instructions.MATERIALIZE_FRAME_ :
                     case Instructions.CREATE_CLOSURE_ :
                     case Instructions.VOID_OPERATION_ :
-                    case Instructions.TO_BOOLEAN_ :
                     case Instructions.GET_SOURCE_POSITION_ :
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     case Instructions.GET_SOURCE_POSITIONS_ :
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
                     case Instructions.GET_BYTECODE_LOCATION_ :
                     case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                     case Instructions.COLLECT_SOURCE_LOCATIONS_ :
@@ -4456,11 +7751,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.PRINT_HERE_ :
-                    case Instructions.INCREMENT_VALUE_ :
-                    case Instructions.DOUBLE_VALUE_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.MOD_ :
-                    case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     case Instructions.EXPLICIT_BINDINGS_TEST_ :
                     case Instructions.IMPLICIT_BINDINGS_TEST_ :
@@ -4469,13 +7760,69 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 6;
                         break;
                     }
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    case Instructions.MOD_ :
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                    case Instructions.LESS_ :
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                    {
+                        nodeIndex = BYTES.getIntUnaligned(bc, bci + 2 /* imm node */);
+                        bci += 14;
+                        break;
+                    }
                     case Instructions.CALL_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                    case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
                     {
                         nodeIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
+                        bci += 10;
+                        break;
+                    }
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                    {
+                        nodeIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
+                        bci += 14;
+                        break;
+                    }
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.THROW_OPERATION$PERFORM_ :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                    case Instructions.INCREMENT_VALUE_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                    {
+                        nodeIndex = BYTES.getIntUnaligned(bc, bci + 2 /* imm node */);
                         bci += 10;
                         break;
                     }
@@ -4497,6 +7844,234 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         private static void doPop(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            short newInstruction;
+            int operandIndex = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+            if (operandIndex != -1) {
+                short newOperand;
+                short operand = BYTES.getShort(bc, operandIndex);
+                Object value = FRAMES.requireObject(frame, sp - 1);
+                if (value instanceof Boolean &&
+                     (newOperand = applyQuickeningBoolean(operand)) != -1) {
+                    newInstruction = Instructions.POP$BOOLEAN;
+                } else if (value instanceof Long &&
+                     (newOperand = applyQuickeningLong(operand)) != -1) {
+                    newInstruction = Instructions.POP$LONG;
+                } else {
+                    newOperand = undoQuickening(operand);
+                    newInstruction = Instructions.POP$GENERIC;
+                }
+                BYTES.putShort(bc, operandIndex, newOperand);
+                $this.getRoot().onQuickenOperand(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl($this, operandIndex, operand), new InstructionImpl($this, operandIndex, newOperand));
+            } else {
+                newInstruction = Instructions.POP$GENERIC;
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private static void doPop$Boolean(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            if (CompilerDirectives.inCompiledCode()) {
+                // Always clear in compiled code for liveness analysis
+                FRAMES.clear(frame, sp - 1);
+                return;
+            }
+            if (frame.getTag(sp - 1) != FrameTags.BOOLEAN) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                doPop($this, frame, bc, bci, sp);
+                return;
+            }
+            // No need to clear for primitives in the interpreter
+        }
+
+        private static void doPop$Long(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            if (CompilerDirectives.inCompiledCode()) {
+                // Always clear in compiled code for liveness analysis
+                FRAMES.clear(frame, sp - 1);
+                return;
+            }
+            if (frame.getTag(sp - 1) != FrameTags.LONG) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                doPop($this, frame, bc, bci, sp);
+                return;
+            }
+            // No need to clear for primitives in the interpreter
+        }
+
+        private static void doPop$generic(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private static boolean doBranchFalse(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            boolean value = (boolean)FRAMES.requireObject(frame, sp - 1);
+            short newInstruction;
+            short newOperand;
+            int operandIndex = BYTES.getIntUnaligned(bc, bci + 10 /* imm child0 */);
+            short operand = BYTES.getShort(bc, operandIndex);
+            if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
+                newInstruction = Instructions.BRANCH_FALSE$BOOLEAN;
+                $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "BranchFalse$Boolean");
+            } else {
+                newInstruction = Instructions.BRANCH_FALSE$GENERIC;
+                newOperand = operand;
+                $this.getRoot().onSpecialize(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), "BranchFalse$Generic");
+            }
+            BYTES.putShort(bc, operandIndex, newOperand);
+            $this.getRoot().onQuickenOperand(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl($this, operandIndex, operand), new InstructionImpl($this, operandIndex, newOperand));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            return value;
+        }
+
+        private static boolean doBranchFalse$Generic(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            try {
+                return (boolean) FRAMES.expectObject(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                return doBranchFalse($this, frame, bc, bci, sp);
+            }
+        }
+
+        private static boolean doBranchFalse$Boolean(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            try {
+                return FRAMES.expectBoolean(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                return doBranchFalse($this, frame, bc, bci, sp);
+            }
+        }
+
+        private static void doMergeConditional(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp, Object local) {
+            boolean condition = (boolean) FRAMES.getValue(frame, sp - 2);
+            short newInstruction;
+            short newOperand;
+            short newOtherOperand;
+            int operandIndex;
+            int otherOperandIndex;
+            if (condition) {
+                operandIndex = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+                otherOperandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child1 */);
+            } else {
+                operandIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm child1 */);
+                otherOperandIndex = BYTES.getIntUnaligned(bc, bci + 2 /* imm child0 */);
+            }
+            if (operandIndex != -1 && otherOperandIndex != -1) {
+                short operand = BYTES.getShort(bc, operandIndex);
+                short otherOperand = BYTES.getShort(bc, otherOperandIndex);
+                if (local instanceof Boolean
+                   && ((newOperand = applyQuickeningBoolean(operand)) != -1)) {
+                    switch (BYTES.getShort(bc, bci)) {
+                        case Instructions.MERGE_CONDITIONAL :
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                            newOtherOperand = otherOperand;
+                            newInstruction = Instructions.MERGE_CONDITIONAL$BOOLEAN;
+                            break;
+                        case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                            newOtherOperand = otherOperand;
+                            newInstruction = Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED;
+                            break;
+                        default :
+                            newOtherOperand = undoQuickening(otherOperand);
+                            newInstruction = Instructions.MERGE_CONDITIONAL$GENERIC;
+                            break;
+                    }
+                } else if (local instanceof Long
+                   && ((newOperand = applyQuickeningLong(operand)) != -1)) {
+                    switch (BYTES.getShort(bc, bci)) {
+                        case Instructions.MERGE_CONDITIONAL :
+                        case Instructions.MERGE_CONDITIONAL$LONG :
+                            newOtherOperand = otherOperand;
+                            newInstruction = Instructions.MERGE_CONDITIONAL$LONG;
+                            break;
+                        case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                            newOtherOperand = otherOperand;
+                            newInstruction = Instructions.MERGE_CONDITIONAL$LONG$UNBOXED;
+                            break;
+                        default :
+                            newOtherOperand = undoQuickening(otherOperand);
+                            newInstruction = Instructions.MERGE_CONDITIONAL$GENERIC;
+                            break;
+                    }
+                } else {
+                    newOperand = operand;
+                    newOtherOperand = undoQuickening(otherOperand);
+                    newInstruction = Instructions.MERGE_CONDITIONAL$GENERIC;
+                }
+                BYTES.putShort(bc, operandIndex, newOperand);
+                $this.getRoot().onQuickenOperand(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl($this, operandIndex, operand), new InstructionImpl($this, operandIndex, newOperand));
+                BYTES.putShort(bc, otherOperandIndex, newOtherOperand);
+                $this.getRoot().onQuickenOperand(new InstructionImpl($this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl($this, otherOperandIndex, otherOperand), new InstructionImpl($this, otherOperandIndex, newOtherOperand));
+            } else {
+                newInstruction = Instructions.MERGE_CONDITIONAL$GENERIC;
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($this, bci, BYTES.getShort(bc, bci));
+                BYTES.putShort(bc, bci, newInstruction);
+                $this.getRoot().onQuicken(oldInstruction, new InstructionImpl($this, bci, newInstruction));
+            }
+            FRAMES.setObject(frame, sp - 2, local);
+            FRAMES.clear(frame, sp - 1);
+        }
+
+        private static void doMergeConditional$Boolean(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            boolean value;
+            try {
+                value = FRAMES.expectBoolean(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doMergeConditional($this, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            FRAMES.setObject(frame, sp - 2, value);
+        }
+
+        private static void doMergeConditional$Boolean$unboxed(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            boolean value;
+            try {
+                value = FRAMES.expectBoolean(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doMergeConditional($this, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            FRAMES.setBoolean(frame, sp - 2, value);
+        }
+
+        private static void doMergeConditional$Long(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            long value;
+            try {
+                value = FRAMES.expectLong(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doMergeConditional($this, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            FRAMES.setObject(frame, sp - 2, value);
+        }
+
+        private static void doMergeConditional$Long$unboxed(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            long value;
+            try {
+                value = FRAMES.expectLong(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doMergeConditional($this, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            FRAMES.setLong(frame, sp - 2, value);
+        }
+
+        private static void doMergeConditional$generic(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            Object value;
+            try {
+                value = FRAMES.expectObject(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doMergeConditional($this, frame, bc, bci, sp, ex.getResult());
+                return;
+            }
+            FRAMES.setObject(frame, sp - 2, value);
             FRAMES.clear(frame, sp - 1);
         }
 
@@ -4581,11 +8156,164 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
         }
 
+        private static byte specializeSlotTag(Object value) {
+            if (value instanceof Boolean) {
+                return FrameTags.BOOLEAN;
+            } else if (value instanceof Long) {
+                return FrameTags.LONG;
+            } else {
+                return FrameTags.OBJECT;
+            }
+        }
+
         private static byte[] unquickenBytecode(byte[] original) {
             byte[] copy = Arrays.copyOf(original, original.length);
             int bci = 0;
             while (bci < copy.length) {
                 switch (BYTES.getShort(copy, bci)) {
+                    case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                    case Instructions.LOAD_ARGUMENT$LONG :
+                        BYTES.putShort(copy, bci, Instructions.LOAD_ARGUMENT);
+                        bci += 4;
+                        break;
+                    case Instructions.LOAD_LOCAL$BOOLEAN :
+                    case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL$LONG :
+                    case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.LOAD_LOCAL);
+                        bci += 4;
+                        break;
+                    case Instructions.LOAD_CONSTANT$BOOLEAN :
+                    case Instructions.LOAD_CONSTANT$LONG :
+                        BYTES.putShort(copy, bci, Instructions.LOAD_CONSTANT);
+                        bci += 6;
+                        break;
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$LONG :
+                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.LOAD_LOCAL_MAT);
+                        bci += 6;
+                        break;
+                    case Instructions.POP$BOOLEAN :
+                    case Instructions.POP$LONG :
+                    case Instructions.POP$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.POP);
+                        bci += 6;
+                        break;
+                    case Instructions.STORE_LOCAL$BOOLEAN :
+                    case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL$LONG :
+                    case Instructions.STORE_LOCAL$LONG$LONG :
+                    case Instructions.STORE_LOCAL$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.STORE_LOCAL);
+                        bci += 8;
+                        break;
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                    case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$LONG :
+                    case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                    case Instructions.MERGE_CONDITIONAL$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.MERGE_CONDITIONAL);
+                        bci += 10;
+                        break;
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                    case Instructions.STORE_LOCAL_MAT$LONG :
+                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                    case Instructions.STORE_LOCAL_MAT$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.STORE_LOCAL_MAT);
+                        bci += 10;
+                        break;
+                    case Instructions.TAG_LEAVE$BOOLEAN :
+                    case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                    case Instructions.TAG_LEAVE$LONG :
+                    case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                    case Instructions.TAG_LEAVE$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.TAG_LEAVE);
+                        bci += 10;
+                        break;
+                    case Instructions.BRANCH_FALSE$BOOLEAN :
+                    case Instructions.BRANCH_FALSE$GENERIC :
+                        BYTES.putShort(copy, bci, Instructions.BRANCH_FALSE);
+                        bci += 14;
+                        break;
+                    case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.READ_EXCEPTION_OPERATION_);
+                        bci += 6;
+                        break;
+                    case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
+                        BYTES.putShort(copy, bci, Instructions.COPY_LOCALS_TO_FRAME_);
+                        bci += 10;
+                        break;
+                    case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                    case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                    case Instructions.DOUBLE_VALUE$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.DOUBLE_VALUE_);
+                        bci += 10;
+                        break;
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
+                        BYTES.putShort(copy, bci, Instructions.ENSURE_AND_GET_SOURCE_POSITION_);
+                        bci += 10;
+                        break;
+                    case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                    case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                    case Instructions.INCREMENT_VALUE$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.INCREMENT_VALUE_);
+                        bci += 10;
+                        break;
+                    case Instructions.THROW_OPERATION$PERFORM_ :
+                        BYTES.putShort(copy, bci, Instructions.THROW_OPERATION_);
+                        bci += 10;
+                        break;
+                    case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                    case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$LONG_ :
+                    case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                    case Instructions.TO_BOOLEAN$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.TO_BOOLEAN_);
+                        bci += 10;
+                        break;
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                    case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.VERY_COMPLEX_OPERATION_);
+                        bci += 10;
+                        break;
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.ADD_);
+                        bci += 14;
+                        break;
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.ADD_CONSTANT_OPERATION_);
+                        bci += 14;
+                        break;
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.ADD_CONSTANT_OPERATION_AT_END_);
+                        bci += 14;
+                        break;
+                    case Instructions.LESS$INTS_ :
+                    case Instructions.LESS$INTS$UNBOXED_ :
+                    case Instructions.LESS$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.LESS_);
+                        bci += 14;
+                        break;
+                    case Instructions.MOD$INTS_ :
+                    case Instructions.MOD$INTS$UNBOXED_ :
+                    case Instructions.MOD$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.MOD_);
+                        bci += 14;
+                        break;
+                    case Instructions.TEE_LOCAL$LONG_ :
+                    case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
+                        BYTES.putShort(copy, bci, Instructions.TEE_LOCAL_);
+                        bci += 14;
+                        break;
                     case Instructions.CONSTANT_NULL :
                     case Instructions.DUP :
                     case Instructions.INVALIDATE0 :
@@ -4600,7 +8328,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.LOAD_VARIADIC_7 :
                     case Instructions.LOAD_VARIADIC_8 :
                     case Instructions.MERGE_VARIADIC :
-                    case Instructions.POP :
                     case Instructions.RETURN :
                     case Instructions.THROW :
                         bci += 2;
@@ -4610,48 +8337,36 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
-                    case Instructions.STORE_LOCAL :
                         bci += 4;
                         break;
                     case Instructions.BRANCH :
-                    case Instructions.ADD_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.COLLECT_ALL_SOURCE_LOCATIONS_ :
                     case Instructions.COLLECT_BYTECODE_LOCATIONS_ :
                     case Instructions.COLLECT_SOURCE_LOCATIONS_ :
                     case Instructions.CONTINUE_ :
-                    case Instructions.COPY_LOCALS_TO_FRAME_ :
                     case Instructions.CREATE_CLOSURE_ :
                     case Instructions.CURRENT_LOCATION_ :
-                    case Instructions.DOUBLE_VALUE_ :
                     case Instructions.EARLY_RETURN_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
                     case Instructions.EXPLICIT_BINDINGS_TEST_ :
                     case Instructions.GET_BYTECODE_LOCATION_ :
                     case Instructions.GET_SOURCE_POSITION_ :
                     case Instructions.GET_SOURCE_POSITIONS_ :
                     case Instructions.IMPLICIT_BINDINGS_TEST_ :
-                    case Instructions.INCREMENT_VALUE_ :
                     case Instructions.INVOKE_ :
-                    case Instructions.LESS_ :
                     case Instructions.MATERIALIZE_FRAME_ :
-                    case Instructions.MOD_ :
                     case Instructions.PRINT_HERE_ :
                     case Instructions.READ_EXCEPTION_OPERATION_ :
-                    case Instructions.THROW_OPERATION_ :
-                    case Instructions.TO_BOOLEAN_ :
                     case Instructions.TO_STRING_ :
-                    case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.VOID_OPERATION_ :
                     case Instructions.INVALIDATE2 :
                     case Instructions.LOAD_CONSTANT :
                     case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.POP :
                     case Instructions.TAG_ENTER :
-                    case Instructions.TAG_LEAVE :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_RESUME :
                     case Instructions.TAG_YIELD :
@@ -4659,19 +8374,39 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 6;
                         break;
                     case Instructions.INVALIDATE3 :
+                    case Instructions.STORE_LOCAL :
                         bci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
-                    case Instructions.BRANCH_FALSE :
-                    case Instructions.ADD_CONSTANT_OPERATION_ :
-                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     case Instructions.CALL_ :
-                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.COPY_LOCALS_TO_FRAME_ :
+                    case Instructions.DOUBLE_VALUE_ :
+                    case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                    case Instructions.INCREMENT_VALUE_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.THROW_OPERATION_ :
+                    case Instructions.TO_BOOLEAN_ :
+                    case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.INVALIDATE4 :
+                    case Instructions.MERGE_CONDITIONAL :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
+                    case Instructions.STORE_LOCAL_MAT :
+                    case Instructions.TAG_LEAVE :
                         bci += 10;
+                        break;
+                    case Instructions.INVALIDATE5 :
+                        bci += 12;
+                        break;
+                    case Instructions.BRANCH_FALSE :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_ :
+                    case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                    case Instructions.LESS_ :
+                    case Instructions.MOD_ :
+                    case Instructions.TEE_LOCAL_ :
+                    case Instructions.INVALIDATE6 :
+                        bci += 14;
                         break;
                 }
             }
@@ -4695,7 +8430,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         @Override
         @BytecodeInterpreterSwitch
-        long continueAt(BasicInterpreterWithUncached $root, VirtualFrame frame, VirtualFrame localFrame, long startState) {
+        long continueAt(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, VirtualFrame localFrame, long startState) {
             EncapsulatingNodeReference encapsulatingNode = EncapsulatingNodeReference.getCurrent();
             Node prev = encapsulatingNode.set(this);
             try {
@@ -4717,10 +8452,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     try {
                         switch (op) {
                             case Instructions.POP :
+                            case Instructions.POP$BOOLEAN :
+                            case Instructions.POP$LONG :
+                            case Instructions.POP$GENERIC :
                             {
                                 doPop(this, frame, bc, bci, sp);
                                 sp -= 1;
-                                bci += 2;
+                                bci += 6;
                                 break;
                             }
                             case Instructions.DUP :
@@ -4765,10 +8503,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.BRANCH_FALSE :
+                            case Instructions.BRANCH_FALSE$GENERIC :
+                            case Instructions.BRANCH_FALSE$BOOLEAN :
                             {
                                 if ((boolean) FRAMES.uncheckedGetObject(frame, sp - 1)) {
                                     sp -= 1;
-                                    bci += 10;
+                                    bci += 14;
                                     break;
                                 } else {
                                     sp -= 1;
@@ -4777,11 +8517,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 }
                             }
                             case Instructions.STORE_LOCAL :
+                            case Instructions.STORE_LOCAL$BOOLEAN :
+                            case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
+                            case Instructions.STORE_LOCAL$LONG :
+                            case Instructions.STORE_LOCAL$LONG$LONG :
+                            case Instructions.STORE_LOCAL$GENERIC :
                             {
                                 doStoreLocal(frame, localFrame, bc, bci, sp);
                                 FRAMES.clear(frame, sp - 1);
                                 sp -= 1;
-                                bci += 4;
+                                bci += 8;
                                 break;
                             }
                             case Instructions.THROW :
@@ -4789,6 +8534,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 throw sneakyThrow((Throwable) FRAMES.uncheckedGetObject(frame, sp - 1));
                             }
                             case Instructions.LOAD_CONSTANT :
+                            case Instructions.LOAD_CONSTANT$BOOLEAN :
+                            case Instructions.LOAD_CONSTANT$LONG :
                             {
                                 FRAMES.setObject(frame, sp, ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */)));
                                 sp += 1;
@@ -4803,6 +8550,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.LOAD_ARGUMENT :
+                            case Instructions.LOAD_ARGUMENT$BOOLEAN :
+                            case Instructions.LOAD_ARGUMENT$LONG :
                             {
                                 FRAMES.setObject(frame, sp, localFrame.getArguments()[BYTES.getShort(bc, bci + 2 /* imm index */)]);
                                 sp += 1;
@@ -4817,6 +8566,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.LOAD_LOCAL :
+                            case Instructions.LOAD_LOCAL$BOOLEAN :
+                            case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
+                            case Instructions.LOAD_LOCAL$LONG :
+                            case Instructions.LOAD_LOCAL$LONG$UNBOXED :
+                            case Instructions.LOAD_LOCAL$GENERIC :
                             {
                                 doLoadLocal(this, frame, localFrame, bc, bci, sp);
                                 sp += 1;
@@ -4824,16 +8578,26 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.LOAD_LOCAL_MAT :
+                            case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
+                            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
+                            case Instructions.LOAD_LOCAL_MAT$LONG :
+                            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
+                            case Instructions.LOAD_LOCAL_MAT$GENERIC :
                             {
                                 doLoadLocalMat(this, frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
                                 bci += 6;
                                 break;
                             }
                             case Instructions.STORE_LOCAL_MAT :
+                            case Instructions.STORE_LOCAL_MAT$BOOLEAN :
+                            case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
+                            case Instructions.STORE_LOCAL_MAT$LONG :
+                            case Instructions.STORE_LOCAL_MAT$LONG$LONG :
+                            case Instructions.STORE_LOCAL_MAT$GENERIC :
                             {
                                 doStoreLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
                                 sp -= 2;
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.YIELD :
@@ -4859,9 +8623,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.TAG_LEAVE :
+                            case Instructions.TAG_LEAVE$BOOLEAN :
+                            case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                            case Instructions.TAG_LEAVE$LONG :
+                            case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                            case Instructions.TAG_LEAVE$GENERIC :
                             {
                                 doTagLeave(this, frame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.TAG_LEAVE_VOID :
@@ -4971,10 +8740,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.ADD_ :
+                            case Instructions.ADD$ADD_LONGS_ :
+                            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                             {
                                 doAdd_(frame, localFrame, bc, bci, sp);
                                 sp -= 1;
-                                bci += 6;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.TO_STRING_ :
@@ -4990,31 +8761,40 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.ADD_CONSTANT_OPERATION_ :
+                            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
+                            case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                             {
                                 doAddConstantOperation_(frame, localFrame, bc, bci, sp);
-                                bci += 10;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
+                            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
+                            case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
                             {
                                 doAddConstantOperationAtEnd_(frame, localFrame, bc, bci, sp);
-                                bci += 10;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.VERY_COMPLEX_OPERATION_ :
+                            case Instructions.VERY_COMPLEX_OPERATION$BLA_ :
+                            case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
+                            case Instructions.VERY_COMPLEX_OPERATION$UNBOXED_ :
                             {
                                 doVeryComplexOperation_(frame, localFrame, bc, bci, sp);
                                 sp -= 1;
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.THROW_OPERATION_ :
+                            case Instructions.THROW_OPERATION$PERFORM_ :
                             {
                                 doThrowOperation_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.READ_EXCEPTION_OPERATION_ :
+                            case Instructions.READ_EXCEPTION_OPERATION$UNBOXED_ :
                             {
                                 doReadExceptionOperation_(frame, localFrame, bc, bci, sp);
                                 bci += 6;
@@ -5034,9 +8814,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.TEE_LOCAL_ :
+                            case Instructions.TEE_LOCAL$LONG_ :
+                            case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
                             {
                                 doTeeLocal_(frame, localFrame, bc, bci, sp);
-                                bci += 10;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.TEE_LOCAL_RANGE_ :
@@ -5072,9 +8854,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.TO_BOOLEAN_ :
+                            case Instructions.TO_BOOLEAN$LONG_ :
+                            case Instructions.TO_BOOLEAN$LONG$UNBOXED_ :
+                            case Instructions.TO_BOOLEAN$BOOLEAN_ :
+                            case Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_ :
+                            case Instructions.TO_BOOLEAN$UNBOXED_ :
                             {
                                 doToBoolean_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.GET_SOURCE_POSITION_ :
@@ -5085,9 +8872,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.ENSURE_AND_GET_SOURCE_POSITION_ :
+                            case Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ :
                             {
                                 doEnsureAndGetSourcePosition_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.GET_SOURCE_POSITIONS_ :
@@ -5098,9 +8886,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.COPY_LOCALS_TO_FRAME_ :
+                            case Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_ :
                             {
                                 doCopyLocalsToFrame_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.GET_BYTECODE_LOCATION_ :
@@ -5152,15 +8941,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.INCREMENT_VALUE_ :
+                            case Instructions.INCREMENT_VALUE$INCREMENT_ :
+                            case Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_ :
+                            case Instructions.INCREMENT_VALUE$UNBOXED_ :
                             {
                                 doIncrementValue_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.DOUBLE_VALUE_ :
+                            case Instructions.DOUBLE_VALUE$DOUBLE_ :
+                            case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
+                            case Instructions.DOUBLE_VALUE$UNBOXED_ :
                             {
                                 doDoubleValue_(frame, localFrame, bc, bci, sp);
-                                bci += 6;
+                                bci += 10;
                                 break;
                             }
                             case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
@@ -5170,17 +8965,23 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                             case Instructions.MOD_ :
+                            case Instructions.MOD$INTS_ :
+                            case Instructions.MOD$INTS$UNBOXED_ :
+                            case Instructions.MOD$UNBOXED_ :
                             {
                                 doMod_(frame, localFrame, bc, bci, sp);
                                 sp -= 1;
-                                bci += 6;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.LESS_ :
+                            case Instructions.LESS$INTS_ :
+                            case Instructions.LESS$INTS$UNBOXED_ :
+                            case Instructions.LESS$UNBOXED_ :
                             {
                                 doLess_(frame, localFrame, bc, bci, sp);
                                 sp -= 1;
-                                bci += 6;
+                                bci += 14;
                                 break;
                             }
                             case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -5233,6 +9034,18 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                     break;
                                 }
                             }
+                            case Instructions.MERGE_CONDITIONAL :
+                            case Instructions.MERGE_CONDITIONAL$BOOLEAN :
+                            case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
+                            case Instructions.MERGE_CONDITIONAL$LONG :
+                            case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
+                            case Instructions.MERGE_CONDITIONAL$GENERIC :
+                            {
+                                doMergeConditional(this, frame, bc, bci, sp);
+                                sp -= 1;
+                                bci += 10;
+                                break;
+                            }
                             case Instructions.INVALIDATE0 :
                             {
                                 return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
@@ -5250,6 +9063,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
                             }
                             case Instructions.INVALIDATE4 :
+                            {
+                                return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
+                            }
+                            case Instructions.INVALIDATE5 :
+                            {
+                                return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
+                            }
+                            case Instructions.INVALIDATE6 :
                             {
                                 return ((sp & 0xFFFFL) << 32) | (bci & 0xFFFFFFFFL);
                             }
@@ -5296,9 +9117,30 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                         } else {
                                             switch (readValidBytecode(bc, node.returnBci)) {
                                                 case Instructions.TAG_LEAVE :
+                                                case Instructions.TAG_LEAVE$BOOLEAN :
+                                                case Instructions.TAG_LEAVE$LONG :
+                                                case Instructions.TAG_LEAVE$GENERIC :
                                                     FRAMES.setObject(frame, (int)temp, result);
                                                     temp = temp + 1;
-                                                    bci = node.returnBci + 6;
+                                                    bci = node.returnBci + 10;
+                                                    break;
+                                                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                                                    try {
+                                                        FRAMES.setBoolean(frame, (int)temp, BasicInterpreterProductionRootScoping.expectBoolean(result));
+                                                    } catch (UnexpectedResultException e) {
+                                                        FRAMES.setObject(frame, (int)temp, e.getResult());
+                                                    }
+                                                    temp = temp + 1;
+                                                    bci = node.returnBci + 10;
+                                                    break;
+                                                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                                                    try {
+                                                        FRAMES.setLong(frame, (int)temp, BasicInterpreterProductionRootScoping.expectLong(result));
+                                                    } catch (UnexpectedResultException e) {
+                                                        FRAMES.setObject(frame, (int)temp, e.getResult());
+                                                    }
+                                                    temp = temp + 1;
+                                                    bci = node.returnBci + 10;
                                                     break;
                                                 case Instructions.TAG_LEAVE_VOID :
                                                     bci = node.returnBci + 6;
@@ -5363,7 +9205,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private void doLoadLocalMat(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            BasicInterpreterWithUncached localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
@@ -5374,16 +9216,18 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
             int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
             int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            BasicInterpreterWithUncached localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
+            int localOffset = slot - USER_LOCALS_START_INDEX;
+            BasicInterpreterProductionRootScoping localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
             if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
                 throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
             }
-            FRAMES.setObject(frame, slot, local);
+            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
+            bytecodeNode.setLocalValueInternal(frame, localOffset, localOffset, local);
             FRAMES.clear(stackFrame, sp - 1);
             FRAMES.clear(stackFrame, sp - 2);
         }
 
-        private void doYield(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp, BasicInterpreterWithUncached $root) {
+        private void doYield(VirtualFrame frame, VirtualFrame localFrame, byte[] bc, int bci, int sp, BasicInterpreterProductionRootScoping $root) {
             int maxLocals = $root.maxLocals;
             FRAMES.copyTo(frame, maxLocals, localFrame, maxLocals, (sp - 1 - maxLocals));
             ContinuationRootNodeImpl continuationRootNode = ACCESS.uncheckedCast(ACCESS.readObject(constants, BYTES.getIntUnaligned(bc, bci + 2 /* imm location */)), ContinuationRootNodeImpl.class);
@@ -5399,7 +9243,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private void doTagLeave(AbstractBytecodeNode $this, VirtualFrame frame, byte[] bc, int bci, int sp) {
             Object returnValue;
-            returnValue = FRAMES.requireObject(frame, sp - 1);
+            try {
+                returnValue = FRAMES.expectObject(frame, sp - 1);
+            } catch (UnexpectedResultException ex) {
+                doTagLeave($this, frame, bc, bci, sp);
+                return;
+            }
             TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
             tagNode.findProbe().onReturnValue(frame, returnValue);
         }
@@ -5646,7 +9495,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @InliningCutoff
-        private Throwable resolveThrowable(BasicInterpreterWithUncached $root, VirtualFrame frame, int bci, Throwable throwable) {
+        private Throwable resolveThrowable(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, int bci, Throwable throwable) {
             if (throwable instanceof AbstractTruffleException ate) {
                 return ate;
             } else if (throwable instanceof ControlFlowException cfe) {
@@ -5663,6 +9512,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             boolean wasOnReturnExecuted;
             switch (readValidBytecode(bc, bci)) {
                 case Instructions.TAG_LEAVE :
+                case Instructions.TAG_LEAVE$BOOLEAN :
+                case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
+                case Instructions.TAG_LEAVE$LONG :
+                case Instructions.TAG_LEAVE$LONG$UNBOXED :
+                case Instructions.TAG_LEAVE$GENERIC :
+                    wasOnReturnExecuted = BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */) == nodeId;
+                    break;
                 case Instructions.TAG_LEAVE_VOID :
                     wasOnReturnExecuted = BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */) == nodeId;
                     break;
@@ -5673,7 +9529,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return node.findProbe().onReturnExceptionalOrUnwind(frame, exception, wasOnReturnExecuted);
         }
 
-        private long resolveControlFlowException(BasicInterpreterWithUncached $root, VirtualFrame frame, int bci, ControlFlowException cfe) throws Throwable {
+        private long resolveControlFlowException(BasicInterpreterProductionRootScoping $root, VirtualFrame frame, int bci, ControlFlowException cfe) throws Throwable {
             Object result = $root.interceptControlFlowException(cfe, frame, this, bci);
             FRAMES.setObject(frame, $root.maxLocals, result);
             int sp = $root.maxLocals + 1;
@@ -5681,8 +9537,92 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @Override
-        AbstractBytecodeNode toCached() {
-            return new CachedBytecodeNode(this.bytecodes, this.constants, this.handlers, this.locals, this.sourceInfo, this.sources, this.numNodes, this.tagRoot);
+        byte[] getLocalTags() {
+            return null;
+        }
+
+        @Override
+        public Object getLocalValue(int bci, Frame frame, int localOffset) {
+            assert validateBytecodeIndex(bci);
+            CompilerAsserts.partialEvaluationConstant(bci);
+            CompilerAsserts.partialEvaluationConstant(localOffset);
+            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
+            if (frame.isObject(frameIndex)) {
+                return frame.getObject(frameIndex);
+            }
+            return null;
+        }
+
+        @Override
+        public void setLocalValue(int bci, Frame frame, int localOffset, Object value) {
+            assert validateBytecodeIndex(bci);
+            CompilerAsserts.partialEvaluationConstant(bci);
+            CompilerAsserts.partialEvaluationConstant(localOffset);
+            assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            frame.setObject(localOffset + USER_LOCALS_START_INDEX, value);
+        }
+
+        @Override
+        protected Object getLocalValueInternal(Frame frame, int localOffset, int localIndex) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            return frame.getObject(USER_LOCALS_START_INDEX + localOffset);
+        }
+
+        @Override
+        protected void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            frame.setObject(USER_LOCALS_START_INDEX + localOffset, value);
+        }
+
+        @Override
+        protected boolean getLocalValueInternalBoolean(Frame frame, int localOffset, int localIndex) throws UnexpectedResultException {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            Object value = frame.getObject(USER_LOCALS_START_INDEX + localOffset);
+            if (value instanceof Boolean castValue) {
+                return castValue;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new UnexpectedResultException(value);
+        }
+
+        @Override
+        protected void setLocalValueInternalBoolean(Frame frame, int localOffset, int localIndex, boolean value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            frame.setObject(USER_LOCALS_START_INDEX + localOffset, value);
+        }
+
+        @Override
+        protected long getLocalValueInternalLong(Frame frame, int localOffset, int localIndex) throws UnexpectedResultException {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            Object value = frame.getObject(USER_LOCALS_START_INDEX + localOffset);
+            if (value instanceof Long castValue) {
+                return castValue;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new UnexpectedResultException(value);
+        }
+
+        @Override
+        protected void setLocalValueInternalLong(Frame frame, int localOffset, int localIndex, long value) {
+            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            frame.setObject(USER_LOCALS_START_INDEX + localOffset, value);
+        }
+
+        @Override
+        byte getCachedLocalTagInternal(byte[] localTags, int localIndex) {
+            return FrameTags.OBJECT;
+        }
+
+        @Override
+        void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
+        }
+
+        @Override
+        AbstractBytecodeNode toCached(int numLocals) {
+            return new CachedBytecodeNode(this.bytecodes, this.constants, this.handlers, this.locals, this.sourceInfo, this.sources, this.numNodes, this.tagRoot, numLocals);
         }
 
         @Override
@@ -5764,6 +9704,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
+        private static void doMergeConditional(AbstractBytecodeNode $this, Frame frame, byte[] bc, int bci, int sp) {
+            Object value = FRAMES.requireObject(frame, sp - 1);
+            FRAMES.setObject(frame, sp - 2, value);
+            FRAMES.clear(frame, sp - 1);
+        }
+
         @ExplodeLoop
         private static int resolveHandler(int bci, int handler, int[] localHandlers) {
             for (int i = handler; i < localHandlers.length; i += EXCEPTION_HANDLER_LENGTH) {
@@ -5811,7 +9757,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private ConstantPool constantPool;
         private boolean reachable = true;
         private ArrayList<ContinuationLocation> continuationLocations;
-        private int maxLocals;
         private List<TagNode> tagRoots;
         private List<TagNode> tagNodes;
         private SavedState savedState;
@@ -5822,7 +9767,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private final int tags;
         private final int instrumentations;
         private final boolean parseSources;
-        private final ArrayList<BasicInterpreterWithUncached> builtNodes;
+        private final ArrayList<BasicInterpreterProductionRootScoping> builtNodes;
         private int numRoots;
         private final ArrayList<Source> sources;
         private SerializationState serialization;
@@ -5904,12 +9849,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 }
                 return new SerializationLocal(serialization.depth, serialization.localCount++);
             }
-            ScopeData scope = getCurrentScope();
-            short localIndex = allocateBytecodeLocal() /* unique global index */;
-            short frameIndex = safeCastShort(USER_LOCALS_START_INDEX + scope.frameOffset + scope.numLocals) /* location in frame */;
-            int tableIndex = doEmitLocal(localIndex, frameIndex, name, info) /* index in global table */;
-            scope.registerLocal(tableIndex);
-            BytecodeLocalImpl local = new BytecodeLocalImpl(frameIndex, localIndex, ((RootData) operationStack[this.rootOperationSp].data).index, scope);
+            short frameIndex = allocateBytecodeLocal() /* location in frame */;
+            doEmitLocal(name, info);
+            BytecodeLocalImpl local = new BytecodeLocalImpl(frameIndex, frameIndex, ((RootData) operationStack[this.rootOperationSp].data).index);
             return local;
         }
 
@@ -5995,11 +9937,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 return;
             }
             validateRootOperationBegin();
-            ScopeData parentScope = getCurrentScope();
             beforeChild();
             BlockData operationData = new BlockData(this.currentStackHeight);
             beginOperation(Operations.BLOCK, operationData);
-            operationData.frameOffset = parentScope.frameOffset + parentScope.numLocals;
         }
 
         /**
@@ -6023,14 +9963,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof BlockData operationData)) {
                 throw assertionFailed("Data class BlockData expected, but was " + operation.data);
             }
-            if (operationData.numLocals > 0) {
-                maxLocals = Math.max(maxLocals, operationData.frameOffset + operationData.numLocals);
-                for (int index = 0; index < operationData.numLocals; index++) {
-                    locals[operationData.locals[index] + LOCALS_OFFSET_END_BCI] = bci;
-                    doEmitInstructionS(Instructions.CLEAR_LOCAL, 0, safeCastShort(locals[operationData.locals[index] + LOCALS_OFFSET_FRAME_INDEX]));
-                }
-            }
-            operationData.valid = false;
             afterChild(operationData.producedValue, operationData.childBci);
         }
 
@@ -6069,7 +10001,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 return;
             }
             if (bc != null) {
-                savedState = new SavedState(operationSequenceNumber, operationStack, operationSp, rootOperationSp, numLocals, numLabels, numNodes, numHandlers, numConditionalBranches, bc, bci, currentStackHeight, maxStackHeight, sourceInfo, sourceInfoIndex, handlerTable, handlerTableSize, locals, localsTableIndex, unresolvedLabels, constantPool, reachable, continuationLocations, maxLocals, tagRoots, tagNodes, savedState);
+                savedState = new SavedState(operationSequenceNumber, operationStack, operationSp, rootOperationSp, numLocals, numLabels, numNodes, numHandlers, numConditionalBranches, bc, bci, currentStackHeight, maxStackHeight, sourceInfo, sourceInfoIndex, handlerTable, handlerTableSize, locals, localsTableIndex, unresolvedLabels, constantPool, reachable, continuationLocations, tagRoots, tagNodes, savedState);
             }
             operationSequenceNumber = 0;
             rootOperationSp = operationSp;
@@ -6077,7 +10009,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             tagRoots = null;
             tagNodes = null;
             numLocals = 0;
-            maxLocals = numLocals;
             numLabels = 0;
             numNodes = 0;
             numHandlers = 0;
@@ -6104,7 +10035,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     throw BytecodeEncodingException.create("Root node count exceeded maximum value.");
                 }
             }
-            operationData.frameOffset = numLocals;
             beginOperation(Operations.ROOT, operationData);
             beginTag(TAGS_ROOT_TAG_ROOT_BODY_TAG);
             beginBlock();
@@ -6143,13 +10073,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             endTag(TAGS_ROOT_TAG_ROOT_BODY_TAG);
             doEmitInstruction(Instructions.RETURN, -1);
             endOperation(Operations.ROOT);
-            if (operationData.numLocals > 0) {
-                maxLocals = Math.max(maxLocals, operationData.frameOffset + operationData.numLocals);
-                for (int index = 0; index < operationData.numLocals; index++) {
-                    locals[operationData.locals[index] + LOCALS_OFFSET_END_BCI] = bci;
-                }
-            }
-            operationData.valid = false;
             byte[] bytecodes_ = null;
             Object[] constants_ = null;
             int[] handlers_ = null;
@@ -6183,15 +10106,15 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 }
                 tagRoot_ = new TagRootNode(tagTree_, tagNodes_);
             }
-            BasicInterpreterWithUncached result;
+            BasicInterpreterProductionRootScoping result;
             if (reparseReason != null) {
                 result = builtNodes.get(operationData.index);
                 if (parseBytecodes) {
                     AbstractBytecodeNode oldBytecodeNode = result.bytecode;
-                    assert result.maxLocals == maxLocals + USER_LOCALS_START_INDEX;
+                    assert result.maxLocals == numLocals + USER_LOCALS_START_INDEX;
                     assert result.nodes == this.nodes;
                     assert constants_.length == oldBytecodeNode.constants.length;
-                    assert result.getFrameDescriptor().getNumberOfSlots() == maxStackHeight + maxLocals + USER_LOCALS_START_INDEX;
+                    assert result.getFrameDescriptor().getNumberOfSlots() == maxStackHeight + numLocals + USER_LOCALS_START_INDEX;
                     for (ContinuationLocation continuationLocation : continuationLocations) {
                         int constantPoolIndex = continuationLocation.constantPoolIndex;
                         ContinuationRootNodeImpl continuationRootNode = (ContinuationRootNodeImpl) oldBytecodeNode.constants[constantPoolIndex];
@@ -6202,8 +10125,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 assert result.buildIndex == operationData.index;
             } else {
                 com.oracle.truffle.api.frame.FrameDescriptor.Builder frameDescriptorBuilder = FrameDescriptor.newBuilder();
-                frameDescriptorBuilder.addSlots(maxStackHeight + maxLocals + USER_LOCALS_START_INDEX, FrameSlotKind.Illegal);
-                result = new BasicInterpreterWithUncached(language, frameDescriptorBuilder, nodes, maxLocals + USER_LOCALS_START_INDEX, operationData.index, bytecodes_, constants_, handlers_, locals_, sourceInfo_, sources_, numNodes_, tagRoot_);
+                frameDescriptorBuilder.addSlots(maxStackHeight + numLocals + USER_LOCALS_START_INDEX, FrameSlotKind.Illegal);
+                result = new BasicInterpreterProductionRootScoping(language, frameDescriptorBuilder, nodes, numLocals + USER_LOCALS_START_INDEX, numLocals, operationData.index, bytecodes_, constants_, handlers_, locals_, sourceInfo_, sources_, numNodes_, tagRoot_);
                 BytecodeNode bytecodeNode = result.getBytecodeNode();
                 for (ContinuationLocation continuationLocation : continuationLocations) {
                     int constantPoolIndex = continuationLocation.constantPoolIndex;
@@ -6247,7 +10170,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 this.constantPool = savedState.constantPool;
                 this.reachable = savedState.reachable;
                 this.continuationLocations = savedState.continuationLocations;
-                this.maxLocals = savedState.maxLocals;
                 this.tagRoots = savedState.tagRoots;
                 this.tagNodes = savedState.tagNodes;
                 this.savedState = savedState.savedState;
@@ -6410,7 +10332,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 throw assertionFailed("Data class ConditionalData expected, but was " + operation.data);
             }
             markReachable(operationData.thenReachable || operationData.elseReachable);
-            afterChild(true, -1);
+            doEmitInstructionII(Instructions.MERGE_CONDITIONAL, -1, operationData.thenReachable ? operationData.child0Bci : -1, operationData.elseReachable ? operationData.child1Bci : -1);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -6825,7 +10748,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             // Pop any extra values off the stack before branching.
             int stackHeightBeforeBranch = currentStackHeight;
             while (targetStackHeight != currentStackHeight) {
-                doEmitInstruction(Instructions.POP, -1);
+                doEmitInstructionI(Instructions.POP, -1, -1);
             }
             // If the branch is not taken (e.g., control branches over it) the values are still on the stack.
             currentStackHeight = stackHeightBeforeBranch;
@@ -6980,9 +10903,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private void validateLocalScope(BytecodeLocal local) {
             BytecodeLocalImpl localImpl = (BytecodeLocalImpl) local;
-            if (!localImpl.scope.valid) {
-                throw failArgument("Local variable scope of this local is no longer valid.");
-            }
             RootData rootOperationData = getCurrentRootOperationData();
             if (rootOperationData.index != localImpl.rootIndex) {
                 throw failArgument("Local variable must belong to the current root node. Consider using materialized local accesses to access locals from an outer root node.");
@@ -7020,9 +10940,23 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private void validateMaterializedLocalScope(BytecodeLocal local) {
             BytecodeLocalImpl localImpl = (BytecodeLocalImpl) local;
-            if (!localImpl.scope.valid) {
-                throw failArgument("Local variable scope of this local is no longer valid.");
+            for (int i = operationSp - 1; i >= 0; i--) {
+                if (operationStack[i].operation == Operations.FINALLYHANDLER) {
+                    i = ((FinallyHandlerData) operationStack[i].data).finallyOperationSp;
+                    continue;
+                }
+                switch (operationStack[i].operation) {
+                    case Operations.ROOT :
+                        if (!(operationStack[i].data instanceof RootData rootOperationData)) {
+                            throw assertionFailed("Data class RootData expected, but was " + operationStack[i].data);
+                        }
+                        if (rootOperationData.index == localImpl.rootIndex) {
+                            // root node found
+                            return;
+                        }
+                }
             }
+            throw failArgument("Local variables used in materialized accesses must belong to the current root node or an outer root node.");
         }
 
         /**
@@ -7112,7 +11046,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             validateRootOperationBegin();
             validateLocalScope(local);
             beforeChild();
-            BytecodeLocalImpl operationData = (BytecodeLocalImpl)local;
+            StoreLocalData operationData = new StoreLocalData((BytecodeLocalImpl)local);
             beginOperation(Operations.STORELOCAL, operationData);
         }
 
@@ -7137,11 +11071,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (operation.childCount != 1) {
                 throw failState("Operation StoreLocal expected exactly 1 child, but " + operation.childCount + " provided. This is probably a bug in the parser.");
             }
-            if (!(operation.data instanceof BytecodeLocalImpl operationData)) {
-                throw assertionFailed("Data class BytecodeLocalImpl expected, but was " + operation.data);
+            if (!(operation.data instanceof StoreLocalData operationData)) {
+                throw assertionFailed("Data class StoreLocalData expected, but was " + operation.data);
             }
-            doEmitInstructionS(Instructions.STORE_LOCAL, -1, operationData.frameIndex);
-            afterChild(false, bci - 4);
+            doEmitInstructionSI(Instructions.STORE_LOCAL, -1, operationData.local.frameIndex, operationData.childBci);
+            afterChild(false, bci - 8);
         }
 
         /**
@@ -7173,7 +11107,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             validateRootOperationBegin();
             validateMaterializedLocalScope(local);
             beforeChild();
-            BytecodeLocalImpl operationData = (BytecodeLocalImpl)local;
+            StoreLocalData operationData = new StoreLocalData((BytecodeLocalImpl)local);
             beginOperation(Operations.STORELOCALMATERIALIZED, operationData);
         }
 
@@ -7198,11 +11132,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (operation.childCount != 2) {
                 throw failState("Operation StoreLocalMaterialized expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
             }
-            if (!(operation.data instanceof BytecodeLocalImpl operationData)) {
-                throw assertionFailed("Data class BytecodeLocalImpl expected, but was " + operation.data);
+            if (!(operation.data instanceof StoreLocalData operationData)) {
+                throw assertionFailed("Data class StoreLocalData expected, but was " + operation.data);
             }
-            doEmitInstructionSS(Instructions.STORE_LOCAL_MAT, -2, operationData.frameIndex, operationData.rootIndex);
-            afterChild(false, bci - 6);
+            doEmitInstructionSSI(Instructions.STORE_LOCAL_MAT, -2, operationData.local.frameIndex, operationData.local.rootIndex, operationData.childBci);
+            afterChild(false, bci - 10);
         }
 
         /**
@@ -7593,12 +11527,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (operationData.producedValue) {
                 if (operationData.operationReachable) {
                     markReachable(true);
-                    doEmitInstructionI(Instructions.TAG_LEAVE, 0, operationData.nodeId);
+                    doEmitInstructionII(Instructions.TAG_LEAVE, 0, operationData.nodeId, operationData.childBci);
                     doCreateExceptionHandler(operationData.handlerStartBci, bci, HANDLER_TAG_EXCEPTIONAL, operationData.nodeId, operationData.startStackHeight);
                 } else {
-                    doEmitInstructionI(Instructions.TAG_LEAVE, 0, operationData.nodeId);
+                    doEmitInstructionII(Instructions.TAG_LEAVE, 0, operationData.nodeId, operationData.childBci);
                 }
-                afterChild(true, bci - 6);
+                afterChild(true, bci - 10);
             } else {
                 if (operationData.operationReachable) {
                     markReachable(true);
@@ -7683,7 +11617,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED, UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.ADD, operationData);
         }
 
@@ -7711,8 +11645,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.ADD_, -1, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            int childBci1 = operationData.childBcis[1];
+            doEmitInstructionIII(Instructions.ADD_, -1, allocateNode(), childBci0, childBci1);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -7849,7 +11785,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             validateRootOperationBegin();
             int constantLhsIndex = constantPool.addConstant(constantLhsValue);
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, new int[] {constantLhsIndex});
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, new int[] {constantLhsIndex});
             beginOperation(Operations.ADDCONSTANTOPERATION, operationData);
         }
 
@@ -7877,8 +11813,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionII(Instructions.ADD_CONSTANT_OPERATION_, 0, operationData.constants[0], allocateNode());
-            afterChild(true, bci - 10);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionIII(Instructions.ADD_CONSTANT_OPERATION_, 0, operationData.constants[0], allocateNode(), childBci0);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -7900,7 +11837,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.ADDCONSTANTOPERATIONATEND, operationData);
         }
 
@@ -7932,8 +11869,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionII(Instructions.ADD_CONSTANT_OPERATION_AT_END_, 0, constantRhsIndex, allocateNode());
-            afterChild(true, bci - 10);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionIII(Instructions.ADD_CONSTANT_OPERATION_AT_END_, 0, constantRhsIndex, allocateNode(), childBci0);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -7955,7 +11893,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.VERYCOMPLEXOPERATION, operationData);
         }
 
@@ -7984,8 +11922,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.VERY_COMPLEX_OPERATION_, -1, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.VERY_COMPLEX_OPERATION_, -1, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8007,7 +11946,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.THROWOPERATION, operationData);
         }
 
@@ -8035,8 +11974,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.THROW_OPERATION_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.THROW_OPERATION_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8220,7 +12160,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             validateLocalScope(setterValue);
             int setterIndex = constantPool.addConstant(LocalAccessor.constantOf(setterValue));
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, new int[] {setterIndex});
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, new int[] {setterIndex});
             beginOperation(Operations.TEELOCAL, operationData);
         }
 
@@ -8248,8 +12188,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionII(Instructions.TEE_LOCAL_, 0, operationData.constants[0], allocateNode());
-            afterChild(true, bci - 10);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionIII(Instructions.TEE_LOCAL_, 0, operationData.constants[0], allocateNode(), childBci0);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -8488,7 +12429,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.TOBOOLEAN, operationData);
         }
 
@@ -8516,8 +12457,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.TO_BOOLEAN_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.TO_BOOLEAN_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8560,7 +12502,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.ENSUREANDGETSOURCEPOSITION, operationData);
         }
 
@@ -8588,8 +12530,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.ENSURE_AND_GET_SOURCE_POSITION_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.ENSURE_AND_GET_SOURCE_POSITION_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8632,7 +12575,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.COPYLOCALSTOFRAME, operationData);
         }
 
@@ -8660,8 +12603,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.COPY_LOCALS_TO_FRAME_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.COPY_LOCALS_TO_FRAME_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8868,7 +12812,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 return;
             }
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.INCREMENTVALUE, operationData);
         }
 
@@ -8899,8 +12843,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.INCREMENT_VALUE_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.INCREMENT_VALUE_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -8925,7 +12870,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 return;
             }
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.DOUBLEVALUE, operationData);
         }
 
@@ -8956,8 +12901,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.DOUBLE_VALUE_, 0, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            doEmitInstructionII(Instructions.DOUBLE_VALUE_, 0, allocateNode(), childBci0);
+            afterChild(true, bci - 10);
         }
 
         /**
@@ -9000,7 +12946,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED, UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.MOD, operationData);
         }
 
@@ -9028,8 +12974,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.MOD_, -1, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            int childBci1 = operationData.childBcis[1];
+            doEmitInstructionIII(Instructions.MOD_, -1, allocateNode(), childBci0, childBci1);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -9051,7 +12999,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             validateRootOperationBegin();
             beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED, UNINITIALIZED}, EMPTY_INT_ARRAY);
             beginOperation(Operations.LESS, operationData);
         }
 
@@ -9079,8 +13027,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.LESS_, -1, allocateNode());
-            afterChild(true, bci - 6);
+            int childBci0 = operationData.childBcis[0];
+            int childBci1 = operationData.childBcis[1];
+            doEmitInstructionIII(Instructions.LESS_, -1, allocateNode(), childBci0, childBci1);
+            afterChild(true, bci - 14);
         }
 
         /**
@@ -9569,7 +13519,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         throw assertionFailed("Data class BlockData expected, but was " + operationStack[operationSp - 1].data);
                     }
                     if (operationData.producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, operationData.childBci);
                     }
                     break;
                 }
@@ -9579,7 +13529,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         throw assertionFailed("Data class RootData expected, but was " + operationStack[operationSp - 1].data);
                     }
                     if (operationData.producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, operationData.childBci);
                     }
                     break;
                 }
@@ -9589,7 +13539,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         throw assertionFailed("Data class SourceData expected, but was " + operationStack[operationSp - 1].data);
                     }
                     if (operationData.producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, operationData.childBci);
                     }
                     break;
                 }
@@ -9599,7 +13549,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         throw assertionFailed("Data class SourceSectionData expected, but was " + operationStack[operationSp - 1].data);
                     }
                     if (operationData.producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, operationData.childBci);
                     }
                     break;
                 }
@@ -9610,7 +13560,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     }
                     if (childIndex != 0) {
                         doEmitInstruction(Instructions.DUP, 1);
-                        doEmitInstructionI(Instructions.TO_BOOLEAN_, 0, allocateNode());
+                        // Boxing elimination not supported for converter operations if the value is returned.
+                        int childBci = -1;
+                        doEmitInstructionII(Instructions.TO_BOOLEAN_, 0, allocateNode(), childBci);
                         if (this.reachable) {
                             operationData.branchFixupBcis.add(bci + 2);
                         }
@@ -9625,7 +13577,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     }
                     if (childIndex != 0) {
                         doEmitInstruction(Instructions.DUP, 1);
-                        doEmitInstructionI(Instructions.TO_BOOLEAN_, 0, allocateNode());
+                        // Boxing elimination not supported for converter operations if the value is returned.
+                        int childBci = -1;
+                        doEmitInstructionII(Instructions.TO_BOOLEAN_, 0, allocateNode(), childBci);
                         if (this.reachable) {
                             operationData.branchFixupBcis.add(bci + 2);
                         }
@@ -9760,7 +13714,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if ((childIndex == 0) && !producedValue) {
                         throw failState("Operation IfThen expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     } else if ((childIndex == 1) && producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     if (!(operationStack[operationSp - 1].data instanceof IfThenData operationData)) {
                         throw assertionFailed("Data class IfThenData expected, but was " + operationStack[operationSp - 1].data);
@@ -9769,7 +13723,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         if (reachable) {
                             operationData.falseBranchFixupBci = bci + 2;
                         }
-                        doEmitInstructionII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile());
+                        doEmitInstructionIII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile(), childBci);
                     } else {
                         int toUpdate = operationData.falseBranchFixupBci;
                         if (toUpdate != UNINITIALIZED) {
@@ -9783,7 +13737,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if ((childIndex == 0) && !producedValue) {
                         throw failState("Operation IfThenElse expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     } else if ((childIndex == 1 || childIndex == 2) && producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     if (!(operationStack[operationSp - 1].data instanceof IfThenElseData operationData)) {
                         throw assertionFailed("Data class IfThenElseData expected, but was " + operationStack[operationSp - 1].data);
@@ -9792,7 +13746,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         if (reachable) {
                             operationData.falseBranchFixupBci = bci + 2;
                         }
-                        doEmitInstructionII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile());
+                        doEmitInstructionIII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile(), childBci);
                     } else if (childIndex == 1) {
                         if (reachable) {
                             operationData.endBranchFixupBci = bci + 2;
@@ -9819,11 +13773,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         throw assertionFailed("Data class ConditionalData expected, but was " + operationStack[operationSp - 1].data);
                     }
                     if (childIndex == 0) {
+                        doEmitInstruction(Instructions.DUP, 1);
                         if (reachable) {
                             operationData.falseBranchFixupBci = bci + 2;
                         }
-                        doEmitInstructionII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile());
+                        doEmitInstructionIII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile(), childBci);
                     } else if (childIndex == 1) {
+                        operationData.child0Bci = childBci;
                         if (reachable) {
                             operationData.endBranchFixupBci = bci + 2;
                             doEmitInstructionI(Instructions.BRANCH, 0, UNINITIALIZED);
@@ -9834,6 +13790,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             BYTES.putInt(bc, toUpdate, bci);
                         }
                     } else {
+                        operationData.child1Bci = childBci;
                         int toUpdate = operationData.endBranchFixupBci;
                         if (toUpdate != UNINITIALIZED) {
                             BYTES.putInt(bc, toUpdate, bci);
@@ -9846,7 +13803,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if ((childIndex == 0) && !producedValue) {
                         throw failState("Operation While expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     } else if ((childIndex == 1) && producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     if (!(operationStack[operationSp - 1].data instanceof WhileData operationData)) {
                         throw assertionFailed("Data class WhileData expected, but was " + operationStack[operationSp - 1].data);
@@ -9855,7 +13812,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         if (reachable) {
                             operationData.endBranchFixupBci = bci + 2;
                         }
-                        doEmitInstructionII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile());
+                        doEmitInstructionIII(Instructions.BRANCH_FALSE, -1, UNINITIALIZED, allocateBranchProfile(), childBci);
                     } else {
                         int toUpdate = operationData.endBranchFixupBci;
                         if (toUpdate != UNINITIALIZED) {
@@ -9868,7 +13825,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Operations.TRYCATCH :
                 {
                     if (producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     if (!(operationStack[operationSp - 1].data instanceof TryCatchData operationData)) {
                         throw assertionFailed("Data class TryCatchData expected, but was " + operationStack[operationSp - 1].data);
@@ -9886,7 +13843,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                     } else if (childIndex == 1) {
                         // pop the exception
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, -1);
                         if (operationData.endBranchFixupBci != UNINITIALIZED) {
                             BYTES.putInt(bc, operationData.endBranchFixupBci, bci);
                         }
@@ -9896,14 +13853,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Operations.TRYFINALLY :
                 {
                     if (producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     break;
                 }
                 case Operations.TRYCATCHOTHERWISE :
                 {
                     if (producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     if (!(operationStack[operationSp - 1].data instanceof TryFinallyData operationData)) {
                         throw assertionFailed("Data class TryFinallyData expected, but was " + operationStack[operationSp - 1].data);
@@ -9934,7 +13891,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                     } else {
                         // pop the exception
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, -1);
                         if (operationData.endBranchFixupBci != UNINITIALIZED) {
                             BYTES.putInt(bc, operationData.endBranchFixupBci, bci);
                         }
@@ -9944,7 +13901,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Operations.FINALLYHANDLER :
                 {
                     if (producedValue) {
-                        doEmitInstruction(Instructions.POP, -1);
+                        doEmitInstructionI(Instructions.POP, -1, childBci);
                     }
                     break;
                 }
@@ -9960,6 +13917,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation StoreLocal expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof StoreLocalData operationData)) {
+                        throw assertionFailed("Data class StoreLocalData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    operationData.childBci = childBci;
                     break;
                 }
                 case Operations.STORELOCALMATERIALIZED :
@@ -9967,6 +13928,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation StoreLocalMaterialized expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof StoreLocalData operationData)) {
+                        throw assertionFailed("Data class StoreLocalData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    operationData.childBci = childBci;
                     break;
                 }
                 case Operations.RETURN :
@@ -10000,6 +13965,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation Add expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    } else if (childIndex == 1) {
+                        operationData.childBcis[1] = childBci;
+                    }
                     break;
                 }
                 case Operations.TOSTRING :
@@ -10021,12 +13994,24 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation AddConstantOperation expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.ADDCONSTANTOPERATIONATEND :
                 {
                     if (!producedValue) {
                         throw failState("Operation AddConstantOperationAtEnd expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
                     }
                     break;
                 }
@@ -10035,12 +14020,24 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation VeryComplexOperation expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.THROWOPERATION :
                 {
                     if (!producedValue) {
                         throw failState("Operation ThrowOperation expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
                     }
                     break;
                 }
@@ -10070,6 +14067,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation TeeLocal expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.TEELOCALRANGE :
@@ -10098,6 +14101,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation ToBoolean expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.ENSUREANDGETSOURCEPOSITION :
@@ -10105,12 +14114,24 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation EnsureAndGetSourcePosition expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.COPYLOCALSTOFRAME :
                 {
                     if (!producedValue) {
                         throw failState("Operation CopyLocalsToFrame expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
                     }
                     break;
                 }
@@ -10126,12 +14147,24 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation IncrementValue expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    }
                     break;
                 }
                 case Operations.DOUBLEVALUE :
                 {
                     if (!producedValue) {
                         throw failState("Operation DoubleValue expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
                     }
                     break;
                 }
@@ -10140,12 +14173,28 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     if (!producedValue) {
                         throw failState("Operation Mod expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    } else if (childIndex == 1) {
+                        operationData.childBcis[1] = childBci;
+                    }
                     break;
                 }
                 case Operations.LESS :
                 {
                     if (!producedValue) {
                         throw failState("Operation Less expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
+                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
+                    }
+                    if (childIndex == 0) {
+                        operationData.childBcis[0] = childBci;
+                    } else if (childIndex == 1) {
+                        operationData.childBcis[1] = childBci;
                     }
                     break;
                 }
@@ -10293,7 +14342,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 throw failState("Unexpected parser end - there are still operations on the stack. Did you forget to end them?");
             }
             if (reparseReason == null) {
-                nodes.setNodes(builtNodes.toArray(new BasicInterpreterWithUncached[0]));
+                nodes.setNodes(builtNodes.toArray(new BasicInterpreterProductionRootScoping[0]));
             }
             assert nodes.validate();
         }
@@ -10390,18 +14439,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         needsRewind = true;
                         break;
                     }
-                    case Operations.BLOCK :
-                    {
-                        if (!(operationStack[i].data instanceof BlockData operationData)) {
-                            throw assertionFailed("Data class BlockData expected, but was " + operationStack[i].data);
-                        }
-                        for (int j = 0; j < operationData.numLocals; j++) {
-                            locals[operationData.locals[j] + LOCALS_OFFSET_END_BCI] = bci;
-                            doEmitInstructionS(Instructions.CLEAR_LOCAL, 0, safeCastShort(locals[operationData.locals[j] + LOCALS_OFFSET_FRAME_INDEX]));
-                            needsRewind = true;
-                        }
-                        break;
-                    }
                 }
             }
             /**
@@ -10450,21 +14487,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             operationData.startBci = bci;
                             break;
                         }
-                        case Operations.BLOCK :
-                        {
-                            if (!(operationStack[i].data instanceof BlockData operationData)) {
-                                throw assertionFailed("Data class BlockData expected, but was " + operationStack[i].data);
-                            }
-                            for (int j = 0; j < operationData.numLocals; j++) {
-                                int prevTableIndex = operationData.locals[j];
-                                // Create a new table entry with a new bytecode range and the same metadata.
-                                int localIndex = locals[prevTableIndex + LOCALS_OFFSET_LOCAL_INDEX];
-                                int frameIndex = locals[prevTableIndex + LOCALS_OFFSET_FRAME_INDEX];
-                                int nameIndex = locals[prevTableIndex + LOCALS_OFFSET_NAME];
-                                int infoIndex = locals[prevTableIndex + LOCALS_OFFSET_INFO];
-                                operationData.locals[j] = doEmitLocal(localIndex, frameIndex, nameIndex, infoIndex);
-                            }
-                        }
                     }
                 }
             }
@@ -10491,8 +14513,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             throw assertionFailed("Data class TagOperationData expected, but was " + operationStack[i].data);
                         }
                         if (reachable) {
-                            doEmitInstructionI(Instructions.TAG_LEAVE, 0, operationData.nodeId);
-                            childBci = bci - 6;
+                            doEmitInstructionII(Instructions.TAG_LEAVE, 0, operationData.nodeId, childBci);
+                            childBci = bci - 10;
                             doCreateExceptionHandler(operationData.handlerStartBci, bci, HANDLER_TAG_EXCEPTIONAL, operationData.nodeId, operationData.startStackHeight);
                             needsRewind = true;
                         }
@@ -10564,17 +14586,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         needsRewind = true;
                         break;
                     }
-                    case Operations.BLOCK :
-                    {
-                        if (!(operationStack[i].data instanceof BlockData operationData)) {
-                            throw assertionFailed("Data class BlockData expected, but was " + operationStack[i].data);
-                        }
-                        for (int j = 0; j < operationData.numLocals; j++) {
-                            locals[operationData.locals[j] + LOCALS_OFFSET_END_BCI] = bci;
-                            needsRewind = true;
-                        }
-                        break;
-                    }
                 }
             }
             /**
@@ -10622,27 +14633,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             }
                             operationData.startBci = bci;
                             break;
-                        }
-                        case Operations.BLOCK :
-                        {
-                            if (!(operationStack[i].data instanceof BlockData operationData)) {
-                                throw assertionFailed("Data class BlockData expected, but was " + operationStack[i].data);
-                            }
-                            for (int j = 0; j < operationData.numLocals; j++) {
-                                int prevTableIndex = operationData.locals[j];
-                                int endBci = locals[prevTableIndex + LOCALS_OFFSET_END_BCI];
-                                if (endBci == bci) {
-                                    // No need to split. Reuse the existing entry.
-                                    locals[prevTableIndex + LOCALS_OFFSET_END_BCI] = UNINITIALIZED;
-                                    continue;
-                                }
-                                // Create a new table entry with a new bytecode range and the same metadata.
-                                int localIndex = locals[prevTableIndex + LOCALS_OFFSET_LOCAL_INDEX];
-                                int frameIndex = locals[prevTableIndex + LOCALS_OFFSET_FRAME_INDEX];
-                                int nameIndex = locals[prevTableIndex + LOCALS_OFFSET_NAME];
-                                int infoIndex = locals[prevTableIndex + LOCALS_OFFSET_INFO];
-                                operationData.locals[j] = doEmitLocal(localIndex, frameIndex, nameIndex, infoIndex);
-                            }
                         }
                     }
                 }
@@ -10695,7 +14685,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         private short allocateBytecodeLocal() {
-            return checkOverflowShort((short) numLocals++, "Number of locals");
+            return checkOverflowShort((short) (USER_LOCALS_START_INDEX + numLocals++), "Number of locals");
         }
 
         private int allocateBranchProfile() {
@@ -10756,20 +14746,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
         }
 
-        private ScopeData getCurrentScope() {
-            for (int i = operationSp - 1; i >= rootOperationSp; i--) {
-                if (operationStack[i].operation == Operations.FINALLYHANDLER) {
-                    i = ((FinallyHandlerData) operationStack[i].data).finallyOperationSp;
-                    continue;
-                }
-                if (operationStack[i].data instanceof ScopeData e) {
-                    return e;
-                }
-            }
-            throw failState("Invalid scope for local variable.");
-        }
-
-        private int doEmitLocal(int localIndex, int frameIndex, Object name, Object info) {
+        private int doEmitLocal(Object name, Object info) {
             int nameIndex = -1;
             if (name != null) {
                 nameIndex = constantPool.addConstant(name);
@@ -10778,17 +14755,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (info != null) {
                 infoIndex = constantPool.addConstant(info);
             }
-            return doEmitLocal(localIndex, frameIndex, nameIndex, infoIndex);
+            return doEmitLocal(nameIndex, infoIndex);
         }
 
-        private int doEmitLocal(int localIndex, int frameIndex, int nameIndex, int infoIndex) {
+        private int doEmitLocal(int nameIndex, int infoIndex) {
             int tableIndex = allocateLocalsTableEntry();
-            assert frameIndex - USER_LOCALS_START_INDEX >= 0;
-            locals[tableIndex + LOCALS_OFFSET_START_BCI] = bci;
-            // will be patched later at the end of the block
-            locals[tableIndex + LOCALS_OFFSET_END_BCI] = -1;
-            locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX] = localIndex;
-            locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] = frameIndex;
             locals[tableIndex + LOCALS_OFFSET_NAME] = nameIndex;
             locals[tableIndex + LOCALS_OFFSET_INFO] = infoIndex;
             return tableIndex;
@@ -10899,7 +14870,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case SerializationState.CODE_$END :
                         {
                             for (int i = 0; i < this.builtNodes.size(); i++) {
-                                BasicInterpreterWithUncached node = this.builtNodes.get(i);
+                                BasicInterpreterProductionRootScoping node = this.builtNodes.get(i);
                                 node.name = (String) context.consts.get(buffer.readInt());
                             }
                             return;
@@ -10922,7 +14893,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         }
                         case SerializationState.CODE_END_ROOT :
                         {
-                            BasicInterpreterWithUncached node = (BasicInterpreterWithUncached) endRoot();
+                            BasicInterpreterProductionRootScoping node = (BasicInterpreterProductionRootScoping) endRoot();
                             int serializedContextDepth = buffer.readInt();
                             if (context.depth != serializedContextDepth) {
                                 throw new AssertionError("Invalid context depth. Expected " + context.depth + " but got " + serializedContextDepth);
@@ -11475,9 +15446,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         @Override
         public String toString() {
             StringBuilder b = new StringBuilder();
-            b.append(BasicInterpreterWithUncached.class.getSimpleName());
+            b.append(BasicInterpreterProductionRootScoping.class.getSimpleName());
             b.append('.');
-            b.append(com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder.class.getSimpleName());
+            b.append(com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder.class.getSimpleName());
             b.append("[");
             b.append("at=");
             for (int i = 0; i < operationSp; i++) {
@@ -11651,6 +15622,28 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return true;
         }
 
+        private boolean doEmitInstructionSI(short instruction, int stackEffect, short data0, int data1) {
+            if (stackEffect != 0) {
+                currentStackHeight += stackEffect;
+                assert currentStackHeight >= 0;
+            }
+            if (stackEffect > 0) {
+                updateMaxStackHeight(currentStackHeight);
+            }
+            if (!reachable) {
+                return false;
+            }
+            int newBci = checkBci(bci + 8);
+            if (newBci > bc.length) {
+                ensureBytecodeCapacity(newBci);
+            }
+            BYTES.putShort(bc, bci + 0, instruction);
+            BYTES.putShort(bc, bci + 2 /* imm 0 */, data0);
+            BYTES.putInt(bc, bci + 4 /* imm 1 */, data1);
+            bci = newBci;
+            return true;
+        }
+
         private boolean doEmitInstructionII(short instruction, int stackEffect, int data0, int data1) {
             if (stackEffect != 0) {
                 currentStackHeight += stackEffect;
@@ -11669,6 +15662,52 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             BYTES.putShort(bc, bci + 0, instruction);
             BYTES.putInt(bc, bci + 2 /* imm 0 */, data0);
             BYTES.putInt(bc, bci + 6 /* imm 1 */, data1);
+            bci = newBci;
+            return true;
+        }
+
+        private boolean doEmitInstructionSSI(short instruction, int stackEffect, short data0, short data1, int data2) {
+            if (stackEffect != 0) {
+                currentStackHeight += stackEffect;
+                assert currentStackHeight >= 0;
+            }
+            if (stackEffect > 0) {
+                updateMaxStackHeight(currentStackHeight);
+            }
+            if (!reachable) {
+                return false;
+            }
+            int newBci = checkBci(bci + 10);
+            if (newBci > bc.length) {
+                ensureBytecodeCapacity(newBci);
+            }
+            BYTES.putShort(bc, bci + 0, instruction);
+            BYTES.putShort(bc, bci + 2 /* imm 0 */, data0);
+            BYTES.putShort(bc, bci + 4 /* imm 1 */, data1);
+            BYTES.putInt(bc, bci + 6 /* imm 2 */, data2);
+            bci = newBci;
+            return true;
+        }
+
+        private boolean doEmitInstructionIII(short instruction, int stackEffect, int data0, int data1, int data2) {
+            if (stackEffect != 0) {
+                currentStackHeight += stackEffect;
+                assert currentStackHeight >= 0;
+            }
+            if (stackEffect > 0) {
+                updateMaxStackHeight(currentStackHeight);
+            }
+            if (!reachable) {
+                return false;
+            }
+            int newBci = checkBci(bci + 14);
+            if (newBci > bc.length) {
+                ensureBytecodeCapacity(newBci);
+            }
+            BYTES.putShort(bc, bci + 0, instruction);
+            BYTES.putInt(bc, bci + 2 /* imm 0 */, data0);
+            BYTES.putInt(bc, bci + 6 /* imm 1 */, data1);
+            BYTES.putInt(bc, bci + 10 /* imm 2 */, data2);
             bci = newBci;
             return true;
         }
@@ -11723,12 +15762,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             private ConstantPool constantPool;
             private boolean reachable = true;
             private ArrayList<ContinuationLocation> continuationLocations;
-            private int maxLocals;
             private List<TagNode> tagRoots;
             private List<TagNode> tagNodes;
             private SavedState savedState;
 
-            SavedState(int operationSequenceNumber, OperationStackEntry[] operationStack, int operationSp, int rootOperationSp, int numLocals, int numLabels, int numNodes, int numHandlers, int numConditionalBranches, byte[] bc, int bci, int currentStackHeight, int maxStackHeight, int[] sourceInfo, int sourceInfoIndex, int[] handlerTable, int handlerTableSize, int[] locals, int localsTableIndex, HashMap<BytecodeLabel, ArrayList<Integer>> unresolvedLabels, ConstantPool constantPool, boolean reachable, ArrayList<ContinuationLocation> continuationLocations, int maxLocals, List<TagNode> tagRoots, List<TagNode> tagNodes, SavedState savedState) {
+            SavedState(int operationSequenceNumber, OperationStackEntry[] operationStack, int operationSp, int rootOperationSp, int numLocals, int numLabels, int numNodes, int numHandlers, int numConditionalBranches, byte[] bc, int bci, int currentStackHeight, int maxStackHeight, int[] sourceInfo, int sourceInfoIndex, int[] handlerTable, int handlerTableSize, int[] locals, int localsTableIndex, HashMap<BytecodeLabel, ArrayList<Integer>> unresolvedLabels, ConstantPool constantPool, boolean reachable, ArrayList<ContinuationLocation> continuationLocations, List<TagNode> tagRoots, List<TagNode> tagNodes, SavedState savedState) {
                 this.operationSequenceNumber = operationSequenceNumber;
                 this.operationStack = operationStack;
                 this.operationSp = operationSp;
@@ -11752,7 +15790,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 this.constantPool = constantPool;
                 this.reachable = reachable;
                 this.continuationLocations = continuationLocations;
-                this.maxLocals = maxLocals;
                 this.tagRoots = tagRoots;
                 this.tagNodes = tagNodes;
                 this.savedState = savedState;
@@ -11785,40 +15822,22 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 return "(" + toString(null) + ")";
             }
 
-            private String toString(com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder builder) {
+            private String toString(com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder builder) {
                 StringBuilder b = new StringBuilder();
                 b.append(OPERATION_NAMES[operation]);
                 switch (operation) {
-                    case Operations.BLOCK :
-                    {
-                        BlockData operationData = (BlockData) data;
-                        if (operationData.numLocals > 0) {
-                            b.append(" locals=");
-                            b.append(operationData.numLocals);
-                        }
-                    }
-                    break;
-                    case Operations.ROOT :
-                    {
-                        RootData operationData = (RootData) data;
-                        if (operationData.numLocals > 0) {
-                            b.append(" locals=");
-                            b.append(operationData.numLocals);
-                        }
-                    }
-                    break;
                     case Operations.STORELOCAL :
                     {
                         b.append(" ");
-                        BytecodeLocalImpl operationData = (BytecodeLocalImpl) data;
-                        b.append(operationData.frameIndex);
+                        StoreLocalData operationData = (StoreLocalData) data;
+                        b.append(operationData.local.frameIndex);
                     }
                     break;
                     case Operations.STORELOCALMATERIALIZED :
                     {
                         b.append(" ");
-                        BytecodeLocalImpl operationData = (BytecodeLocalImpl) data;
-                        b.append(operationData.frameIndex);
+                        StoreLocalData operationData = (StoreLocalData) data;
+                        b.append(operationData.local.frameIndex);
                     }
                     break;
                     case Operations.SOURCE :
@@ -11892,14 +15911,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             private final short frameIndex;
             private final short localIndex;
             private final short rootIndex;
-            private final ScopeData scope;
 
-            BytecodeLocalImpl(short frameIndex, short localIndex, short rootIndex, ScopeData scope) {
+            BytecodeLocalImpl(short frameIndex, short localIndex, short rootIndex) {
                 super(BytecodeRootNodesImpl.VISIBLE_TOKEN);
                 this.frameIndex = frameIndex;
                 this.localIndex = localIndex;
                 this.rootIndex = rootIndex;
-                this.scope = scope;
             }
 
             @Override
@@ -11944,31 +15961,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
 
         }
-        private abstract static class ScopeData {
-
-            int frameOffset;
-            /**
-             * The indices of this scope's locals in the global locals table. Used to patch in the end bci at the end of the scope.
-             */
-            int[] locals = null;
-            /**
-             * The number of locals allocated in the frame for this scope.
-             */
-            int numLocals = 0;
-            boolean valid = true;
-
-            public void registerLocal(int tableIndex) {
-                int localTableIndex = numLocals++;
-                if (locals == null) {
-                    locals = new int[8];
-                } else if (localTableIndex >= locals.length) {
-                    locals = Arrays.copyOf(locals, locals.length * 2);
-                }
-                locals[localTableIndex] = tableIndex;
-            }
-
-        }
-        private static final class BlockData extends ScopeData {
+        private static final class BlockData {
 
             final int startStackHeight;
             boolean producedValue;
@@ -11981,7 +15974,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
 
         }
-        private static final class RootData extends ScopeData {
+        private static final class RootData {
 
             final short index;
             boolean producedValue;
@@ -12028,12 +16021,16 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             boolean elseReachable;
             int falseBranchFixupBci;
             int endBranchFixupBci;
+            int child0Bci;
+            int child1Bci;
 
             ConditionalData(boolean thenReachable, boolean elseReachable) {
                 this.thenReachable = thenReachable;
                 this.elseReachable = elseReachable;
                 this.falseBranchFixupBci = UNINITIALIZED;
                 this.endBranchFixupBci = UNINITIALIZED;
+                this.child0Bci = UNINITIALIZED;
+                this.child1Bci = UNINITIALIZED;
             }
 
         }
@@ -12121,6 +16118,17 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
             FinallyHandlerData(int finallyOperationSp) {
                 this.finallyOperationSp = finallyOperationSp;
+            }
+
+        }
+        private static final class StoreLocalData {
+
+            BytecodeLocalImpl local;
+            int childBci;
+
+            StoreLocalData(BytecodeLocalImpl local) {
+                this.local = local;
+                this.childBci = UNINITIALIZED;
             }
 
         }
@@ -12480,7 +16488,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             private final DeserializationState outer;
             private final int depth;
             private final ArrayList<Object> consts = new ArrayList<>();
-            private final ArrayList<BasicInterpreterWithUncached> builtNodes = new ArrayList<>();
+            private final ArrayList<BasicInterpreterProductionRootScoping> builtNodes = new ArrayList<>();
             private final ArrayList<BytecodeLabel> labels = new ArrayList<>();
             private final ArrayList<BytecodeLocal> locals = new ArrayList<>();
             private final ArrayList<Runnable> finallyGenerators = new ArrayList<>();
@@ -12553,7 +16561,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         @CompilationFinal private volatile long encoding;
 
-        BytecodeRootNodesImpl(BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder> generator, BytecodeConfig config) {
+        BytecodeRootNodesImpl(BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder> generator, BytecodeConfig config) {
             super(VISIBLE_TOKEN, generator);
             this.encoding = BytecodeConfigEncoderImpl.decode(config);
         }
@@ -12590,11 +16598,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             if (!needsBytecodeReparse && !needsSourceReparse) {
                 return false;
             }
-            BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder> parser = getParserImpl();
+            BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder> parser = getParserImpl();
             UpdateReason reason = new UpdateReason(oldSources != newSources, newInstrumentations & ~oldInstrumentations, newTags & ~oldTags);
             Builder builder = new Builder(this, needsBytecodeReparse, newTags, newInstrumentations, needsSourceReparse, reason);
             for (BasicInterpreter node : nodes) {
-                builder.builtNodes.add((BasicInterpreterWithUncached) node);
+                builder.builtNodes.add((BasicInterpreterProductionRootScoping) node);
             }
             parser.parse(builder);
             builder.finish();
@@ -12602,12 +16610,12 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return true;
         }
 
-        private void setNodes(BasicInterpreterWithUncached[] nodes) {
+        private void setNodes(BasicInterpreterProductionRootScoping[] nodes) {
             if (this.nodes != null) {
                 throw new AssertionError();
             }
             this.nodes = nodes;
-            for (BasicInterpreterWithUncached node : nodes) {
+            for (BasicInterpreterProductionRootScoping node : nodes) {
                 if (node.getRootNodes() != this) {
                     throw new AssertionError();
                 }
@@ -12618,13 +16626,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @SuppressWarnings("unchecked")
-        private BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder> getParserImpl() {
-            return (BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterWithUncached.Builder>) super.getParser();
+        private BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder> getParserImpl() {
+            return (BytecodeParser<com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterProductionRootScoping.Builder>) super.getParser();
         }
 
         private boolean validate() {
             for (BasicInterpreter node : nodes) {
-                ((BasicInterpreterWithUncached) node).getBytecodeNodeImpl().validateBytecodes();
+                ((BasicInterpreterProductionRootScoping) node).getBytecodeNodeImpl().validateBytecodes();
             }
             return true;
         }
@@ -12650,9 +16658,9 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         public void serialize(DataOutput buffer, BytecodeSerializer callback) throws IOException {
             ArrayList<BasicInterpreter> existingNodes = new ArrayList<>(nodes.length);
             for (int i = 0; i < nodes.length; i++) {
-                existingNodes.add((BasicInterpreterWithUncached) nodes[i]);
+                existingNodes.add((BasicInterpreterProductionRootScoping) nodes[i]);
             }
-            BasicInterpreterWithUncached.doSerialize(buffer, callback, new Builder(getLanguage(), this, BytecodeConfig.COMPLETE), existingNodes);
+            BasicInterpreterProductionRootScoping.doSerialize(buffer, callback, new Builder(getLanguage(), this, BytecodeConfig.COMPLETE), existingNodes);
         }
 
         private static final class UpdateReason implements CharSequence {
@@ -12741,579 +16749,1129 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         /*
          * Instruction pop
          * kind: POP
-         * encoding: [1 : short]
+         * encoding: [1 : short, child0 (bci) : int]
          * signature: void (Object)
          */
         private static final short POP = 1;
         /*
+         * Instruction pop$Boolean
+         * kind: POP
+         * encoding: [2 : short, child0 (bci) : int]
+         * signature: void (boolean)
+         */
+        private static final short POP$BOOLEAN = 2;
+        /*
+         * Instruction pop$Long
+         * kind: POP
+         * encoding: [3 : short, child0 (bci) : int]
+         * signature: void (long)
+         */
+        private static final short POP$LONG = 3;
+        /*
+         * Instruction pop$generic
+         * kind: POP
+         * encoding: [4 : short, child0 (bci) : int]
+         * signature: void (Object)
+         */
+        private static final short POP$GENERIC = 4;
+        /*
          * Instruction dup
          * kind: DUP
-         * encoding: [2 : short]
+         * encoding: [5 : short]
          * signature: void ()
          */
-        private static final short DUP = 2;
+        private static final short DUP = 5;
         /*
          * Instruction return
          * kind: RETURN
-         * encoding: [3 : short]
+         * encoding: [6 : short]
          * signature: void (Object)
          */
-        private static final short RETURN = 3;
+        private static final short RETURN = 6;
         /*
          * Instruction branch
          * kind: BRANCH
-         * encoding: [4 : short, branch_target (bci) : int]
+         * encoding: [7 : short, branch_target (bci) : int]
          * signature: void ()
          */
-        private static final short BRANCH = 4;
+        private static final short BRANCH = 7;
         /*
          * Instruction branch.backward
          * kind: BRANCH_BACKWARD
-         * encoding: [5 : short, branch_target (bci) : int, loop_header_branch_profile (branch_profile) : int]
+         * encoding: [8 : short, branch_target (bci) : int, loop_header_branch_profile (branch_profile) : int]
          * signature: void ()
          */
-        private static final short BRANCH_BACKWARD = 5;
+        private static final short BRANCH_BACKWARD = 8;
         /*
          * Instruction branch.false
          * kind: BRANCH_FALSE
-         * encoding: [6 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [9 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
          * signature: void (Object)
          */
-        private static final short BRANCH_FALSE = 6;
+        private static final short BRANCH_FALSE = 9;
+        /*
+         * Instruction branch.false$Generic
+         * kind: BRANCH_FALSE
+         * encoding: [10 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
+         * signature: void (Object)
+         */
+        private static final short BRANCH_FALSE$GENERIC = 10;
+        /*
+         * Instruction branch.false$Boolean
+         * kind: BRANCH_FALSE
+         * encoding: [11 : short, branch_target (bci) : int, branch_profile : int, child0 (bci) : int]
+         * signature: void (boolean)
+         */
+        private static final short BRANCH_FALSE$BOOLEAN = 11;
         /*
          * Instruction store.local
          * kind: STORE_LOCAL
-         * encoding: [7 : short, frame_index : short]
+         * encoding: [12 : short, frame_index : short, child0 (bci) : int]
          * signature: void (Object)
          */
-        private static final short STORE_LOCAL = 7;
+        private static final short STORE_LOCAL = 12;
+        /*
+         * Instruction store.local$Boolean
+         * kind: STORE_LOCAL
+         * encoding: [13 : short, frame_index : short, child0 (bci) : int]
+         * signature: void (Object)
+         */
+        private static final short STORE_LOCAL$BOOLEAN = 13;
+        /*
+         * Instruction store.local$Boolean$Boolean
+         * kind: STORE_LOCAL
+         * encoding: [14 : short, frame_index : short, child0 (bci) : int]
+         * signature: void (boolean)
+         */
+        private static final short STORE_LOCAL$BOOLEAN$BOOLEAN = 14;
+        /*
+         * Instruction store.local$Long
+         * kind: STORE_LOCAL
+         * encoding: [15 : short, frame_index : short, child0 (bci) : int]
+         * signature: void (Object)
+         */
+        private static final short STORE_LOCAL$LONG = 15;
+        /*
+         * Instruction store.local$Long$Long
+         * kind: STORE_LOCAL
+         * encoding: [16 : short, frame_index : short, child0 (bci) : int]
+         * signature: void (long)
+         */
+        private static final short STORE_LOCAL$LONG$LONG = 16;
+        /*
+         * Instruction store.local$generic
+         * kind: STORE_LOCAL
+         * encoding: [17 : short, frame_index : short, child0 (bci) : int]
+         * signature: void (Object)
+         */
+        private static final short STORE_LOCAL$GENERIC = 17;
         /*
          * Instruction throw
          * kind: THROW
-         * encoding: [8 : short]
+         * encoding: [18 : short]
          * signature: void (Object)
          */
-        private static final short THROW = 8;
+        private static final short THROW = 18;
         /*
          * Instruction load.constant
          * kind: LOAD_CONSTANT
-         * encoding: [9 : short, constant (const) : int]
+         * encoding: [19 : short, constant (const) : int]
          * signature: Object ()
          */
-        private static final short LOAD_CONSTANT = 9;
+        private static final short LOAD_CONSTANT = 19;
+        /*
+         * Instruction load.constant$Boolean
+         * kind: LOAD_CONSTANT
+         * encoding: [20 : short, constant (const) : int]
+         * signature: boolean ()
+         */
+        private static final short LOAD_CONSTANT$BOOLEAN = 20;
+        /*
+         * Instruction load.constant$Long
+         * kind: LOAD_CONSTANT
+         * encoding: [21 : short, constant (const) : int]
+         * signature: long ()
+         */
+        private static final short LOAD_CONSTANT$LONG = 21;
         /*
          * Instruction load.null
          * kind: LOAD_NULL
-         * encoding: [10 : short]
+         * encoding: [22 : short]
          * signature: Object ()
          */
-        private static final short LOAD_NULL = 10;
+        private static final short LOAD_NULL = 22;
         /*
          * Instruction load.argument
          * kind: LOAD_ARGUMENT
-         * encoding: [11 : short, index (short) : short]
+         * encoding: [23 : short, index (short) : short]
          * signature: Object ()
          */
-        private static final short LOAD_ARGUMENT = 11;
+        private static final short LOAD_ARGUMENT = 23;
+        /*
+         * Instruction load.argument$Boolean
+         * kind: LOAD_ARGUMENT
+         * encoding: [24 : short, index (short) : short]
+         * signature: boolean ()
+         */
+        private static final short LOAD_ARGUMENT$BOOLEAN = 24;
+        /*
+         * Instruction load.argument$Long
+         * kind: LOAD_ARGUMENT
+         * encoding: [25 : short, index (short) : short]
+         * signature: long ()
+         */
+        private static final short LOAD_ARGUMENT$LONG = 25;
         /*
          * Instruction load.exception
          * kind: LOAD_EXCEPTION
-         * encoding: [12 : short, exception_sp (sp) : short]
+         * encoding: [26 : short, exception_sp (sp) : short]
          * signature: Object ()
          */
-        private static final short LOAD_EXCEPTION = 12;
+        private static final short LOAD_EXCEPTION = 26;
         /*
          * Instruction load.local
          * kind: LOAD_LOCAL
-         * encoding: [13 : short, frame_index : short]
+         * encoding: [27 : short, frame_index : short]
          * signature: Object ()
          */
-        private static final short LOAD_LOCAL = 13;
+        private static final short LOAD_LOCAL = 27;
+        /*
+         * Instruction load.local$Boolean
+         * kind: LOAD_LOCAL
+         * encoding: [28 : short, frame_index : short]
+         * signature: Object ()
+         */
+        private static final short LOAD_LOCAL$BOOLEAN = 28;
+        /*
+         * Instruction load.local$Boolean$unboxed
+         * kind: LOAD_LOCAL
+         * encoding: [29 : short, frame_index : short]
+         * signature: boolean ()
+         */
+        private static final short LOAD_LOCAL$BOOLEAN$UNBOXED = 29;
+        /*
+         * Instruction load.local$Long
+         * kind: LOAD_LOCAL
+         * encoding: [30 : short, frame_index : short]
+         * signature: Object ()
+         */
+        private static final short LOAD_LOCAL$LONG = 30;
+        /*
+         * Instruction load.local$Long$unboxed
+         * kind: LOAD_LOCAL
+         * encoding: [31 : short, frame_index : short]
+         * signature: long ()
+         */
+        private static final short LOAD_LOCAL$LONG$UNBOXED = 31;
+        /*
+         * Instruction load.local$generic
+         * kind: LOAD_LOCAL
+         * encoding: [32 : short, frame_index : short]
+         * signature: Object ()
+         */
+        private static final short LOAD_LOCAL$GENERIC = 32;
         /*
          * Instruction load.local.mat
          * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [14 : short, frame_index : short, root_index (local_root) : short]
+         * encoding: [33 : short, frame_index : short, root_index (local_root) : short]
          * signature: Object (Object)
          */
-        private static final short LOAD_LOCAL_MAT = 14;
+        private static final short LOAD_LOCAL_MAT = 33;
+        /*
+         * Instruction load.local.mat$Boolean
+         * kind: LOAD_LOCAL_MATERIALIZED
+         * encoding: [34 : short, frame_index : short, root_index (local_root) : short]
+         * signature: Object (Object)
+         */
+        private static final short LOAD_LOCAL_MAT$BOOLEAN = 34;
+        /*
+         * Instruction load.local.mat$Boolean$unboxed
+         * kind: LOAD_LOCAL_MATERIALIZED
+         * encoding: [35 : short, frame_index : short, root_index (local_root) : short]
+         * signature: boolean (Object)
+         */
+        private static final short LOAD_LOCAL_MAT$BOOLEAN$UNBOXED = 35;
+        /*
+         * Instruction load.local.mat$Long
+         * kind: LOAD_LOCAL_MATERIALIZED
+         * encoding: [36 : short, frame_index : short, root_index (local_root) : short]
+         * signature: Object (Object)
+         */
+        private static final short LOAD_LOCAL_MAT$LONG = 36;
+        /*
+         * Instruction load.local.mat$Long$unboxed
+         * kind: LOAD_LOCAL_MATERIALIZED
+         * encoding: [37 : short, frame_index : short, root_index (local_root) : short]
+         * signature: long (Object)
+         */
+        private static final short LOAD_LOCAL_MAT$LONG$UNBOXED = 37;
+        /*
+         * Instruction load.local.mat$generic
+         * kind: LOAD_LOCAL_MATERIALIZED
+         * encoding: [38 : short, frame_index : short, root_index (local_root) : short]
+         * signature: Object (Object)
+         */
+        private static final short LOAD_LOCAL_MAT$GENERIC = 38;
         /*
          * Instruction store.local.mat
          * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [15 : short, frame_index : short, root_index (local_root) : short]
+         * encoding: [39 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
          * signature: void (Object, Object)
          */
-        private static final short STORE_LOCAL_MAT = 15;
+        private static final short STORE_LOCAL_MAT = 39;
+        /*
+         * Instruction store.local.mat$Boolean
+         * kind: STORE_LOCAL_MATERIALIZED
+         * encoding: [40 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+         * signature: void (Object, Object)
+         */
+        private static final short STORE_LOCAL_MAT$BOOLEAN = 40;
+        /*
+         * Instruction store.local.mat$Boolean$Boolean
+         * kind: STORE_LOCAL_MATERIALIZED
+         * encoding: [41 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+         * signature: void (boolean, Object)
+         */
+        private static final short STORE_LOCAL_MAT$BOOLEAN$BOOLEAN = 41;
+        /*
+         * Instruction store.local.mat$Long
+         * kind: STORE_LOCAL_MATERIALIZED
+         * encoding: [42 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+         * signature: void (Object, Object)
+         */
+        private static final short STORE_LOCAL_MAT$LONG = 42;
+        /*
+         * Instruction store.local.mat$Long$Long
+         * kind: STORE_LOCAL_MATERIALIZED
+         * encoding: [43 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+         * signature: void (long, Object)
+         */
+        private static final short STORE_LOCAL_MAT$LONG$LONG = 43;
+        /*
+         * Instruction store.local.mat$generic
+         * kind: STORE_LOCAL_MATERIALIZED
+         * encoding: [44 : short, frame_index : short, root_index (local_root) : short, child0 (bci) : int]
+         * signature: void (Object, Object)
+         */
+        private static final short STORE_LOCAL_MAT$GENERIC = 44;
         /*
          * Instruction yield
          * kind: YIELD
-         * encoding: [16 : short, location (const) : int]
+         * encoding: [45 : short, location (const) : int]
          * signature: void (Object)
          */
-        private static final short YIELD = 16;
+        private static final short YIELD = 45;
         /*
          * Instruction tag.enter
          * kind: TAG_ENTER
-         * encoding: [17 : short, tag : int]
+         * encoding: [46 : short, tag : int]
          * signature: void ()
          */
-        private static final short TAG_ENTER = 17;
+        private static final short TAG_ENTER = 46;
         /*
          * Instruction tag.leave
          * kind: TAG_LEAVE
-         * encoding: [18 : short, tag : int]
+         * encoding: [47 : short, tag : int, child0 (bci) : int]
          * signature: Object (Object)
          */
-        private static final short TAG_LEAVE = 18;
+        private static final short TAG_LEAVE = 47;
+        /*
+         * Instruction tag.leave$Boolean
+         * kind: TAG_LEAVE
+         * encoding: [48 : short, tag : int, child0 (bci) : int]
+         * signature: Object (boolean)
+         */
+        private static final short TAG_LEAVE$BOOLEAN = 48;
+        /*
+         * Instruction tag.leave$Boolean$unboxed
+         * kind: TAG_LEAVE
+         * encoding: [49 : short, tag : int, child0 (bci) : int]
+         * signature: boolean (Object)
+         */
+        private static final short TAG_LEAVE$BOOLEAN$UNBOXED = 49;
+        /*
+         * Instruction tag.leave$Long
+         * kind: TAG_LEAVE
+         * encoding: [50 : short, tag : int, child0 (bci) : int]
+         * signature: Object (long)
+         */
+        private static final short TAG_LEAVE$LONG = 50;
+        /*
+         * Instruction tag.leave$Long$unboxed
+         * kind: TAG_LEAVE
+         * encoding: [51 : short, tag : int, child0 (bci) : int]
+         * signature: long (Object)
+         */
+        private static final short TAG_LEAVE$LONG$UNBOXED = 51;
+        /*
+         * Instruction tag.leave$generic
+         * kind: TAG_LEAVE
+         * encoding: [52 : short, tag : int, child0 (bci) : int]
+         * signature: Object (Object)
+         */
+        private static final short TAG_LEAVE$GENERIC = 52;
         /*
          * Instruction tag.leaveVoid
          * kind: TAG_LEAVE_VOID
-         * encoding: [19 : short, tag : int]
+         * encoding: [53 : short, tag : int]
          * signature: Object ()
          */
-        private static final short TAG_LEAVE_VOID = 19;
+        private static final short TAG_LEAVE_VOID = 53;
         /*
          * Instruction tag.yield
          * kind: TAG_YIELD
-         * encoding: [20 : short, tag : int]
+         * encoding: [54 : short, tag : int]
          * signature: Object (Object)
          */
-        private static final short TAG_YIELD = 20;
+        private static final short TAG_YIELD = 54;
         /*
          * Instruction tag.resume
          * kind: TAG_RESUME
-         * encoding: [21 : short, tag : int]
+         * encoding: [55 : short, tag : int]
          * signature: void ()
          */
-        private static final short TAG_RESUME = 21;
+        private static final short TAG_RESUME = 55;
         /*
          * Instruction load.variadic_0
          * kind: LOAD_VARIADIC
-         * encoding: [22 : short]
+         * encoding: [56 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_0 = 22;
+        private static final short LOAD_VARIADIC_0 = 56;
         /*
          * Instruction load.variadic_1
          * kind: LOAD_VARIADIC
-         * encoding: [23 : short]
+         * encoding: [57 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_1 = 23;
+        private static final short LOAD_VARIADIC_1 = 57;
         /*
          * Instruction load.variadic_2
          * kind: LOAD_VARIADIC
-         * encoding: [24 : short]
+         * encoding: [58 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_2 = 24;
+        private static final short LOAD_VARIADIC_2 = 58;
         /*
          * Instruction load.variadic_3
          * kind: LOAD_VARIADIC
-         * encoding: [25 : short]
+         * encoding: [59 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_3 = 25;
+        private static final short LOAD_VARIADIC_3 = 59;
         /*
          * Instruction load.variadic_4
          * kind: LOAD_VARIADIC
-         * encoding: [26 : short]
+         * encoding: [60 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_4 = 26;
+        private static final short LOAD_VARIADIC_4 = 60;
         /*
          * Instruction load.variadic_5
          * kind: LOAD_VARIADIC
-         * encoding: [27 : short]
+         * encoding: [61 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_5 = 27;
+        private static final short LOAD_VARIADIC_5 = 61;
         /*
          * Instruction load.variadic_6
          * kind: LOAD_VARIADIC
-         * encoding: [28 : short]
+         * encoding: [62 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_6 = 28;
+        private static final short LOAD_VARIADIC_6 = 62;
         /*
          * Instruction load.variadic_7
          * kind: LOAD_VARIADIC
-         * encoding: [29 : short]
+         * encoding: [63 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_7 = 29;
+        private static final short LOAD_VARIADIC_7 = 63;
         /*
          * Instruction load.variadic_8
          * kind: LOAD_VARIADIC
-         * encoding: [30 : short]
+         * encoding: [64 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_8 = 30;
+        private static final short LOAD_VARIADIC_8 = 64;
         /*
          * Instruction merge.variadic
          * kind: MERGE_VARIADIC
-         * encoding: [31 : short]
+         * encoding: [65 : short]
          * signature: Object (Object)
          */
-        private static final short MERGE_VARIADIC = 31;
+        private static final short MERGE_VARIADIC = 65;
         /*
          * Instruction constant_null
          * kind: STORE_NULL
-         * encoding: [32 : short]
+         * encoding: [66 : short]
          * signature: Object ()
          */
-        private static final short CONSTANT_NULL = 32;
+        private static final short CONSTANT_NULL = 66;
         /*
          * Instruction clear.local
          * kind: CLEAR_LOCAL
-         * encoding: [33 : short, frame_index : short]
+         * encoding: [67 : short, frame_index : short]
          * signature: void ()
          */
-        private static final short CLEAR_LOCAL = 33;
+        private static final short CLEAR_LOCAL = 67;
         /*
          * Instruction c.EarlyReturn
          * kind: CUSTOM
-         * encoding: [34 : short, node : int]
+         * encoding: [68 : short, node : int]
          * nodeType: EarlyReturn
          * signature: void (Object)
          */
-        private static final short EARLY_RETURN_ = 34;
+        private static final short EARLY_RETURN_ = 68;
         /*
          * Instruction c.Add
          * kind: CUSTOM
-         * encoding: [35 : short, node : int]
+         * encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Add
          * signature: Object (Object, Object)
          */
-        private static final short ADD_ = 35;
+        private static final short ADD_ = 69;
+        /*
+         * Instruction c.Add$AddLongs
+         * kind: CUSTOM
+         * encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Add
+         * signature: long (long, long)
+         */
+        private static final short ADD$ADD_LONGS_ = 70;
+        /*
+         * Instruction c.Add$AddLongs$unboxed
+         * kind: CUSTOM
+         * encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Add
+         * signature: long (long, long)
+         */
+        private static final short ADD$ADD_LONGS$UNBOXED_ = 71;
         /*
          * Instruction c.ToString
          * kind: CUSTOM
-         * encoding: [36 : short, node : int]
+         * encoding: [72 : short, node : int]
          * nodeType: ToString
          * signature: Object (Object)
          */
-        private static final short TO_STRING_ = 36;
+        private static final short TO_STRING_ = 72;
         /*
          * Instruction c.Call
          * kind: CUSTOM
-         * encoding: [37 : short, interpreter (const) : int, node : int]
+         * encoding: [73 : short, interpreter (const) : int, node : int]
          * nodeType: Call
          * signature: Object (BasicInterpreter, Object[]...)
          */
-        private static final short CALL_ = 37;
+        private static final short CALL_ = 73;
         /*
          * Instruction c.AddConstantOperation
          * kind: CUSTOM
-         * encoding: [38 : short, constantLhs (const) : int, node : int]
+         * encoding: [74 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
          * nodeType: AddConstantOperation
          * signature: Object (long, Object)
          */
-        private static final short ADD_CONSTANT_OPERATION_ = 38;
+        private static final short ADD_CONSTANT_OPERATION_ = 74;
+        /*
+         * Instruction c.AddConstantOperation$AddLongs
+         * kind: CUSTOM
+         * encoding: [75 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
+         * nodeType: AddConstantOperation
+         * signature: long (long, long)
+         */
+        private static final short ADD_CONSTANT_OPERATION$ADD_LONGS_ = 75;
+        /*
+         * Instruction c.AddConstantOperation$AddLongs$unboxed
+         * kind: CUSTOM
+         * encoding: [76 : short, constantLhs (const) : int, node : int, child0 (bci) : int]
+         * nodeType: AddConstantOperation
+         * signature: long (long, long)
+         */
+        private static final short ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ = 76;
         /*
          * Instruction c.AddConstantOperationAtEnd
          * kind: CUSTOM
-         * encoding: [39 : short, constantRhs (const) : int, node : int]
+         * encoding: [77 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
          * nodeType: AddConstantOperationAtEnd
          * signature: Object (Object, long)
          */
-        private static final short ADD_CONSTANT_OPERATION_AT_END_ = 39;
+        private static final short ADD_CONSTANT_OPERATION_AT_END_ = 77;
+        /*
+         * Instruction c.AddConstantOperationAtEnd$AddLongs
+         * kind: CUSTOM
+         * encoding: [78 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
+         * nodeType: AddConstantOperationAtEnd
+         * signature: long (long, long)
+         */
+        private static final short ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ = 78;
+        /*
+         * Instruction c.AddConstantOperationAtEnd$AddLongs$unboxed
+         * kind: CUSTOM
+         * encoding: [79 : short, constantRhs (const) : int, node : int, child0 (bci) : int]
+         * nodeType: AddConstantOperationAtEnd
+         * signature: long (long, long)
+         */
+        private static final short ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ = 79;
         /*
          * Instruction c.VeryComplexOperation
          * kind: CUSTOM
-         * encoding: [40 : short, node : int]
+         * encoding: [80 : short, node : int, child0 (bci) : int]
          * nodeType: VeryComplexOperation
          * signature: long (long, Object[]...)
          */
-        private static final short VERY_COMPLEX_OPERATION_ = 40;
+        private static final short VERY_COMPLEX_OPERATION_ = 80;
+        /*
+         * Instruction c.VeryComplexOperation$Bla
+         * kind: CUSTOM
+         * encoding: [81 : short, node : int, child0 (bci) : int]
+         * nodeType: VeryComplexOperation
+         * signature: long (long, Object[]...)
+         */
+        private static final short VERY_COMPLEX_OPERATION$BLA_ = 81;
+        /*
+         * Instruction c.VeryComplexOperation$Bla$unboxed
+         * kind: CUSTOM
+         * encoding: [82 : short, node : int, child0 (bci) : int]
+         * nodeType: VeryComplexOperation
+         * signature: long (long, Object[]...)
+         */
+        private static final short VERY_COMPLEX_OPERATION$BLA$UNBOXED_ = 82;
+        /*
+         * Instruction c.VeryComplexOperation$unboxed
+         * kind: CUSTOM
+         * encoding: [83 : short, node : int, child0 (bci) : int]
+         * nodeType: VeryComplexOperation
+         * signature: long (long, Object[]...)
+         */
+        private static final short VERY_COMPLEX_OPERATION$UNBOXED_ = 83;
         /*
          * Instruction c.ThrowOperation
          * kind: CUSTOM
-         * encoding: [41 : short, node : int]
+         * encoding: [84 : short, node : int, child0 (bci) : int]
          * nodeType: ThrowOperation
          * signature: Object (long)
          */
-        private static final short THROW_OPERATION_ = 41;
+        private static final short THROW_OPERATION_ = 84;
+        /*
+         * Instruction c.ThrowOperation$Perform
+         * kind: CUSTOM
+         * encoding: [85 : short, node : int, child0 (bci) : int]
+         * nodeType: ThrowOperation
+         * signature: Object (long)
+         */
+        private static final short THROW_OPERATION$PERFORM_ = 85;
         /*
          * Instruction c.ReadExceptionOperation
          * kind: CUSTOM
-         * encoding: [42 : short, node : int]
+         * encoding: [86 : short, node : int]
          * nodeType: ReadExceptionOperation
          * signature: long (TestException)
          */
-        private static final short READ_EXCEPTION_OPERATION_ = 42;
+        private static final short READ_EXCEPTION_OPERATION_ = 86;
+        /*
+         * Instruction c.ReadExceptionOperation$unboxed
+         * kind: CUSTOM
+         * encoding: [87 : short, node : int]
+         * nodeType: ReadExceptionOperation
+         * signature: long (TestException)
+         */
+        private static final short READ_EXCEPTION_OPERATION$UNBOXED_ = 87;
         /*
          * Instruction c.AlwaysBoxOperation
          * kind: CUSTOM
-         * encoding: [43 : short, node : int]
+         * encoding: [88 : short, node : int]
          * nodeType: AlwaysBoxOperation
          * signature: Object (Object)
          */
-        private static final short ALWAYS_BOX_OPERATION_ = 43;
+        private static final short ALWAYS_BOX_OPERATION_ = 88;
         /*
          * Instruction c.AppenderOperation
          * kind: CUSTOM
-         * encoding: [44 : short, node : int]
+         * encoding: [89 : short, node : int]
          * nodeType: AppenderOperation
          * signature: void (List<?>, Object)
          */
-        private static final short APPENDER_OPERATION_ = 44;
+        private static final short APPENDER_OPERATION_ = 89;
         /*
          * Instruction c.TeeLocal
          * kind: CUSTOM
-         * encoding: [45 : short, setter (const) : int, node : int]
+         * encoding: [90 : short, setter (const) : int, node : int, child0 (bci) : int]
          * nodeType: TeeLocal
          * signature: Object (LocalAccessor, Object)
          */
-        private static final short TEE_LOCAL_ = 45;
+        private static final short TEE_LOCAL_ = 90;
+        /*
+         * Instruction c.TeeLocal$Long
+         * kind: CUSTOM
+         * encoding: [91 : short, setter (const) : int, node : int, child0 (bci) : int]
+         * nodeType: TeeLocal
+         * signature: long (LocalAccessor, long)
+         */
+        private static final short TEE_LOCAL$LONG_ = 91;
+        /*
+         * Instruction c.TeeLocal$Long$unboxed
+         * kind: CUSTOM
+         * encoding: [92 : short, setter (const) : int, node : int, child0 (bci) : int]
+         * nodeType: TeeLocal
+         * signature: long (LocalAccessor, long)
+         */
+        private static final short TEE_LOCAL$LONG$UNBOXED_ = 92;
         /*
          * Instruction c.TeeLocalRange
          * kind: CUSTOM
-         * encoding: [46 : short, setter (const) : int, node : int]
+         * encoding: [93 : short, setter (const) : int, node : int]
          * nodeType: TeeLocalRange
          * signature: Object (LocalRangeAccessor, Object)
          */
-        private static final short TEE_LOCAL_RANGE_ = 46;
+        private static final short TEE_LOCAL_RANGE_ = 93;
         /*
          * Instruction c.Invoke
          * kind: CUSTOM
-         * encoding: [47 : short, node : int]
+         * encoding: [94 : short, node : int]
          * nodeType: Invoke
          * signature: Object (Object, Object[]...)
          */
-        private static final short INVOKE_ = 47;
+        private static final short INVOKE_ = 94;
         /*
          * Instruction c.MaterializeFrame
          * kind: CUSTOM
-         * encoding: [48 : short, node : int]
+         * encoding: [95 : short, node : int]
          * nodeType: MaterializeFrame
          * signature: MaterializedFrame ()
          */
-        private static final short MATERIALIZE_FRAME_ = 48;
+        private static final short MATERIALIZE_FRAME_ = 95;
         /*
          * Instruction c.CreateClosure
          * kind: CUSTOM
-         * encoding: [49 : short, node : int]
+         * encoding: [96 : short, node : int]
          * nodeType: CreateClosure
          * signature: TestClosure (BasicInterpreter)
          */
-        private static final short CREATE_CLOSURE_ = 49;
+        private static final short CREATE_CLOSURE_ = 96;
         /*
          * Instruction c.VoidOperation
          * kind: CUSTOM
-         * encoding: [50 : short, node : int]
+         * encoding: [97 : short, node : int]
          * nodeType: VoidOperation
          * signature: void ()
          */
-        private static final short VOID_OPERATION_ = 50;
+        private static final short VOID_OPERATION_ = 97;
         /*
          * Instruction c.ToBoolean
          * kind: CUSTOM
-         * encoding: [51 : short, node : int]
+         * encoding: [98 : short, node : int, child0 (bci) : int]
          * nodeType: ToBoolean
          * signature: boolean (Object)
          */
-        private static final short TO_BOOLEAN_ = 51;
+        private static final short TO_BOOLEAN_ = 98;
+        /*
+         * Instruction c.ToBoolean$Long
+         * kind: CUSTOM
+         * encoding: [99 : short, node : int, child0 (bci) : int]
+         * nodeType: ToBoolean
+         * signature: boolean (long)
+         */
+        private static final short TO_BOOLEAN$LONG_ = 99;
+        /*
+         * Instruction c.ToBoolean$Long$unboxed
+         * kind: CUSTOM
+         * encoding: [100 : short, node : int, child0 (bci) : int]
+         * nodeType: ToBoolean
+         * signature: boolean (long)
+         */
+        private static final short TO_BOOLEAN$LONG$UNBOXED_ = 100;
+        /*
+         * Instruction c.ToBoolean$Boolean
+         * kind: CUSTOM
+         * encoding: [101 : short, node : int, child0 (bci) : int]
+         * nodeType: ToBoolean
+         * signature: boolean (boolean)
+         */
+        private static final short TO_BOOLEAN$BOOLEAN_ = 101;
+        /*
+         * Instruction c.ToBoolean$Boolean$unboxed
+         * kind: CUSTOM
+         * encoding: [102 : short, node : int, child0 (bci) : int]
+         * nodeType: ToBoolean
+         * signature: boolean (boolean)
+         */
+        private static final short TO_BOOLEAN$BOOLEAN$UNBOXED_ = 102;
+        /*
+         * Instruction c.ToBoolean$unboxed
+         * kind: CUSTOM
+         * encoding: [103 : short, node : int, child0 (bci) : int]
+         * nodeType: ToBoolean
+         * signature: boolean (Object)
+         */
+        private static final short TO_BOOLEAN$UNBOXED_ = 103;
         /*
          * Instruction c.GetSourcePosition
          * kind: CUSTOM
-         * encoding: [52 : short, node : int]
+         * encoding: [104 : short, node : int]
          * nodeType: GetSourcePosition
          * signature: SourceSection ()
          */
-        private static final short GET_SOURCE_POSITION_ = 52;
+        private static final short GET_SOURCE_POSITION_ = 104;
         /*
          * Instruction c.EnsureAndGetSourcePosition
          * kind: CUSTOM
-         * encoding: [53 : short, node : int]
+         * encoding: [105 : short, node : int, child0 (bci) : int]
          * nodeType: EnsureAndGetSourcePosition
          * signature: SourceSection (boolean)
          */
-        private static final short ENSURE_AND_GET_SOURCE_POSITION_ = 53;
+        private static final short ENSURE_AND_GET_SOURCE_POSITION_ = 105;
+        /*
+         * Instruction c.EnsureAndGetSourcePosition$Operation
+         * kind: CUSTOM
+         * encoding: [106 : short, node : int, child0 (bci) : int]
+         * nodeType: EnsureAndGetSourcePosition
+         * signature: SourceSection (boolean)
+         */
+        private static final short ENSURE_AND_GET_SOURCE_POSITION$OPERATION_ = 106;
         /*
          * Instruction c.GetSourcePositions
          * kind: CUSTOM
-         * encoding: [54 : short, node : int]
+         * encoding: [107 : short, node : int]
          * nodeType: GetSourcePositions
          * signature: SourceSection[] ()
          */
-        private static final short GET_SOURCE_POSITIONS_ = 54;
+        private static final short GET_SOURCE_POSITIONS_ = 107;
         /*
          * Instruction c.CopyLocalsToFrame
          * kind: CUSTOM
-         * encoding: [55 : short, node : int]
+         * encoding: [108 : short, node : int, child0 (bci) : int]
          * nodeType: CopyLocalsToFrame
          * signature: Frame (Object)
          */
-        private static final short COPY_LOCALS_TO_FRAME_ = 55;
+        private static final short COPY_LOCALS_TO_FRAME_ = 108;
+        /*
+         * Instruction c.CopyLocalsToFrame$SomeLocals
+         * kind: CUSTOM
+         * encoding: [109 : short, node : int, child0 (bci) : int]
+         * nodeType: CopyLocalsToFrame
+         * signature: Frame (long)
+         */
+        private static final short COPY_LOCALS_TO_FRAME$SOME_LOCALS_ = 109;
         /*
          * Instruction c.GetBytecodeLocation
          * kind: CUSTOM
-         * encoding: [56 : short, node : int]
+         * encoding: [110 : short, node : int]
          * nodeType: GetBytecodeLocation
          * signature: BytecodeLocation ()
          */
-        private static final short GET_BYTECODE_LOCATION_ = 56;
+        private static final short GET_BYTECODE_LOCATION_ = 110;
         /*
          * Instruction c.CollectBytecodeLocations
          * kind: CUSTOM
-         * encoding: [57 : short, node : int]
+         * encoding: [111 : short, node : int]
          * nodeType: CollectBytecodeLocations
          * signature: List<BytecodeLocation> ()
          */
-        private static final short COLLECT_BYTECODE_LOCATIONS_ = 57;
+        private static final short COLLECT_BYTECODE_LOCATIONS_ = 111;
         /*
          * Instruction c.CollectSourceLocations
          * kind: CUSTOM
-         * encoding: [58 : short, node : int]
+         * encoding: [112 : short, node : int]
          * nodeType: CollectSourceLocations
          * signature: List<SourceSection> ()
          */
-        private static final short COLLECT_SOURCE_LOCATIONS_ = 58;
+        private static final short COLLECT_SOURCE_LOCATIONS_ = 112;
         /*
          * Instruction c.CollectAllSourceLocations
          * kind: CUSTOM
-         * encoding: [59 : short, node : int]
+         * encoding: [113 : short, node : int]
          * nodeType: CollectAllSourceLocations
          * signature: List<SourceSection[]> ()
          */
-        private static final short COLLECT_ALL_SOURCE_LOCATIONS_ = 59;
+        private static final short COLLECT_ALL_SOURCE_LOCATIONS_ = 113;
         /*
          * Instruction c.Continue
          * kind: CUSTOM
-         * encoding: [60 : short, node : int]
+         * encoding: [114 : short, node : int]
          * nodeType: ContinueNode
          * signature: Object (ContinuationResult, Object)
          */
-        private static final short CONTINUE_ = 60;
+        private static final short CONTINUE_ = 114;
         /*
          * Instruction c.CurrentLocation
          * kind: CUSTOM
-         * encoding: [61 : short, node : int]
+         * encoding: [115 : short, node : int]
          * nodeType: CurrentLocation
          * signature: BytecodeLocation ()
          */
-        private static final short CURRENT_LOCATION_ = 61;
+        private static final short CURRENT_LOCATION_ = 115;
         /*
          * Instruction c.PrintHere
          * kind: CUSTOM
-         * encoding: [62 : short, node : int]
+         * encoding: [116 : short, node : int]
          * nodeType: PrintHere
          * signature: void ()
          */
-        private static final short PRINT_HERE_ = 62;
+        private static final short PRINT_HERE_ = 116;
         /*
          * Instruction c.IncrementValue
          * kind: CUSTOM
-         * encoding: [63 : short, node : int]
+         * encoding: [117 : short, node : int, child0 (bci) : int]
          * nodeType: IncrementValue
          * signature: long (long)
          */
-        private static final short INCREMENT_VALUE_ = 63;
+        private static final short INCREMENT_VALUE_ = 117;
+        /*
+         * Instruction c.IncrementValue$Increment
+         * kind: CUSTOM
+         * encoding: [118 : short, node : int, child0 (bci) : int]
+         * nodeType: IncrementValue
+         * signature: long (long)
+         */
+        private static final short INCREMENT_VALUE$INCREMENT_ = 118;
+        /*
+         * Instruction c.IncrementValue$Increment$unboxed
+         * kind: CUSTOM
+         * encoding: [119 : short, node : int, child0 (bci) : int]
+         * nodeType: IncrementValue
+         * signature: long (long)
+         */
+        private static final short INCREMENT_VALUE$INCREMENT$UNBOXED_ = 119;
+        /*
+         * Instruction c.IncrementValue$unboxed
+         * kind: CUSTOM
+         * encoding: [120 : short, node : int, child0 (bci) : int]
+         * nodeType: IncrementValue
+         * signature: long (long)
+         */
+        private static final short INCREMENT_VALUE$UNBOXED_ = 120;
         /*
          * Instruction c.DoubleValue
          * kind: CUSTOM
-         * encoding: [64 : short, node : int]
+         * encoding: [121 : short, node : int, child0 (bci) : int]
          * nodeType: DoubleValue
          * signature: long (long)
          */
-        private static final short DOUBLE_VALUE_ = 64;
+        private static final short DOUBLE_VALUE_ = 121;
+        /*
+         * Instruction c.DoubleValue$Double
+         * kind: CUSTOM
+         * encoding: [122 : short, node : int, child0 (bci) : int]
+         * nodeType: DoubleValue
+         * signature: long (long)
+         */
+        private static final short DOUBLE_VALUE$DOUBLE_ = 122;
+        /*
+         * Instruction c.DoubleValue$Double$unboxed
+         * kind: CUSTOM
+         * encoding: [123 : short, node : int, child0 (bci) : int]
+         * nodeType: DoubleValue
+         * signature: long (long)
+         */
+        private static final short DOUBLE_VALUE$DOUBLE$UNBOXED_ = 123;
+        /*
+         * Instruction c.DoubleValue$unboxed
+         * kind: CUSTOM
+         * encoding: [124 : short, node : int, child0 (bci) : int]
+         * nodeType: DoubleValue
+         * signature: long (long)
+         */
+        private static final short DOUBLE_VALUE$UNBOXED_ = 124;
         /*
          * Instruction c.EnableIncrementValueInstrumentation
          * kind: CUSTOM
-         * encoding: [65 : short, node : int]
+         * encoding: [125 : short, node : int]
          * nodeType: EnableIncrementValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 65;
+        private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 125;
         /*
          * Instruction c.Mod
          * kind: CUSTOM
-         * encoding: [66 : short, node : int]
+         * encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD_ = 66;
+        private static final short MOD_ = 126;
+        /*
+         * Instruction c.Mod$Ints
+         * kind: CUSTOM
+         * encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Mod
+         * signature: long (long, long)
+         */
+        private static final short MOD$INTS_ = 127;
+        /*
+         * Instruction c.Mod$Ints$unboxed
+         * kind: CUSTOM
+         * encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Mod
+         * signature: long (long, long)
+         */
+        private static final short MOD$INTS$UNBOXED_ = 128;
+        /*
+         * Instruction c.Mod$unboxed
+         * kind: CUSTOM
+         * encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Mod
+         * signature: long (long, long)
+         */
+        private static final short MOD$UNBOXED_ = 129;
         /*
          * Instruction c.Less
          * kind: CUSTOM
-         * encoding: [67 : short, node : int]
+         * encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS_ = 67;
+        private static final short LESS_ = 130;
+        /*
+         * Instruction c.Less$Ints
+         * kind: CUSTOM
+         * encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Less
+         * signature: boolean (long, long)
+         */
+        private static final short LESS$INTS_ = 131;
+        /*
+         * Instruction c.Less$Ints$unboxed
+         * kind: CUSTOM
+         * encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Less
+         * signature: boolean (long, long)
+         */
+        private static final short LESS$INTS$UNBOXED_ = 132;
+        /*
+         * Instruction c.Less$unboxed
+         * kind: CUSTOM
+         * encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * nodeType: Less
+         * signature: boolean (long, long)
+         */
+        private static final short LESS$UNBOXED_ = 133;
         /*
          * Instruction c.EnableDoubleValueInstrumentation
          * kind: CUSTOM
-         * encoding: [68 : short, node : int]
+         * encoding: [134 : short, node : int]
          * nodeType: EnableDoubleValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 68;
+        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 134;
         /*
          * Instruction c.ExplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [69 : short, node : int]
+         * encoding: [135 : short, node : int]
          * nodeType: ExplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short EXPLICIT_BINDINGS_TEST_ = 69;
+        private static final short EXPLICIT_BINDINGS_TEST_ = 135;
         /*
          * Instruction c.ImplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [70 : short, node : int]
+         * encoding: [136 : short, node : int]
          * nodeType: ImplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short IMPLICIT_BINDINGS_TEST_ = 70;
+        private static final short IMPLICIT_BINDINGS_TEST_ = 136;
         /*
          * Instruction sc.ScAnd
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [137 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_AND_ = 71;
+        private static final short SC_AND_ = 137;
         /*
          * Instruction sc.ScOr
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [138 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_OR_ = 72;
+        private static final short SC_OR_ = 138;
+        /*
+         * Instruction merge.conditional
+         * kind: MERGE_CONDITIONAL
+         * encoding: [139 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: Object (boolean, Object)
+         */
+        private static final short MERGE_CONDITIONAL = 139;
+        /*
+         * Instruction merge.conditional$Boolean
+         * kind: MERGE_CONDITIONAL
+         * encoding: [140 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: Object (boolean, boolean)
+         */
+        private static final short MERGE_CONDITIONAL$BOOLEAN = 140;
+        /*
+         * Instruction merge.conditional$Boolean$unboxed
+         * kind: MERGE_CONDITIONAL
+         * encoding: [141 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: boolean (boolean, boolean)
+         */
+        private static final short MERGE_CONDITIONAL$BOOLEAN$UNBOXED = 141;
+        /*
+         * Instruction merge.conditional$Long
+         * kind: MERGE_CONDITIONAL
+         * encoding: [142 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: Object (boolean, long)
+         */
+        private static final short MERGE_CONDITIONAL$LONG = 142;
+        /*
+         * Instruction merge.conditional$Long$unboxed
+         * kind: MERGE_CONDITIONAL
+         * encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: long (boolean, long)
+         */
+        private static final short MERGE_CONDITIONAL$LONG$UNBOXED = 143;
+        /*
+         * Instruction merge.conditional$generic
+         * kind: MERGE_CONDITIONAL
+         * encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
+         * signature: Object (boolean, Object)
+         */
+        private static final short MERGE_CONDITIONAL$GENERIC = 144;
         /*
          * Instruction invalidate0
          * kind: INVALIDATE
-         * encoding: [73 : short]
+         * encoding: [145 : short]
          * signature: void ()
          */
-        private static final short INVALIDATE0 = 73;
+        private static final short INVALIDATE0 = 145;
         /*
          * Instruction invalidate1
          * kind: INVALIDATE
-         * encoding: [74 : short, invalidated0 (short) : short]
+         * encoding: [146 : short, invalidated0 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE1 = 74;
+        private static final short INVALIDATE1 = 146;
         /*
          * Instruction invalidate2
          * kind: INVALIDATE
-         * encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+         * encoding: [147 : short, invalidated0 (short) : short, invalidated1 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE2 = 75;
+        private static final short INVALIDATE2 = 147;
         /*
          * Instruction invalidate3
          * kind: INVALIDATE
-         * encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+         * encoding: [148 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE3 = 76;
+        private static final short INVALIDATE3 = 148;
         /*
          * Instruction invalidate4
          * kind: INVALIDATE
-         * encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+         * encoding: [149 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE4 = 77;
+        private static final short INVALIDATE4 = 149;
+        /*
+         * Instruction invalidate5
+         * kind: INVALIDATE
+         * encoding: [150 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+         * signature: void ()
+         */
+        private static final short INVALIDATE5 = 150;
+        /*
+         * Instruction invalidate6
+         * kind: INVALIDATE
+         * encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
+         * signature: void ()
+         */
+        private static final short INVALIDATE6 = 151;
 
     }
     private static final class Operations {
@@ -13382,6 +17940,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private static final int IMPLICITBINDINGSTEST = 62;
         private static final int SCAND = 63;
         private static final int SCOR = 64;
+
+    }
+    private static final class FrameTags {
+
+        private static final byte OBJECT = 0 /* FrameSlotKind.Object.tag */;
+        private static final byte LONG = 1 /* FrameSlotKind.Long.tag */;
+        private static final byte BOOLEAN = 5 /* FrameSlotKind.Boolean.tag */;
+        private static final byte ILLEGAL = 7 /* FrameSlotKind.Illegal.tag */;
 
     }
     private static final class ExceptionHandlerImpl extends ExceptionHandler {
@@ -13602,16 +18168,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         }
 
         @Override
-        public int getStartIndex() {
-            return bytecode.locals[baseIndex + LOCALS_OFFSET_START_BCI];
-        }
-
-        @Override
-        public int getEndIndex() {
-            return bytecode.locals[baseIndex + LOCALS_OFFSET_END_BCI];
-        }
-
-        @Override
         public Object getInfo() {
             int infoId = bytecode.locals[baseIndex + LOCALS_OFFSET_INFO];
             if (infoId == -1) {
@@ -13633,17 +18189,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         @Override
         public int getLocalIndex() {
-            return bytecode.locals[baseIndex + LOCALS_OFFSET_LOCAL_INDEX];
+            return baseIndex / LOCALS_LENGTH;
         }
 
         @Override
         public int getLocalOffset() {
-            return bytecode.locals[baseIndex + LOCALS_OFFSET_FRAME_INDEX] - USER_LOCALS_START_INDEX;
+            return baseIndex / LOCALS_LENGTH;
         }
 
         @Override
         public FrameSlotKind getTypeProfile() {
-            return null;
+            byte[] localTags = bytecode.getLocalTags();
+            if (localTags == null) {
+                return null;
+            }
+            return FrameSlotKind.fromTag(localTags[getLocalIndex()]);
         }
 
     }
@@ -13672,11 +18232,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     }
     private static final class ContinuationRootNodeImpl extends ContinuationRootNode {
 
-        final BasicInterpreterWithUncached root;
+        final BasicInterpreterProductionRootScoping root;
         final int sp;
         @CompilationFinal volatile BytecodeLocation location;
 
-        ContinuationRootNodeImpl(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, BasicInterpreterWithUncached root, int sp, BytecodeLocation location) {
+        ContinuationRootNodeImpl(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, BasicInterpreterProductionRootScoping root, int sp, BytecodeLocation location) {
             super(BytecodeRootNodesImpl.VISIBLE_TOKEN, language, frameDescriptor);
             this.root = root;
             this.sp = sp;
@@ -13850,8 +18410,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
-            Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            Object child1Value_;
+            try {
+                child1Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] || SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] || SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
@@ -13877,6 +18450,44 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private long executeAddLongs(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return expectLong(executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            return Add.addLongs(child0Value_, child1Value_);
+        }
+
+        private long executeAddLongs$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return expectLong(executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            return Add.addLongs(child0Value_, child1Value_);
+        }
+
         @SuppressWarnings("static-method")
         private boolean fallbackGuard_(int state_0, Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
@@ -13897,6 +18508,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddLongs");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return Add.addLongs(child0Value_, child1Value_);
                 }
             }
@@ -13907,12 +18519,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddStrings");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return Add.addStrings(child0Value_, child1Value_);
                 }
             }
             state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */;
             this.state_0_ = state_0;
             $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$Fallback");
+            quicken(state_0, $bytecode, $bc, $bci);
             return Add.addObjects(child0Value, child1Value);
         }
 
@@ -13950,6 +18564,38 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[3] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            int oldOperandIndex1 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child1 */);
+            short oldOperand1 = BYTES.getShort($bc, oldOperandIndex1);
+            short newOperand1;
+            if ((state_0 & 0b110) == 0 /* only-active SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] || SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] || SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1
+               && (newOperand1 = applyQuickeningLong(oldOperand1)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.ADD$ADD_LONGS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.ADD$ADD_LONGS_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newOperand1 = undoQuickening(oldOperand1);
+                newInstruction = Instructions.ADD_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            BYTES.putShort($bc, oldOperandIndex1, newOperand1);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 1, new InstructionImpl($bytecode, oldOperandIndex1, oldOperand1), new InstructionImpl($bytecode, oldOperandIndex1, newOperand1));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @GeneratedBy(BasicInterpreter.class)
@@ -14224,7 +18870,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             long constantLhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantLhs */)), Long.class);
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(constantLhsValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddConstantOperation.addStrings(long, String)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperation.addLongs(long, long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
@@ -14239,6 +18891,30 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(constantLhsValue_, child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private long executeAddLongs(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long constantLhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantLhs */)), Long.class);
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(constantLhsValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            return AddConstantOperation.addLongs(constantLhsValue_, child0Value_);
+        }
+
+        private long executeAddLongs$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long constantLhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantLhs */)), Long.class);
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(constantLhsValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            return AddConstantOperation.addLongs(constantLhsValue_, child0Value_);
+        }
+
         private Object executeAndSpecialize(long constantLhsValue, Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             if (child0Value instanceof Long) {
@@ -14246,6 +18922,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.AddConstantOperation.addLongs(long, long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddConstantOperation$AddLongs");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return AddConstantOperation.addLongs(constantLhsValue, child0Value_);
             }
             if (child0Value instanceof String) {
@@ -14253,6 +18930,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.AddConstantOperation.addStrings(long, String)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddConstantOperation$AddStrings");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return AddConstantOperation.addStrings(constantLhsValue, child0Value_);
             }
             throw new UnsupportedSpecializationException(this, null, constantLhsValue, child0Value);
@@ -14283,6 +18961,31 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[2] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if ((state_0 & 0b10) == 0 /* only-active SpecializationActive[BasicInterpreter.AddConstantOperation.addLongs(long, long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddConstantOperation.addStrings(long, String)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.ADD_CONSTANT_OPERATION_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -14332,7 +19035,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                long constantRhsValue = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
+                return executeAndSpecialize(ex.getResult(), constantRhsValue, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             long constantRhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addStrings(String, long)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addLongs(long, long)] */ && child0Value_ instanceof Long) {
@@ -14348,6 +19058,32 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(child0Value_, constantRhsValue_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private long executeAddLongs(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                long constantRhsValue = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
+                return expectLong(executeAndSpecialize(ex.getResult(), constantRhsValue, $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            long constantRhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
+            return AddConstantOperationAtEnd.addLongs(child0Value_, constantRhsValue_);
+        }
+
+        private long executeAddLongs$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                long constantRhsValue = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
+                return expectLong(executeAndSpecialize(ex.getResult(), constantRhsValue, $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            long constantRhsValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm constantRhs */)), Long.class);
+            return AddConstantOperationAtEnd.addLongs(child0Value_, constantRhsValue_);
+        }
+
         private Object executeAndSpecialize(Object child0Value, long constantRhsValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             if (child0Value instanceof Long) {
@@ -14355,6 +19091,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addLongs(long, long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddConstantOperationAtEnd$AddLongs");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return AddConstantOperationAtEnd.addLongs(child0Value_, constantRhsValue);
             }
             if (child0Value instanceof String) {
@@ -14362,6 +19099,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addStrings(String, long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddConstantOperationAtEnd$AddStrings");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return AddConstantOperationAtEnd.addStrings(child0Value_, constantRhsValue);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value, constantRhsValue);
@@ -14392,6 +19130,31 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[2] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if ((state_0 & 0b10) == 0 /* only-active SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addLongs(long, long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddConstantOperationAtEnd.addStrings(String, long)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.ADD_CONSTANT_OPERATION_AT_END_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -14437,11 +19200,61 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 2));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object[] child1Value = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             Object[] child1Value_ = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.VeryComplexOperation.bla(long, Object[])] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                return VeryComplexOperation.bla(child0Value__, child1Value_);
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.VeryComplexOperation.bla(long, Object[])] */) {
+                return VeryComplexOperation.bla(child0Value_, child1Value_);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private long executeBla(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object[] child1Value = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            Object[] child1Value_ = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            return VeryComplexOperation.bla(child0Value_, child1Value_);
+        }
+
+        private long executeBla$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object[] child1Value = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            Object[] child1Value_ = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            return VeryComplexOperation.bla(child0Value_, child1Value_);
+        }
+
+        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object[] child1Value = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            Object[] child1Value_ = (Object[]) FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.VeryComplexOperation.bla(long, Object[])] */) {
+                return VeryComplexOperation.bla(child0Value_, child1Value_);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
@@ -14454,6 +19267,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.VeryComplexOperation.bla(long, Object[])] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "VeryComplexOperation$Bla");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return VeryComplexOperation.bla(child0Value_, child1Value);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value, child1Value);
@@ -14475,6 +19289,35 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.VeryComplexOperation.bla(long, Object[])] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.VERY_COMPLEX_OPERATION$BLA_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.VERY_COMPLEX_OPERATION$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.VERY_COMPLEX_OPERATION_;
+                }
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -14516,16 +19359,35 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ThrowOperation.perform(long, Node)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ThrowOperation.perform(long, Node)] */) {
                 {
                     Node node__ = (this);
-                    return ThrowOperation.perform(child0Value__, node__);
+                    return ThrowOperation.perform(child0Value_, node__);
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private Object executePerform(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            {
+                Node node__ = (this);
+                return ThrowOperation.perform(child0Value_, node__);
+            }
         }
 
         private Object executeAndSpecialize(Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
@@ -14538,6 +19400,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.ThrowOperation.perform(long, Node)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "ThrowOperation$Perform");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return ThrowOperation.perform(child0Value_, node__);
                 }
             }
@@ -14563,6 +19426,27 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ThrowOperation.perform(long, Node)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                newInstruction = Instructions.THROW_OPERATION$PERFORM_;
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.THROW_OPERATION_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -14613,6 +19497,17 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ReadExceptionOperation.perform(TestException)] */ && child0Value_ instanceof TestException) {
+                TestException child0Value__ = (TestException) child0Value_;
+                return ReadExceptionOperation.perform(child0Value__);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
         private long executeAndSpecialize(Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             if (child0Value instanceof TestException) {
@@ -14620,6 +19515,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.ReadExceptionOperation.perform(TestException)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "ReadExceptionOperation$Perform");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return ReadExceptionOperation.perform(child0Value_);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value);
@@ -14641,6 +19537,20 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                newInstruction = Instructions.READ_EXCEPTION_OPERATION$UNBOXED_;
+            } else {
+                newInstruction = Instructions.READ_EXCEPTION_OPERATION_;
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -14809,7 +19719,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             LocalAccessor setterValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm setter */)), LocalAccessor.class);
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(frameValue, setterValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.TeeLocal.doLong(VirtualFrame, LocalAccessor, long, BytecodeNode)] || SpecializationActive[BasicInterpreter.TeeLocal.doGeneric(VirtualFrame, LocalAccessor, Object, BytecodeNode)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.TeeLocal.doLong(VirtualFrame, LocalAccessor, long, BytecodeNode)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
@@ -14829,6 +19745,36 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(frameValue, setterValue_, child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private long executeLong(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            LocalAccessor setterValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm setter */)), LocalAccessor.class);
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(frameValue, setterValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            {
+                BytecodeNode bytecode__ = ($bytecode);
+                return TeeLocal.doLong(frameValue, setterValue_, child0Value_, bytecode__);
+            }
+        }
+
+        private long executeLong$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
+            LocalAccessor setterValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm setter */)), LocalAccessor.class);
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return expectLong(executeAndSpecialize(frameValue, setterValue_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
+            }
+            {
+                BytecodeNode bytecode__ = ($bytecode);
+                return TeeLocal.doLong(frameValue, setterValue_, child0Value_, bytecode__);
+            }
+        }
+
         private Object executeAndSpecialize(VirtualFrame frameValue, LocalAccessor setterValue, Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             {
@@ -14839,6 +19785,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.TeeLocal.doLong(VirtualFrame, LocalAccessor, long, BytecodeNode)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "TeeLocal$Long");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return TeeLocal.doLong(frameValue, setterValue, child0Value_, bytecode__);
                 }
             }
@@ -14849,6 +19796,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.TeeLocal.doGeneric(VirtualFrame, LocalAccessor, Object, BytecodeNode)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "TeeLocal$Generic");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return TeeLocal.doGeneric(frameValue, setterValue, child0Value, bytecode__1);
             }
         }
@@ -14888,6 +19836,31 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[2] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if ((state_0 & 0b10) == 0 /* only-active SpecializationActive[BasicInterpreter.TeeLocal.doLong(VirtualFrame, LocalAccessor, long, BytecodeNode)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.TeeLocal.doLong(VirtualFrame, LocalAccessor, long, BytecodeNode)] || SpecializationActive[BasicInterpreter.TeeLocal.doGeneric(VirtualFrame, LocalAccessor, Object, BytecodeNode)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.TEE_LOCAL$LONG$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.TEE_LOCAL$LONG_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.TEE_LOCAL_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @GeneratedBy(BasicInterpreter.class)
@@ -15557,7 +20530,84 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private boolean execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] || SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] || SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */) {
+                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] */ && child0Value_ instanceof Long) {
+                    long child0Value__ = (long) child0Value_;
+                    return ToBoolean.doLong(child0Value__);
+                }
+                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] */ && child0Value_ instanceof Boolean) {
+                    boolean child0Value__ = (boolean) child0Value_;
+                    return ToBoolean.doBoolean(child0Value__);
+                }
+                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */ && child0Value_ instanceof String) {
+                    String child0Value__ = (String) child0Value_;
+                    return ToBoolean.doString(child0Value__);
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private boolean executeLong(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return ToBoolean.doLong(child0Value_);
+        }
+
+        private boolean executeLong$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return ToBoolean.doLong(child0Value_);
+        }
+
+        private boolean executeBoolean(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            boolean child0Value_;
+            try {
+                child0Value_ = FRAMES.expectBoolean($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return ToBoolean.doBoolean(child0Value_);
+        }
+
+        private boolean executeBoolean$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            boolean child0Value_;
+            try {
+                child0Value_ = FRAMES.expectBoolean($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return ToBoolean.doBoolean(child0Value_);
+        }
+
+        private boolean executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] || SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] || SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
@@ -15583,6 +20633,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "ToBoolean$Long");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return ToBoolean.doLong(child0Value_);
             }
             if (child0Value instanceof Boolean) {
@@ -15590,6 +20641,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "ToBoolean$Boolean");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return ToBoolean.doBoolean(child0Value_);
             }
             if (child0Value instanceof String) {
@@ -15597,6 +20649,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "ToBoolean$String");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return ToBoolean.doString(child0Value_);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value);
@@ -15636,6 +20689,49 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[3] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0;
+            if (oldOperandIndex0 != -1) {
+                oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            } else {
+                oldOperand0 = -1;
+            }
+            short newOperand0;
+            if ((state_0 & 0b110) == 0 /* only-active SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] || SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] || SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningBoolean(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.TO_BOOLEAN$LONG$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.TO_BOOLEAN$LONG_;
+                }
+            } else if ((state_0 & 0b101) == 0 /* only-active SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.ToBoolean.doLong(long)] || SpecializationActive[BasicInterpreter.ToBoolean.doBoolean(boolean)] || SpecializationActive[BasicInterpreter.ToBoolean.doString(String)] */
+               && (newOperand0 = applyQuickeningBoolean(oldOperand0)) != -1) {
+                if (isQuickeningBoolean(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.TO_BOOLEAN$BOOLEAN$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.TO_BOOLEAN$BOOLEAN_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                if (isQuickeningBoolean(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.TO_BOOLEAN$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.TO_BOOLEAN_;
+                }
+            }
+            if (newOperand0 != -1) {
+                BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+                $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            }
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -15730,17 +20826,37 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private SourceSection execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.EnsureAndGetSourcePosition.doOperation(VirtualFrame, boolean, Node, BytecodeNode)] */ && child0Value_ instanceof Boolean) {
-                boolean child0Value__ = (boolean) child0Value_;
+            boolean child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectBoolean(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(frameValue, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.EnsureAndGetSourcePosition.doOperation(VirtualFrame, boolean, Node, BytecodeNode)] */) {
                 {
                     Node node__ = (this);
                     BytecodeNode bytecode__ = ($bytecode);
-                    return EnsureAndGetSourcePosition.doOperation(frameValue, child0Value__, node__, bytecode__);
+                    return EnsureAndGetSourcePosition.doOperation(frameValue, child0Value_, node__, bytecode__);
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(frameValue, child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private SourceSection executeOperation(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            boolean child0Value_;
+            try {
+                child0Value_ = FRAMES.expectBoolean($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(frameValue, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            {
+                Node node__ = (this);
+                BytecodeNode bytecode__ = ($bytecode);
+                return EnsureAndGetSourcePosition.doOperation(frameValue, child0Value_, node__, bytecode__);
+            }
         }
 
         private SourceSection executeAndSpecialize(VirtualFrame frameValue, Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
@@ -15755,6 +20871,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.EnsureAndGetSourcePosition.doOperation(VirtualFrame, boolean, Node, BytecodeNode)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "EnsureAndGetSourcePosition$Operation");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return EnsureAndGetSourcePosition.doOperation(frameValue, child0Value_, node__, bytecode__);
                 }
             }
@@ -15780,6 +20897,27 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.EnsureAndGetSourcePosition.doOperation(VirtualFrame, boolean, Node, BytecodeNode)] */
+               && (newOperand0 = applyQuickeningBoolean(oldOperand0)) != -1) {
+                newInstruction = Instructions.ENSURE_AND_GET_SOURCE_POSITION$OPERATION_;
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.ENSURE_AND_GET_SOURCE_POSITION_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -15870,7 +21008,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private Frame execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            Object child0Value_;
+            try {
+                child0Value_ = FRAMES.expectObject($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(frameValue, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
             if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doSomeLocals(VirtualFrame, long, BytecodeNode, int)] || SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doAllLocals(VirtualFrame, Object, BytecodeNode, int)] */) {
                 if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doSomeLocals(VirtualFrame, long, BytecodeNode, int)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
@@ -15892,6 +21036,21 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return executeAndSpecialize(frameValue, child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
         }
 
+        private Frame executeSomeLocals(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(frameValue, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            {
+                BytecodeNode bytecodeNode__ = ($bytecode);
+                int bci__ = ($bci);
+                return CopyLocalsToFrame.doSomeLocals(frameValue, child0Value_, bytecodeNode__, bci__);
+            }
+        }
+
         private Frame executeAndSpecialize(VirtualFrame frameValue, Object child0Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
             {
@@ -15904,6 +21063,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doSomeLocals(VirtualFrame, long, BytecodeNode, int)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "CopyLocalsToFrame$SomeLocals");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return CopyLocalsToFrame.doSomeLocals(frameValue, child0Value_, bytecodeNode__, bci__);
                 }
             }
@@ -15916,6 +21076,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doAllLocals(VirtualFrame, Object, BytecodeNode, int)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "CopyLocalsToFrame$AllLocals");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return CopyLocalsToFrame.doAllLocals(frameValue, child0Value, bytecodeNode__1, bci__1);
                 }
             }
@@ -15953,6 +21114,27 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[2] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if ((state_0 & 0b10) == 0 /* only-active SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doSomeLocals(VirtualFrame, long, BytecodeNode, int)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doSomeLocals(VirtualFrame, long, BytecodeNode, int)] || SpecializationActive[BasicInterpreter.CopyLocalsToFrame.doAllLocals(VirtualFrame, Object, BytecodeNode, int)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                newInstruction = Instructions.COPY_LOCALS_TO_FRAME$SOME_LOCALS_;
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newInstruction = Instructions.COPY_LOCALS_TO_FRAME_;
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -16455,10 +21637,53 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.IncrementValue.doIncrement(long)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                return IncrementValue.doIncrement(child0Value__);
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.IncrementValue.doIncrement(long)] */) {
+                return IncrementValue.doIncrement(child0Value_);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private long executeIncrement(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return IncrementValue.doIncrement(child0Value_);
+        }
+
+        private long executeIncrement$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return IncrementValue.doIncrement(child0Value_);
+        }
+
+        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.IncrementValue.doIncrement(long)] */) {
+                return IncrementValue.doIncrement(child0Value_);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
@@ -16471,6 +21696,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.IncrementValue.doIncrement(long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "IncrementValue$Increment");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return IncrementValue.doIncrement(child0Value_);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value);
@@ -16492,6 +21718,35 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.IncrementValue.doIncrement(long)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.INCREMENT_VALUE$INCREMENT$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.INCREMENT_VALUE$INCREMENT_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.INCREMENT_VALUE$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.INCREMENT_VALUE_;
+                }
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -16533,10 +21788,53 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.DoubleValue.doDouble(long)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                return DoubleValue.doDouble(child0Value__);
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.DoubleValue.doDouble(long)] */) {
+                return DoubleValue.doDouble(child0Value_);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private long executeDouble(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return DoubleValue.doDouble(child0Value_);
+        }
+
+        private long executeDouble$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return DoubleValue.doDouble(child0Value_);
+        }
+
+        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.DoubleValue.doDouble(long)] */) {
+                return DoubleValue.doDouble(child0Value_);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
@@ -16549,6 +21847,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.DoubleValue.doDouble(long)] */;
                 this.state_0_ = state_0;
                 $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "DoubleValue$Double");
+                quicken(state_0, $bytecode, $bc, $bci);
                 return DoubleValue.doDouble(child0Value_);
             }
             throw new UnsupportedSpecializationException(this, null, child0Value);
@@ -16570,6 +21869,35 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.DoubleValue.doDouble(long)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.DOUBLE_VALUE$DOUBLE_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.DOUBLE_VALUE$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.DOUBLE_VALUE_;
+                }
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -16705,14 +22033,85 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
-            Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Mod.doInts(long, long)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                if (child1Value_ instanceof Long) {
-                    long child1Value__ = (long) child1Value_;
-                    return Mod.doInts(child0Value__, child1Value__);
-                }
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 2));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Mod.doInts(long, long)] */) {
+                return Mod.doInts(child0Value_, child1Value_);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private long executeInts(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return Mod.doInts(child0Value_, child1Value_);
+        }
+
+        private long executeInts$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return Mod.doInts(child0Value_, child1Value_);
+        }
+
+        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Mod.doInts(long, long)] */) {
+                return Mod.doInts(child0Value_, child1Value_);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
@@ -16727,6 +22126,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Mod.doInts(long, long)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Mod$Ints");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return Mod.doInts(child0Value_, child1Value_);
                 }
             }
@@ -16749,6 +22149,42 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            int oldOperandIndex1 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child1 */);
+            short oldOperand1 = BYTES.getShort($bc, oldOperandIndex1);
+            short newOperand1;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Mod.doInts(long, long)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1
+               && (newOperand1 = applyQuickeningLong(oldOperand1)) != -1) {
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.MOD$INTS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.MOD$INTS_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newOperand1 = undoQuickening(oldOperand1);
+                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.MOD$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.MOD_;
+                }
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            BYTES.putShort($bc, oldOperandIndex1, newOperand1);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 1, new InstructionImpl($bytecode, oldOperandIndex1, oldOperand1), new InstructionImpl($bytecode, oldOperandIndex1, newOperand1));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary
@@ -16793,14 +22229,85 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         private boolean execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
             int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
-            Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Less.doInts(long, long)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                if (child1Value_ instanceof Long) {
-                    long child1Value__ = (long) child1Value_;
-                    return Less.doInts(child0Value__, child1Value__);
-                }
+            long child0Value_;
+            try {
+                child0Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 2));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = BasicInterpreterProductionRootScoping.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Less.doInts(long, long)] */) {
+                return Less.doInts(child0Value_, child1Value_);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private boolean executeInts(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return Less.doInts(child0Value_, child1Value_);
+        }
+
+        private boolean executeInts$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            return Less.doInts(child0Value_, child1Value_);
+        }
+
+        private boolean executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            long child0Value_;
+            try {
+                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
+                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            long child1Value_;
+            try {
+                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
+            } catch (UnexpectedResultException ex) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
+            }
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Less.doInts(long, long)] */) {
+                return Less.doInts(child0Value_, child1Value_);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
@@ -16815,6 +22322,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Less.doInts(long, long)] */;
                     this.state_0_ = state_0;
                     $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Less$Ints");
+                    quicken(state_0, $bytecode, $bc, $bci);
                     return Less.doInts(child0Value_, child1Value_);
                 }
             }
@@ -16837,6 +22345,42 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
+        }
+
+        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
+            short newInstruction;
+            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
+            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
+            short newOperand0;
+            int oldOperandIndex1 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child1 */);
+            short oldOperand1 = BYTES.getShort($bc, oldOperandIndex1);
+            short newOperand1;
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Less.doInts(long, long)] */
+               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1
+               && (newOperand1 = applyQuickeningLong(oldOperand1)) != -1) {
+                if (isQuickeningBoolean(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.LESS$INTS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.LESS$INTS_;
+                }
+            } else {
+                newOperand0 = undoQuickening(oldOperand0);
+                newOperand1 = undoQuickening(oldOperand1);
+                if (isQuickeningBoolean(BYTES.getShort($bc, $bci))) {
+                    newInstruction = Instructions.LESS$UNBOXED_;
+                } else {
+                    newInstruction = Instructions.LESS_;
+                }
+            }
+            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
+            BYTES.putShort($bc, oldOperandIndex1, newOperand1);
+            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 1, new InstructionImpl($bytecode, oldOperandIndex1, oldOperand1), new InstructionImpl($bytecode, oldOperandIndex1, newOperand1));
+            {
+                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
+                BYTES.putShort($bc, $bci, newInstruction);
+                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
+            }
         }
 
         @TruffleBoundary

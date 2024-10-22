@@ -3905,6 +3905,12 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             return -1;
         }
 
+        protected final int localOffsetToLocalIndex(int bci, int localOffset) {
+            int tableIndex = localOffsetToTableIndex(bci, localOffset);
+            assert locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] == localOffset + USER_LOCALS_START_INDEX : "Inconsistent indices.";
+            return locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX];
+        }
+
         @Override
         public Object getLocalName(int bci, int localOffset) {
             assert validateBytecodeIndex(bci);
@@ -7423,7 +7429,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     // Resolving the local index is expensive. Don't do it in the interpreter.
                     tag = frame.getTag(frameIndex);
                 } else {
-                    tag = getCachedLocalTag(frameIndex, bci);
+                    int localIndex = localOffsetToLocalIndex(bci, localOffset);
+                    tag = getCachedLocalTagInternal(this.localTags_, localIndex);
                 }
                 switch (tag) {
                     case FrameTags.BOOLEAN :
@@ -7449,8 +7456,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            setLocalValueImpl(frame, frameIndex, value, bci);
+            setLocalValueImpl(frame, localOffset, value, bci);
         }
 
         @Override
@@ -7567,9 +7573,11 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             setLocalValueInternal(frame, localOffset, localIndex, value);
         }
 
-        private void setLocalValueImpl(Frame frame, int frameIndex, Object value, int bci) {
+        private void setLocalValueImpl(Frame frame, int localOffset, Object value, int bci) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            byte oldTag = getCachedLocalTag(frameIndex, bci);
+            int frameIndex = localOffset + USER_LOCALS_START_INDEX;
+            int localIndex = localOffsetToLocalIndex(bci, localOffset);
+            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
             byte newTag;
             switch (oldTag) {
                 case FrameTags.BOOLEAN :
@@ -7596,22 +7604,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     break;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCachedLocalTag(frameIndex, newTag, bci);
-            setLocalValueImpl(frame, frameIndex, value, bci);
-        }
-
-        byte getCachedLocalTag(int frameIndex, int bci) {
-            int index = localOffsetToTableIndex(bci, frameIndex - USER_LOCALS_START_INDEX);
-            assert locals[index + LOCALS_OFFSET_FRAME_INDEX] == frameIndex : "Inconsistent indices.";
-            int localIndex = locals[index + LOCALS_OFFSET_LOCAL_INDEX];
-            return this.localTags_[localIndex];
-        }
-
-        private void setCachedLocalTag(int frameIndex, byte tag, int bci) {
-            int index = localOffsetToTableIndex(bci, frameIndex - USER_LOCALS_START_INDEX);
-            assert locals[index + LOCALS_OFFSET_FRAME_INDEX] == frameIndex : "Inconsistent indices.";
-            int localIndex = locals[index + LOCALS_OFFSET_LOCAL_INDEX];
-            this.localTags_[localIndex] = tag;
+            setCachedLocalTagInternal(this.localTags_, localIndex, newTag);
+            setLocalValueImpl(frame, localOffset, value, bci);
         }
 
         @Override
@@ -8559,8 +8553,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
-            int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            frame.setObject(frameIndex, value);
+            frame.setObject(localOffset + USER_LOCALS_START_INDEX, value);
         }
 
         @Override
