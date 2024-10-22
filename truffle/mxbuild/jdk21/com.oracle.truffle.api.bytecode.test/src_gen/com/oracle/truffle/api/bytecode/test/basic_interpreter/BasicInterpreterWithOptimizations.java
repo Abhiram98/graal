@@ -153,7 +153,7 @@ import java.util.function.Supplier;
  *     kind: TAG
  *   - Operation EarlyReturn
  *     kind: CUSTOM
- *   - Operation AddOperation
+ *   - Operation Add
  *     kind: CUSTOM
  *   - Operation ToString
  *     kind: CUSTOM
@@ -214,8 +214,6 @@ import java.util.function.Supplier;
  *   - Operation DoubleValue
  *     kind: CUSTOM_INSTRUMENTATION
  *   - Operation EnableIncrementValueInstrumentation
- *     kind: CUSTOM
- *   - Operation Add
  *     kind: CUSTOM
  *   - Operation Mod
  *     kind: CUSTOM
@@ -369,10 +367,10 @@ import java.util.function.Supplier;
  *     encoding: [34 : short, node : int]
  *     nodeType: EarlyReturn
  *     signature: void (Object)
- *   - Instruction c.AddOperation
+ *   - Instruction c.Add
  *     kind: CUSTOM
  *     encoding: [35 : short, node : int]
- *     nodeType: AddOperation
+ *     nodeType: Add
  *     signature: Object (Object, Object)
  *   - Instruction c.ToString
  *     kind: CUSTOM
@@ -524,63 +522,58 @@ import java.util.function.Supplier;
  *     encoding: [65 : short, node : int]
  *     nodeType: EnableIncrementValueInstrumentation
  *     signature: void ()
- *   - Instruction c.Add
- *     kind: CUSTOM
- *     encoding: [66 : short, node : int]
- *     nodeType: Add
- *     signature: long (long, long)
  *   - Instruction c.Mod
  *     kind: CUSTOM
- *     encoding: [67 : short, node : int]
+ *     encoding: [66 : short, node : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Less
  *     kind: CUSTOM
- *     encoding: [68 : short, node : int]
+ *     encoding: [67 : short, node : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.EnableDoubleValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [69 : short, node : int]
+ *     encoding: [68 : short, node : int]
  *     nodeType: EnableDoubleValueInstrumentation
  *     signature: void ()
  *   - Instruction c.ExplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [70 : short, node : int]
+ *     encoding: [69 : short, node : int]
  *     nodeType: ExplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction c.ImplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [71 : short, node : int]
+ *     encoding: [70 : short, node : int]
  *     nodeType: ImplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction sc.ScAnd
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction sc.ScOr
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [73 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction invalidate0
  *     kind: INVALIDATE
- *     encoding: [74 : short]
+ *     encoding: [73 : short]
  *     signature: void ()
  *   - Instruction invalidate1
  *     kind: INVALIDATE
- *     encoding: [75 : short, invalidated0 (short) : short]
+ *     encoding: [74 : short, invalidated0 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate2
  *     kind: INVALIDATE
- *     encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+ *     encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate3
  *     kind: INVALIDATE
- *     encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+ *     encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate4
  *     kind: INVALIDATE
- *     encoding: [78 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
  *     signature: void ()
  */
 @SuppressWarnings({"javadoc", "unused", "deprecation", "static-method"})
@@ -1047,7 +1040,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.TAG_YIELD :
                 case Instructions.TAG_RESUME :
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_OPERATION_ :
+                case Instructions.ADD_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.VERY_COMPLEX_OPERATION_ :
                 case Instructions.THROW_OPERATION_ :
@@ -1073,7 +1066,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.INCREMENT_VALUE_ :
                 case Instructions.DOUBLE_VALUE_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.ADD_ :
                 case Instructions.MOD_ :
                 case Instructions.LESS_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -1162,7 +1154,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     return List.of(
                         new TagNodeArgument(bytecode, "tag", bci + 2));
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_OPERATION_ :
+                case Instructions.ADD_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.VERY_COMPLEX_OPERATION_ :
                 case Instructions.THROW_OPERATION_ :
@@ -1188,7 +1180,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.INCREMENT_VALUE_ :
                 case Instructions.DOUBLE_VALUE_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.ADD_ :
                 case Instructions.MOD_ :
                 case Instructions.LESS_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -1306,8 +1297,8 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     return "clear.local";
                 case Instructions.EARLY_RETURN_ :
                     return "c.EarlyReturn";
-                case Instructions.ADD_OPERATION_ :
-                    return "c.AddOperation";
+                case Instructions.ADD_ :
+                    return "c.Add";
                 case Instructions.TO_STRING_ :
                     return "c.ToString";
                 case Instructions.CALL_ :
@@ -1368,8 +1359,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     return "c.DoubleValue";
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                     return "c.EnableIncrementValueInstrumentation";
-                case Instructions.ADD_ :
-                    return "c.Add";
                 case Instructions.MOD_ :
                     return "c.Mod";
                 case Instructions.LESS_ :
@@ -1430,7 +1419,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.CONSTANT_NULL :
                 case Instructions.CLEAR_LOCAL :
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_OPERATION_ :
+                case Instructions.ADD_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.CALL_ :
                 case Instructions.ADD_CONSTANT_OPERATION_ :
@@ -1458,7 +1447,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.CONTINUE_ :
                 case Instructions.CURRENT_LOCATION_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.ADD_ :
                 case Instructions.MOD_ :
                 case Instructions.LESS_ :
                 case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -1940,7 +1928,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.TAG_YIELD :
                     case Instructions.TAG_RESUME :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_OPERATION_ :
+                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
                     case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.THROW_OPERATION_ :
@@ -1966,7 +1954,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.INCREMENT_VALUE_ :
                     case Instructions.DOUBLE_VALUE_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.ADD_ :
                     case Instructions.MOD_ :
                     case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -2171,7 +2158,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                             break;
                         }
                         case Instructions.EARLY_RETURN_ :
-                        case Instructions.ADD_OPERATION_ :
+                        case Instructions.ADD_ :
                         case Instructions.TO_STRING_ :
                         case Instructions.VERY_COMPLEX_OPERATION_ :
                         case Instructions.THROW_OPERATION_ :
@@ -2197,7 +2184,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         case Instructions.INCREMENT_VALUE_ :
                         case Instructions.DOUBLE_VALUE_ :
                         case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                        case Instructions.ADD_ :
                         case Instructions.MOD_ :
                         case Instructions.LESS_ :
                         case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -2437,7 +2423,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 throw new IllegalArgumentException("Bytecode index out of range " + bci);
             }
             int op = readValidBytecode(bc, bci);
-            if (op < 0 || op > 78) {
+            if (op < 0 || op > 77) {
                 throw new IllegalArgumentException("Invalid op at bytecode index " + op);
             }
             return true;
@@ -2690,7 +2676,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.STORE_LOCAL_MAT :
                     case Instructions.YIELD :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_OPERATION_ :
+                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
                     case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.THROW_OPERATION_ :
@@ -2713,7 +2699,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.ADD_ :
                     case Instructions.MOD_ :
                     case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -2800,7 +2785,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.STORE_LOCAL_MAT :
                     case Instructions.YIELD :
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_OPERATION_ :
+                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
                     case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.THROW_OPERATION_ :
@@ -2823,7 +2808,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.CONTINUE_ :
                     case Instructions.CURRENT_LOCATION_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.ADD_ :
                     case Instructions.MOD_ :
                     case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -3051,8 +3035,8 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EarlyReturn_Node());
                         bci += 6;
                         break;
-                    case Instructions.ADD_OPERATION_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new AddOperation_Node());
+                    case Instructions.ADD_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
                         bci += 6;
                         break;
                     case Instructions.TO_STRING_ :
@@ -3153,10 +3137,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         break;
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new EnableIncrementValueInstrumentation_Node());
-                        bci += 6;
-                        break;
-                    case Instructions.ADD_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
                         bci += 6;
                         break;
                     case Instructions.MOD_ :
@@ -3487,9 +3467,9 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                             bci += 6;
                             break;
                         }
-                        case Instructions.ADD_OPERATION_ :
+                        case Instructions.ADD_ :
                         {
-                            doAddOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            doAdd_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
                             bci += 6;
                             break;
@@ -3683,13 +3663,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                         {
                             doEnableIncrementValueInstrumentation_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            bci += 6;
-                            break;
-                        }
-                        case Instructions.ADD_ :
-                        {
-                            doAdd_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            sp -= 1;
                             bci += 6;
                             break;
                         }
@@ -3954,8 +3927,8 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
-        private void doAddOperation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            AddOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), AddOperation_Node.class);
+        private void doAdd_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 2, result);
             FRAMES.clear(frame, sp - 1);
@@ -4140,13 +4113,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         private void doEnableIncrementValueInstrumentation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             EnableIncrementValueInstrumentation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), EnableIncrementValueInstrumentation_Node.class);
             node.execute(localFrame, frame, this, bc, bci, sp);
-        }
-
-        private void doAdd_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
-            long result = node.execute(localFrame, frame, this, bc, bci, sp);
-            FRAMES.setObject(frame, sp - 2, result);
-            FRAMES.clear(frame, sp - 1);
         }
 
         private void doMod_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -4446,7 +4412,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         continue loop;
                     }
                     case Instructions.EARLY_RETURN_ :
-                    case Instructions.ADD_OPERATION_ :
+                    case Instructions.ADD_ :
                     case Instructions.TO_STRING_ :
                     case Instructions.VERY_COMPLEX_OPERATION_ :
                     case Instructions.THROW_OPERATION_ :
@@ -4472,7 +4438,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.INCREMENT_VALUE_ :
                     case Instructions.DOUBLE_VALUE_ :
                     case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                    case Instructions.ADD_ :
                     case Instructions.MOD_ :
                     case Instructions.LESS_ :
                     case Instructions.ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ :
@@ -4629,7 +4594,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         break;
                     case Instructions.BRANCH :
                     case Instructions.ADD_ :
-                    case Instructions.ADD_OPERATION_ :
                     case Instructions.ALWAYS_BOX_OPERATION_ :
                     case Instructions.APPENDER_OPERATION_ :
                     case Instructions.COLLECT_ALL_SOURCE_LOCATIONS_ :
@@ -4801,7 +4765,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
     public static final class Builder extends BasicInterpreterBuilder {
 
         private static final byte UNINITIALIZED = -1;
-        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "AddOperation", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Add", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
+        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
         private static final Class<?>[] TAGS_ROOT_TAG_ROOT_BODY_TAG = new Class<?>[]{RootTag.class, RootBodyTag.class};
 
         private int operationSequenceNumber;
@@ -6680,19 +6644,19 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         }
 
         /**
-         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.AddOperation AddOperation} operation.
+         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
          * <p>
-         * Signature: AddOperation(lhs, rhs) -> Object
+         * Signature: Add(lhs, rhs) -> Object
          * <p>
          * Adds the two operand values, which must either be longs or Strings.
          * <p>
-         * A corresponding call to {@link #endAddOperation} is required to end the operation.
+         * A corresponding call to {@link #endAdd} is required to end the operation.
          */
         @Override
-        public void beginAddOperation() {
+        public void beginAdd() {
             if (serialization != null) {
                 try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD_OPERATION);
+                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD);
                 } catch (IOException ex) {
                     throw new IOError(ex);
                 }
@@ -6701,34 +6665,34 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             validateRootOperationBegin();
             beforeChild();
             CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
-            beginOperation(Operations.ADDOPERATION, operationData);
+            beginOperation(Operations.ADD, operationData);
         }
 
         /**
-         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.AddOperation AddOperation} operation.
+         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
          * <p>
-         * Signature: AddOperation(lhs, rhs) -> Object
+         * Signature: Add(lhs, rhs) -> Object
          *
-         * @see #beginAddOperation
+         * @see #beginAdd
          */
         @Override
-        public void endAddOperation() {
+        public void endAdd() {
             if (serialization != null) {
                 try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD_OPERATION);
+                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD);
                 } catch (IOException ex) {
                     throw new IOError(ex);
                 }
                 return;
             }
-            OperationStackEntry operation = endOperation(Operations.ADDOPERATION);
+            OperationStackEntry operation = endOperation(Operations.ADD);
             if (operation.childCount != 2) {
-                throw failState("Operation AddOperation expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
+                throw failState("Operation Add expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
             }
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
-            doEmitInstructionI(Instructions.ADD_OPERATION_, -1, allocateNode());
+            doEmitInstructionI(Instructions.ADD_, -1, allocateNode());
             afterChild(true, bci - 6);
         }
 
@@ -7999,57 +7963,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         }
 
         /**
-         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
-         * <p>
-         * Signature: Add(left, right) -> long
-         * <p>
-         * A corresponding call to {@link #endAdd} is required to end the operation.
-         */
-        @Override
-        public void beginAdd() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            validateRootOperationBegin();
-            beforeChild();
-            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
-            beginOperation(Operations.ADD, operationData);
-        }
-
-        /**
-         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
-         * <p>
-         * Signature: Add(left, right) -> long
-         *
-         * @see #beginAdd
-         */
-        @Override
-        public void endAdd() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            OperationStackEntry operation = endOperation(Operations.ADD);
-            if (operation.childCount != 2) {
-                throw failState("Operation Add expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
-            }
-            if (!(operation.data instanceof CustomOperationData operationData)) {
-                throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
-            }
-            doEmitInstructionI(Instructions.ADD_, -1, allocateNode());
-            afterChild(true, bci - 6);
-        }
-
-        /**
          * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Mod Mod} operation.
          * <p>
          * Signature: Mod(left, right) -> long
@@ -8744,7 +8657,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Operations.YIELD :
                 case Operations.TAG :
                 case Operations.EARLYRETURN :
-                case Operations.ADDOPERATION :
+                case Operations.ADD :
                 case Operations.TOSTRING :
                 case Operations.CALL :
                 case Operations.ADDCONSTANTOPERATION :
@@ -8764,7 +8677,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Operations.CONTINUE :
                 case Operations.INCREMENTVALUE :
                 case Operations.DOUBLEVALUE :
-                case Operations.ADD :
                 case Operations.MOD :
                 case Operations.LESS :
                     break;
@@ -9064,10 +8976,10 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     }
                     break;
                 }
-                case Operations.ADDOPERATION :
+                case Operations.ADD :
                 {
                     if (!producedValue) {
-                        throw failState("Operation AddOperation expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                        throw failState("Operation Add expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     break;
                 }
@@ -9201,13 +9113,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 {
                     if (!producedValue) {
                         throw failState("Operation DoubleValue expected a value-producing child at position " + childIndex + ", but a void one was provided.");
-                    }
-                    break;
-                }
-                case Operations.ADD :
-                {
-                    if (!producedValue) {
-                        throw failState("Operation Add expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     break;
                 }
@@ -10216,14 +10121,14 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                             endEarlyReturn();
                             break;
                         }
-                        case SerializationState.CODE_BEGIN_ADD_OPERATION :
+                        case SerializationState.CODE_BEGIN_ADD :
                         {
-                            beginAddOperation();
+                            beginAdd();
                             break;
                         }
-                        case SerializationState.CODE_END_ADD_OPERATION :
+                        case SerializationState.CODE_END_ADD :
                         {
-                            endAddOperation();
+                            endAdd();
                             break;
                         }
                         case SerializationState.CODE_BEGIN_TO_STRING :
@@ -10480,16 +10385,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         case SerializationState.CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION :
                         {
                             emitEnableIncrementValueInstrumentation();
-                            break;
-                        }
-                        case SerializationState.CODE_BEGIN_ADD :
-                        {
-                            beginAdd();
-                            break;
-                        }
-                        case SerializationState.CODE_END_ADD :
-                        {
-                            endAdd();
                             break;
                         }
                         case SerializationState.CODE_BEGIN_MOD :
@@ -11448,8 +11343,8 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             private static final short CODE_END_TAG = (25 << 1) | 0b1;
             private static final short CODE_BEGIN_EARLY_RETURN = 26 << 1;
             private static final short CODE_END_EARLY_RETURN = (26 << 1) | 0b1;
-            private static final short CODE_BEGIN_ADD_OPERATION = 27 << 1;
-            private static final short CODE_END_ADD_OPERATION = (27 << 1) | 0b1;
+            private static final short CODE_BEGIN_ADD = 27 << 1;
+            private static final short CODE_END_ADD = (27 << 1) | 0b1;
             private static final short CODE_BEGIN_TO_STRING = 28 << 1;
             private static final short CODE_END_TO_STRING = (28 << 1) | 0b1;
             private static final short CODE_BEGIN_CALL = 29 << 1;
@@ -11499,19 +11394,17 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             private static final short CODE_BEGIN_DOUBLE_VALUE = 56 << 1;
             private static final short CODE_END_DOUBLE_VALUE = (56 << 1) | 0b1;
             private static final short CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION = 57 << 1;
-            private static final short CODE_BEGIN_ADD = 58 << 1;
-            private static final short CODE_END_ADD = (58 << 1) | 0b1;
-            private static final short CODE_BEGIN_MOD = 59 << 1;
-            private static final short CODE_END_MOD = (59 << 1) | 0b1;
-            private static final short CODE_BEGIN_LESS = 60 << 1;
-            private static final short CODE_END_LESS = (60 << 1) | 0b1;
-            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 61 << 1;
-            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 62 << 1;
-            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 63 << 1;
-            private static final short CODE_BEGIN_SC_AND = 64 << 1;
-            private static final short CODE_END_SC_AND = (64 << 1) | 0b1;
-            private static final short CODE_BEGIN_SC_OR = 65 << 1;
-            private static final short CODE_END_SC_OR = (65 << 1) | 0b1;
+            private static final short CODE_BEGIN_MOD = 58 << 1;
+            private static final short CODE_END_MOD = (58 << 1) | 0b1;
+            private static final short CODE_BEGIN_LESS = 59 << 1;
+            private static final short CODE_END_LESS = (59 << 1) | 0b1;
+            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 60 << 1;
+            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 61 << 1;
+            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 62 << 1;
+            private static final short CODE_BEGIN_SC_AND = 63 << 1;
+            private static final short CODE_END_SC_AND = (63 << 1) | 0b1;
+            private static final short CODE_BEGIN_SC_OR = 64 << 1;
+            private static final short CODE_END_SC_OR = (64 << 1) | 0b1;
 
             private final DataOutput buffer;
             private final BytecodeSerializer callback;
@@ -12066,13 +11959,13 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
          */
         private static final short EARLY_RETURN_ = 34;
         /*
-         * Instruction c.AddOperation
+         * Instruction c.Add
          * kind: CUSTOM
          * encoding: [35 : short, node : int]
-         * nodeType: AddOperation
+         * nodeType: Add
          * signature: Object (Object, Object)
          */
-        private static final short ADD_OPERATION_ = 35;
+        private static final short ADD_ = 35;
         /*
          * Instruction c.ToString
          * kind: CUSTOM
@@ -12314,102 +12207,94 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
          */
         private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 65;
         /*
-         * Instruction c.Add
-         * kind: CUSTOM
-         * encoding: [66 : short, node : int]
-         * nodeType: Add
-         * signature: long (long, long)
-         */
-        private static final short ADD_ = 66;
-        /*
          * Instruction c.Mod
          * kind: CUSTOM
-         * encoding: [67 : short, node : int]
+         * encoding: [66 : short, node : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD_ = 67;
+        private static final short MOD_ = 66;
         /*
          * Instruction c.Less
          * kind: CUSTOM
-         * encoding: [68 : short, node : int]
+         * encoding: [67 : short, node : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS_ = 68;
+        private static final short LESS_ = 67;
         /*
          * Instruction c.EnableDoubleValueInstrumentation
          * kind: CUSTOM
-         * encoding: [69 : short, node : int]
+         * encoding: [68 : short, node : int]
          * nodeType: EnableDoubleValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 69;
+        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 68;
         /*
          * Instruction c.ExplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [70 : short, node : int]
+         * encoding: [69 : short, node : int]
          * nodeType: ExplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short EXPLICIT_BINDINGS_TEST_ = 70;
+        private static final short EXPLICIT_BINDINGS_TEST_ = 69;
         /*
          * Instruction c.ImplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [71 : short, node : int]
+         * encoding: [70 : short, node : int]
          * nodeType: ImplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short IMPLICIT_BINDINGS_TEST_ = 71;
+        private static final short IMPLICIT_BINDINGS_TEST_ = 70;
         /*
          * Instruction sc.ScAnd
+         * kind: CUSTOM_SHORT_CIRCUIT
+         * encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
+         * signature: Object (boolean, boolean)
+         */
+        private static final short SC_AND_ = 71;
+        /*
+         * Instruction sc.ScOr
          * kind: CUSTOM_SHORT_CIRCUIT
          * encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_AND_ = 72;
-        /*
-         * Instruction sc.ScOr
-         * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [73 : short, branch_target (bci) : int, branch_profile : int]
-         * signature: Object (boolean, boolean)
-         */
-        private static final short SC_OR_ = 73;
+        private static final short SC_OR_ = 72;
         /*
          * Instruction invalidate0
          * kind: INVALIDATE
-         * encoding: [74 : short]
+         * encoding: [73 : short]
          * signature: void ()
          */
-        private static final short INVALIDATE0 = 74;
+        private static final short INVALIDATE0 = 73;
         /*
          * Instruction invalidate1
          * kind: INVALIDATE
-         * encoding: [75 : short, invalidated0 (short) : short]
+         * encoding: [74 : short, invalidated0 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE1 = 75;
+        private static final short INVALIDATE1 = 74;
         /*
          * Instruction invalidate2
          * kind: INVALIDATE
-         * encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+         * encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE2 = 76;
+        private static final short INVALIDATE2 = 75;
         /*
          * Instruction invalidate3
          * kind: INVALIDATE
-         * encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+         * encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE3 = 77;
+        private static final short INVALIDATE3 = 76;
         /*
          * Instruction invalidate4
          * kind: INVALIDATE
-         * encoding: [78 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+         * encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE4 = 78;
+        private static final short INVALIDATE4 = 77;
 
     }
     private static final class Operations {
@@ -12440,7 +12325,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         private static final int SOURCESECTION = 24;
         private static final int TAG = 25;
         private static final int EARLYRETURN = 26;
-        private static final int ADDOPERATION = 27;
+        private static final int ADD = 27;
         private static final int TOSTRING = 28;
         private static final int CALL = 29;
         private static final int ADDCONSTANTOPERATION = 30;
@@ -12471,14 +12356,13 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         private static final int INCREMENTVALUE = 55;
         private static final int DOUBLEVALUE = 56;
         private static final int ENABLEINCREMENTVALUEINSTRUMENTATION = 57;
-        private static final int ADD = 58;
-        private static final int MOD = 59;
-        private static final int LESS = 60;
-        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 61;
-        private static final int EXPLICITBINDINGSTEST = 62;
-        private static final int IMPLICITBINDINGSTEST = 63;
-        private static final int SCAND = 64;
-        private static final int SCOR = 65;
+        private static final int MOD = 58;
+        private static final int LESS = 59;
+        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 60;
+        private static final int EXPLICITBINDINGSTEST = 61;
+        private static final int IMPLICITBINDINGSTEST = 62;
+        private static final int SCAND = 63;
+        private static final int SCOR = 64;
 
     }
     private static final class ExceptionHandlerImpl extends ExceptionHandler {
@@ -12909,24 +12793,24 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
     }
     /**
      * Debug Info: <pre>
-     *   Specialization {@link AddOperation#addLongs}
+     *   Specialization {@link Add#addLongs}
      *     Activation probability: 0.48333
      *     With/without class size: 9/0 bytes
-     *   Specialization {@link AddOperation#addStrings}
+     *   Specialization {@link Add#addStrings}
      *     Activation probability: 0.33333
      *     With/without class size: 8/0 bytes
-     *   Specialization {@link AddOperation#addObjects}
+     *   Specialization {@link Add#addObjects}
      *     Activation probability: 0.18333
      *     With/without class size: 6/0 bytes
      * </pre> */
     @SuppressWarnings("javadoc")
-    private static final class AddOperation_Node extends Node implements Introspection.Provider {
+    private static final class Add_Node extends Node implements Introspection.Provider {
 
         /**
          * State Info: <pre>
-         *   0: SpecializationActive {@link AddOperation#addLongs}
-         *   1: SpecializationActive {@link AddOperation#addStrings}
-         *   2: SpecializationActive {@link AddOperation#addObjects}
+         *   0: SpecializationActive {@link Add#addLongs}
+         *   1: SpecializationActive {@link Add#addStrings}
+         *   2: SpecializationActive {@link Add#addObjects}
          * </pre> */
         @CompilationFinal private int state_0_;
 
@@ -12934,24 +12818,24 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             int state_0 = this.state_0_;
             Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
             Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] || SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
-                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */ && child0Value_ instanceof Long) {
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] || SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] || SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
+                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
                     if (child1Value_ instanceof Long) {
                         long child1Value__ = (long) child1Value_;
-                        return AddOperation.addLongs(child0Value__, child1Value__);
+                        return Add.addLongs(child0Value__, child1Value__);
                     }
                 }
-                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */ && child0Value_ instanceof String) {
+                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */ && child0Value_ instanceof String) {
                     String child0Value__ = (String) child0Value_;
                     if (child1Value_ instanceof String) {
                         String child1Value__ = (String) child1Value_;
-                        return AddOperation.addStrings(child0Value__, child1Value__);
+                        return Add.addStrings(child0Value__, child1Value__);
                     }
                 }
-                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
                     if (fallbackGuard_(state_0, child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp)) {
-                        return AddOperation.addObjects(child0Value_, child1Value_);
+                        return Add.addObjects(child0Value_, child1Value_);
                     }
                 }
             }
@@ -12961,10 +12845,10 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
 
         @SuppressWarnings("static-method")
         private boolean fallbackGuard_(int state_0, Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
+            if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
                 return false;
             }
-            if (!((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) && child0Value instanceof String && child1Value instanceof String) {
+            if (!((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */) && child0Value instanceof String && child1Value instanceof String) {
                 return false;
             }
             return true;
@@ -12976,26 +12860,26 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 long child0Value_ = (long) child0Value;
                 if (child1Value instanceof Long) {
                     long child1Value_ = (long) child1Value;
-                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */;
+                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */;
                     this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$AddLongs");
-                    return AddOperation.addLongs(child0Value_, child1Value_);
+                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddLongs");
+                    return Add.addLongs(child0Value_, child1Value_);
                 }
             }
             if (child0Value instanceof String) {
                 String child0Value_ = (String) child0Value;
                 if (child1Value instanceof String) {
                     String child1Value_ = (String) child1Value;
-                    state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */;
+                    state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */;
                     this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$AddStrings");
-                    return AddOperation.addStrings(child0Value_, child1Value_);
+                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddStrings");
+                    return Add.addStrings(child0Value_, child1Value_);
                 }
             }
-            state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */;
+            state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */;
             this.state_0_ = state_0;
-            $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$Fallback");
-            return AddOperation.addObjects(child0Value, child1Value);
+            $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$Fallback");
+            return Add.addObjects(child0Value, child1Value);
         }
 
         @Override
@@ -13006,7 +12890,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             int state_0 = this.state_0_;
             s = new Object[3];
             s[0] = "addLongs";
-            if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */) {
+            if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -13015,7 +12899,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             data[1] = s;
             s = new Object[3];
             s[0] = "addStrings";
-            if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) {
+            if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -13024,7 +12908,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             data[2] = s;
             s = new Object[3];
             s[0] = "addObjects";
-            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -15212,70 +15096,6 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         s[2] = cached;
                     }
                 }
-            }
-            if (s[1] == null) {
-                s[1] = (byte)0b00 /* inactive */;
-            }
-            data[1] = s;
-            return Provider.create(data);
-        }
-
-    }
-    /**
-     * Debug Info: <pre>
-     *   Specialization {@link Add#doInts}
-     *     Activation probability: 1.00000
-     *     With/without class size: 16/0 bytes
-     * </pre> */
-    @SuppressWarnings("javadoc")
-    private static final class Add_Node extends Node implements Introspection.Provider {
-
-        /**
-         * State Info: <pre>
-         *   0: SpecializationActive {@link Add#doInts}
-         * </pre> */
-        @CompilationFinal private int state_0_;
-
-        private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            int state_0 = this.state_0_;
-            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
-            Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */ && child0Value_ instanceof Long) {
-                long child0Value__ = (long) child0Value_;
-                if (child1Value_ instanceof Long) {
-                    long child1Value__ = (long) child1Value_;
-                    return Add.doInts(child0Value__, child1Value__);
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
-        }
-
-        private long executeAndSpecialize(Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            int state_0 = this.state_0_;
-            if (child0Value instanceof Long) {
-                long child0Value_ = (long) child0Value;
-                if (child1Value instanceof Long) {
-                    long child1Value_ = (long) child1Value;
-                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */;
-                    this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$Ints");
-                    return Add.doInts(child0Value_, child1Value_);
-                }
-            }
-            throw new UnsupportedSpecializationException(this, null, child0Value, child1Value);
-        }
-
-        @Override
-        public Introspection getIntrospectionData() {
-            Object[] data = new Object[2];
-            Object[] s;
-            data[0] = 0;
-            int state_0 = this.state_0_;
-            s = new Object[3];
-            s[0] = "doInts";
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */) {
-                s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
                 s[1] = (byte)0b00 /* inactive */;

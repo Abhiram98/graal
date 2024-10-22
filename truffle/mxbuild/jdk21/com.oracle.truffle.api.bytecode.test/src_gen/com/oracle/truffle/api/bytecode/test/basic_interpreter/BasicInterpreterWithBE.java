@@ -155,7 +155,7 @@ import java.util.function.Supplier;
  *     kind: TAG
  *   - Operation EarlyReturn
  *     kind: CUSTOM
- *   - Operation AddOperation
+ *   - Operation Add
  *     kind: CUSTOM
  *   - Operation ToString
  *     kind: CUSTOM
@@ -216,8 +216,6 @@ import java.util.function.Supplier;
  *   - Operation DoubleValue
  *     kind: CUSTOM_INSTRUMENTATION
  *   - Operation EnableIncrementValueInstrumentation
- *     kind: CUSTOM
- *   - Operation Add
  *     kind: CUSTOM
  *   - Operation Mod
  *     kind: CUSTOM
@@ -507,20 +505,20 @@ import java.util.function.Supplier;
  *     encoding: [68 : short, node : int]
  *     nodeType: EarlyReturn
  *     signature: void (Object)
- *   - Instruction c.AddOperation
+ *   - Instruction c.Add
  *     kind: CUSTOM
  *     encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: AddOperation
+ *     nodeType: Add
  *     signature: Object (Object, Object)
- *   - Instruction c.AddOperation$AddLongs
+ *   - Instruction c.Add$AddLongs
  *     kind: CUSTOM
  *     encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: AddOperation
+ *     nodeType: Add
  *     signature: long (long, long)
- *   - Instruction c.AddOperation$AddLongs$unboxed
+ *   - Instruction c.Add$AddLongs$unboxed
  *     kind: CUSTOM
  *     encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: AddOperation
+ *     nodeType: Add
  *     signature: long (long, long)
  *   - Instruction c.ToString
  *     kind: CUSTOM
@@ -792,140 +790,120 @@ import java.util.function.Supplier;
  *     encoding: [125 : short, node : int]
  *     nodeType: EnableIncrementValueInstrumentation
  *     signature: void ()
- *   - Instruction c.Add
- *     kind: CUSTOM
- *     encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: Add
- *     signature: long (long, long)
- *   - Instruction c.Add$Ints
- *     kind: CUSTOM
- *     encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: Add
- *     signature: long (long, long)
- *   - Instruction c.Add$Ints$unboxed
- *     kind: CUSTOM
- *     encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: Add
- *     signature: long (long, long)
- *   - Instruction c.Add$unboxed
- *     kind: CUSTOM
- *     encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
- *     nodeType: Add
- *     signature: long (long, long)
  *   - Instruction c.Mod
  *     kind: CUSTOM
- *     encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Mod$Ints
  *     kind: CUSTOM
- *     encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Mod$Ints$unboxed
  *     kind: CUSTOM
- *     encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Mod$unboxed
  *     kind: CUSTOM
- *     encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Less
  *     kind: CUSTOM
- *     encoding: [134 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.Less$Ints
  *     kind: CUSTOM
- *     encoding: [135 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.Less$Ints$unboxed
  *     kind: CUSTOM
- *     encoding: [136 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.Less$unboxed
  *     kind: CUSTOM
- *     encoding: [137 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.EnableDoubleValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [138 : short, node : int]
+ *     encoding: [134 : short, node : int]
  *     nodeType: EnableDoubleValueInstrumentation
  *     signature: void ()
  *   - Instruction c.ExplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [139 : short, node : int]
+ *     encoding: [135 : short, node : int]
  *     nodeType: ExplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction c.ImplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [140 : short, node : int]
+ *     encoding: [136 : short, node : int]
  *     nodeType: ImplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction sc.ScAnd
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [141 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [137 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction sc.ScOr
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [142 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [138 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction merge.conditional
  *     kind: MERGE_CONDITIONAL
- *     encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [139 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, Object)
  *   - Instruction merge.conditional$Boolean
  *     kind: MERGE_CONDITIONAL
- *     encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [140 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction merge.conditional$Boolean$unboxed
  *     kind: MERGE_CONDITIONAL
- *     encoding: [145 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [141 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: boolean (boolean, boolean)
  *   - Instruction merge.conditional$Long
  *     kind: MERGE_CONDITIONAL
- *     encoding: [146 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [142 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, long)
  *   - Instruction merge.conditional$Long$unboxed
  *     kind: MERGE_CONDITIONAL
- *     encoding: [147 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: long (boolean, long)
  *   - Instruction merge.conditional$generic
  *     kind: MERGE_CONDITIONAL
- *     encoding: [148 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, Object)
  *   - Instruction invalidate0
  *     kind: INVALIDATE
- *     encoding: [149 : short]
+ *     encoding: [145 : short]
  *     signature: void ()
  *   - Instruction invalidate1
  *     kind: INVALIDATE
- *     encoding: [150 : short, invalidated0 (short) : short]
+ *     encoding: [146 : short, invalidated0 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate2
  *     kind: INVALIDATE
- *     encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+ *     encoding: [147 : short, invalidated0 (short) : short, invalidated1 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate3
  *     kind: INVALIDATE
- *     encoding: [152 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+ *     encoding: [148 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate4
  *     kind: INVALIDATE
- *     encoding: [153 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     encoding: [149 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate5
  *     kind: INVALIDATE
- *     encoding: [154 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+ *     encoding: [150 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate6
  *     kind: INVALIDATE
- *     encoding: [155 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
+ *     encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
  *     signature: void ()
  */
 @SuppressWarnings({"javadoc", "unused", "deprecation", "static-method"})
@@ -1426,9 +1404,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             case Instructions.TAG_LEAVE$LONG :
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
                 return Instructions.TAG_LEAVE$LONG$UNBOXED;
-            case Instructions.ADD_OPERATION$ADD_LONGS_ :
-            case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
-                return Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_;
+            case Instructions.ADD$ADD_LONGS_ :
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD$ADD_LONGS$UNBOXED_;
             case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
             case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                 return Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_;
@@ -1459,12 +1437,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             case Instructions.DOUBLE_VALUE_ :
             case Instructions.DOUBLE_VALUE$UNBOXED_ :
                 return Instructions.DOUBLE_VALUE$UNBOXED_;
-            case Instructions.ADD$INTS_ :
-            case Instructions.ADD$INTS$UNBOXED_ :
-                return Instructions.ADD$INTS$UNBOXED_;
-            case Instructions.ADD_ :
-            case Instructions.ADD$UNBOXED_ :
-                return Instructions.ADD$UNBOXED_;
             case Instructions.MOD$INTS_ :
             case Instructions.MOD$INTS$UNBOXED_ :
                 return Instructions.MOD$INTS$UNBOXED_;
@@ -1486,7 +1458,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             case Instructions.LOAD_LOCAL$LONG$UNBOXED :
             case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
-            case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
             case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
             case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
             case Instructions.VERY_COMPLEX_OPERATION$BLA$UNBOXED_ :
@@ -1497,8 +1469,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             case Instructions.INCREMENT_VALUE$UNBOXED_ :
             case Instructions.DOUBLE_VALUE$DOUBLE$UNBOXED_ :
             case Instructions.DOUBLE_VALUE$UNBOXED_ :
-            case Instructions.ADD$INTS$UNBOXED_ :
-            case Instructions.ADD$UNBOXED_ :
             case Instructions.MOD$INTS$UNBOXED_ :
             case Instructions.MOD$UNBOXED_ :
             case Instructions.MERGE_CONDITIONAL$LONG$UNBOXED :
@@ -1532,8 +1502,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 return Instructions.TAG_LEAVE$BOOLEAN;
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
                 return Instructions.TAG_LEAVE$LONG;
-            case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
-                return Instructions.ADD_OPERATION$ADD_LONGS_;
+            case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                return Instructions.ADD$ADD_LONGS_;
             case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
                 return Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_;
             case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
@@ -1560,10 +1530,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 return Instructions.DOUBLE_VALUE$DOUBLE_;
             case Instructions.DOUBLE_VALUE$UNBOXED_ :
                 return Instructions.DOUBLE_VALUE_;
-            case Instructions.ADD$INTS$UNBOXED_ :
-                return Instructions.ADD$INTS_;
-            case Instructions.ADD$UNBOXED_ :
-                return Instructions.ADD_;
             case Instructions.MOD$INTS$UNBOXED_ :
                 return Instructions.MOD$INTS_;
             case Instructions.MOD$UNBOXED_ :
@@ -1748,9 +1714,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Instructions.BRANCH_FALSE :
                 case Instructions.BRANCH_FALSE$GENERIC :
                 case Instructions.BRANCH_FALSE$BOOLEAN :
-                case Instructions.ADD_OPERATION_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                case Instructions.ADD_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                 case Instructions.ADD_CONSTANT_OPERATION_ :
                 case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
                 case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
@@ -1760,10 +1726,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Instructions.TEE_LOCAL_ :
                 case Instructions.TEE_LOCAL$LONG_ :
                 case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
-                case Instructions.ADD_ :
-                case Instructions.ADD$INTS_ :
-                case Instructions.ADD$INTS$UNBOXED_ :
-                case Instructions.ADD$UNBOXED_ :
                 case Instructions.MOD_ :
                 case Instructions.MOD$INTS_ :
                 case Instructions.MOD$INTS$UNBOXED_ :
@@ -1917,13 +1879,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Instructions.IMPLICIT_BINDINGS_TEST_ :
                     return List.of(
                         new NodeProfileArgument(bytecode, "node", bci + 2));
-                case Instructions.ADD_OPERATION_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
                 case Instructions.ADD_ :
-                case Instructions.ADD$INTS_ :
-                case Instructions.ADD$INTS$UNBOXED_ :
-                case Instructions.ADD$UNBOXED_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                 case Instructions.MOD_ :
                 case Instructions.MOD$INTS_ :
                 case Instructions.MOD$INTS$UNBOXED_ :
@@ -2182,12 +2140,12 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     return "clear.local";
                 case Instructions.EARLY_RETURN_ :
                     return "c.EarlyReturn";
-                case Instructions.ADD_OPERATION_ :
-                    return "c.AddOperation";
-                case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    return "c.AddOperation$AddLongs";
-                case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
-                    return "c.AddOperation$AddLongs$unboxed";
+                case Instructions.ADD_ :
+                    return "c.Add";
+                case Instructions.ADD$ADD_LONGS_ :
+                    return "c.Add$AddLongs";
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                    return "c.Add$AddLongs$unboxed";
                 case Instructions.TO_STRING_ :
                     return "c.ToString";
                 case Instructions.CALL_ :
@@ -2296,14 +2254,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     return "c.DoubleValue$unboxed";
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
                     return "c.EnableIncrementValueInstrumentation";
-                case Instructions.ADD_ :
-                    return "c.Add";
-                case Instructions.ADD$INTS_ :
-                    return "c.Add$Ints";
-                case Instructions.ADD$INTS$UNBOXED_ :
-                    return "c.Add$Ints$unboxed";
-                case Instructions.ADD$UNBOXED_ :
-                    return "c.Add$unboxed";
                 case Instructions.MOD_ :
                     return "c.Mod";
                 case Instructions.MOD$INTS_ :
@@ -2421,9 +2371,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Instructions.CONSTANT_NULL :
                 case Instructions.CLEAR_LOCAL :
                 case Instructions.EARLY_RETURN_ :
-                case Instructions.ADD_OPERATION_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                case Instructions.ADD_ :
+                case Instructions.ADD$ADD_LONGS_ :
+                case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                 case Instructions.TO_STRING_ :
                 case Instructions.CALL_ :
                 case Instructions.ADD_CONSTANT_OPERATION_ :
@@ -2469,10 +2419,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Instructions.CONTINUE_ :
                 case Instructions.CURRENT_LOCATION_ :
                 case Instructions.ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ :
-                case Instructions.ADD_ :
-                case Instructions.ADD$INTS_ :
-                case Instructions.ADD$INTS$UNBOXED_ :
-                case Instructions.ADD$UNBOXED_ :
                 case Instructions.MOD_ :
                 case Instructions.MOD$INTS_ :
                 case Instructions.MOD$INTS$UNBOXED_ :
@@ -3111,9 +3057,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.BRANCH_FALSE :
                     case Instructions.BRANCH_FALSE$GENERIC :
                     case Instructions.BRANCH_FALSE$BOOLEAN :
-                    case Instructions.ADD_OPERATION_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                     case Instructions.ADD_CONSTANT_OPERATION_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
@@ -3123,10 +3069,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL$LONG_ :
                     case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
-                    case Instructions.ADD_ :
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
                     case Instructions.MOD_ :
                     case Instructions.MOD$INTS_ :
                     case Instructions.MOD$INTS$UNBOXED_ :
@@ -3480,13 +3422,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                             bci = bci + 6;
                             break;
                         }
-                        case Instructions.ADD_OPERATION_ :
-                        case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                        case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
                         case Instructions.ADD_ :
-                        case Instructions.ADD$INTS_ :
-                        case Instructions.ADD$INTS$UNBOXED_ :
-                        case Instructions.ADD$UNBOXED_ :
+                        case Instructions.ADD$ADD_LONGS_ :
+                        case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                         case Instructions.MOD_ :
                         case Instructions.MOD$INTS_ :
                         case Instructions.MOD$INTS$UNBOXED_ :
@@ -3877,7 +3815,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 throw new IllegalArgumentException("Bytecode index out of range " + bci);
             }
             int op = readValidBytecode(bc, bci);
-            if (op < 0 || op > 155) {
+            if (op < 0 || op > 151) {
                 throw new IllegalArgumentException("Invalid op at bytecode index " + op);
             }
             return true;
@@ -4189,9 +4127,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.BRANCH_FALSE :
                     case Instructions.BRANCH_FALSE$GENERIC :
                     case Instructions.BRANCH_FALSE$BOOLEAN :
-                    case Instructions.ADD_OPERATION_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                     case Instructions.ADD_CONSTANT_OPERATION_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
@@ -4201,10 +4139,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL$LONG_ :
                     case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
-                    case Instructions.ADD_ :
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
                     case Instructions.MOD_ :
                     case Instructions.MOD$INTS_ :
                     case Instructions.MOD$INTS$UNBOXED_ :
@@ -4384,9 +4318,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.BRANCH_FALSE :
                     case Instructions.BRANCH_FALSE$GENERIC :
                     case Instructions.BRANCH_FALSE$BOOLEAN :
-                    case Instructions.ADD_OPERATION_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                     case Instructions.ADD_CONSTANT_OPERATION_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS_ :
                     case Instructions.ADD_CONSTANT_OPERATION$ADD_LONGS$UNBOXED_ :
@@ -4396,10 +4330,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL$LONG_ :
                     case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
-                    case Instructions.ADD_ :
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
                     case Instructions.MOD_ :
                     case Instructions.MOD$INTS_ :
                     case Instructions.MOD$INTS$UNBOXED_ :
@@ -4878,10 +4808,10 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                         result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new DoubleValue_Node());
                         bci += 10;
                         break;
-                    case Instructions.ADD_OPERATION_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new AddOperation_Node());
+                    case Instructions.ADD_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
                         bci += 14;
                         break;
                     case Instructions.ADD_CONSTANT_OPERATION_ :
@@ -4900,13 +4830,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.TEE_LOCAL$LONG_ :
                     case Instructions.TEE_LOCAL$LONG$UNBOXED_ :
                         result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeLocal_Node());
-                        bci += 14;
-                        break;
-                    case Instructions.ADD_ :
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
-                        result[BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)] = insert(new Add_Node());
                         bci += 14;
                         break;
                     case Instructions.MOD_ :
@@ -5470,23 +5393,23 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                             bci += 6;
                             break;
                         }
-                        case Instructions.ADD_OPERATION_ :
+                        case Instructions.ADD_ :
                         {
-                            doAddOperation_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            doAdd_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
                             bci += 14;
                             break;
                         }
-                        case Instructions.ADD_OPERATION$ADD_LONGS_ :
+                        case Instructions.ADD$ADD_LONGS_ :
                         {
-                            doAddOperation$AddLongs_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            doAdd$AddLongs_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
                             bci += 14;
                             break;
                         }
-                        case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
+                        case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                         {
-                            doAddOperation$AddLongs$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            doAdd$AddLongs$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
                             sp -= 1;
                             bci += 14;
                             break;
@@ -5828,34 +5751,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                         {
                             doEnableIncrementValueInstrumentation_(frame, localFrame, cachedNodes, bc, bci, sp);
                             bci += 6;
-                            break;
-                        }
-                        case Instructions.ADD_ :
-                        {
-                            doAdd_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            sp -= 1;
-                            bci += 14;
-                            break;
-                        }
-                        case Instructions.ADD$INTS_ :
-                        {
-                            doAdd$Ints_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            sp -= 1;
-                            bci += 14;
-                            break;
-                        }
-                        case Instructions.ADD$INTS$UNBOXED_ :
-                        {
-                            doAdd$Ints$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            sp -= 1;
-                            bci += 14;
-                            break;
-                        }
-                        case Instructions.ADD$UNBOXED_ :
-                        {
-                            doAdd$unboxed_(frame, localFrame, cachedNodes, bc, bci, sp);
-                            sp -= 1;
-                            bci += 14;
                             break;
                         }
                         case Instructions.MOD_ :
@@ -6928,15 +6823,15 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
-        private void doAddOperation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            AddOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), AddOperation_Node.class);
+        private void doAdd_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
             FRAMES.setObject(frame, sp - 2, result);
             FRAMES.clear(frame, sp - 1);
         }
 
-        private void doAddOperation$AddLongs_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            AddOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), AddOperation_Node.class);
+        private void doAdd$AddLongs_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
             try {
                 long result = node.executeAddLongs(localFrame, frame, this, bc, bci, sp);
                 FRAMES.setObject(frame, sp - 2, result);
@@ -6947,8 +6842,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             FRAMES.clear(frame, sp - 1);
         }
 
-        private void doAddOperation$AddLongs$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            AddOperation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), AddOperation_Node.class);
+        private void doAdd$AddLongs$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
             try {
                 long result = node.executeAddLongs$unboxed(localFrame, frame, this, bc, bci, sp);
                 FRAMES.setLong(frame, sp - 2, result);
@@ -7315,34 +7210,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         private void doEnableIncrementValueInstrumentation_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             EnableIncrementValueInstrumentation_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), EnableIncrementValueInstrumentation_Node.class);
             node.execute(localFrame, frame, this, bc, bci, sp);
-        }
-
-        private void doAdd_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
-            long result = node.execute(localFrame, frame, this, bc, bci, sp);
-            FRAMES.setObject(frame, sp - 2, result);
-            FRAMES.clear(frame, sp - 1);
-        }
-
-        private void doAdd$Ints_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
-            long result = node.executeInts(localFrame, frame, this, bc, bci, sp);
-            FRAMES.setObject(frame, sp - 2, result);
-            FRAMES.clear(frame, sp - 1);
-        }
-
-        private void doAdd$Ints$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
-            long result = node.executeInts$unboxed(localFrame, frame, this, bc, bci, sp);
-            FRAMES.setLong(frame, sp - 2, result);
-            FRAMES.clear(frame, sp - 1);
-        }
-
-        private void doAdd$unboxed_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
-            Add_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Add_Node.class);
-            long result = node.executeunboxed(localFrame, frame, this, bc, bci, sp);
-            FRAMES.setLong(frame, sp - 2, result);
-            FRAMES.clear(frame, sp - 1);
         }
 
         private void doMod_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
@@ -7988,13 +7855,9 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                         bci += 6;
                         break;
                     }
-                    case Instructions.ADD_OPERATION_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
                     case Instructions.ADD_ :
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                     case Instructions.MOD_ :
                     case Instructions.MOD$INTS_ :
                     case Instructions.MOD$INTS$UNBOXED_ :
@@ -8514,9 +8377,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                         BYTES.putShort(copy, bci, Instructions.VERY_COMPLEX_OPERATION_);
                         bci += 10;
                         break;
-                    case Instructions.ADD$INTS_ :
-                    case Instructions.ADD$INTS$UNBOXED_ :
-                    case Instructions.ADD$UNBOXED_ :
+                    case Instructions.ADD$ADD_LONGS_ :
+                    case Instructions.ADD$ADD_LONGS$UNBOXED_ :
                         BYTES.putShort(copy, bci, Instructions.ADD_);
                         bci += 14;
                         break;
@@ -8528,11 +8390,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS_ :
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END$ADD_LONGS$UNBOXED_ :
                         BYTES.putShort(copy, bci, Instructions.ADD_CONSTANT_OPERATION_AT_END_);
-                        bci += 14;
-                        break;
-                    case Instructions.ADD_OPERATION$ADD_LONGS_ :
-                    case Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_ :
-                        BYTES.putShort(copy, bci, Instructions.ADD_OPERATION_);
                         bci += 14;
                         break;
                     case Instructions.LESS$INTS_ :
@@ -8640,7 +8497,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     case Instructions.ADD_ :
                     case Instructions.ADD_CONSTANT_OPERATION_ :
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
-                    case Instructions.ADD_OPERATION_ :
                     case Instructions.LESS_ :
                     case Instructions.MOD_ :
                     case Instructions.TEE_LOCAL_ :
@@ -8845,7 +8701,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
     public static final class Builder extends BasicInterpreterBuilder {
 
         private static final byte UNINITIALIZED = -1;
-        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "AddOperation", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Add", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
+        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
         private static final Class<?>[] TAGS_ROOT_TAG_ROOT_BODY_TAG = new Class<?>[]{RootTag.class, RootBodyTag.class};
 
         private int operationSequenceNumber;
@@ -10724,19 +10580,19 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         }
 
         /**
-         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.AddOperation AddOperation} operation.
+         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
          * <p>
-         * Signature: AddOperation(lhs, rhs) -> Object
+         * Signature: Add(lhs, rhs) -> Object
          * <p>
          * Adds the two operand values, which must either be longs or Strings.
          * <p>
-         * A corresponding call to {@link #endAddOperation} is required to end the operation.
+         * A corresponding call to {@link #endAdd} is required to end the operation.
          */
         @Override
-        public void beginAddOperation() {
+        public void beginAdd() {
             if (serialization != null) {
                 try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD_OPERATION);
+                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD);
                 } catch (IOException ex) {
                     throw new IOError(ex);
                 }
@@ -10745,36 +10601,36 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             validateRootOperationBegin();
             beforeChild();
             CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED, UNINITIALIZED}, EMPTY_INT_ARRAY);
-            beginOperation(Operations.ADDOPERATION, operationData);
+            beginOperation(Operations.ADD, operationData);
         }
 
         /**
-         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.AddOperation AddOperation} operation.
+         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
          * <p>
-         * Signature: AddOperation(lhs, rhs) -> Object
+         * Signature: Add(lhs, rhs) -> Object
          *
-         * @see #beginAddOperation
+         * @see #beginAdd
          */
         @Override
-        public void endAddOperation() {
+        public void endAdd() {
             if (serialization != null) {
                 try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD_OPERATION);
+                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD);
                 } catch (IOException ex) {
                     throw new IOError(ex);
                 }
                 return;
             }
-            OperationStackEntry operation = endOperation(Operations.ADDOPERATION);
+            OperationStackEntry operation = endOperation(Operations.ADD);
             if (operation.childCount != 2) {
-                throw failState("Operation AddOperation expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
+                throw failState("Operation Add expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
             }
             if (!(operation.data instanceof CustomOperationData operationData)) {
                 throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
             }
             int childBci0 = operationData.childBcis[0];
             int childBci1 = operationData.childBcis[1];
-            doEmitInstructionIII(Instructions.ADD_OPERATION_, -1, allocateNode(), childBci0, childBci1);
+            doEmitInstructionIII(Instructions.ADD_, -1, allocateNode(), childBci0, childBci1);
             afterChild(true, bci - 14);
         }
 
@@ -12055,59 +11911,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         }
 
         /**
-         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
-         * <p>
-         * Signature: Add(left, right) -> long
-         * <p>
-         * A corresponding call to {@link #endAdd} is required to end the operation.
-         */
-        @Override
-        public void beginAdd() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_ADD);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            validateRootOperationBegin();
-            beforeChild();
-            CustomOperationData operationData = new CustomOperationData(new int[] {UNINITIALIZED, UNINITIALIZED}, EMPTY_INT_ARRAY);
-            beginOperation(Operations.ADD, operationData);
-        }
-
-        /**
-         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Add Add} operation.
-         * <p>
-         * Signature: Add(left, right) -> long
-         *
-         * @see #beginAdd
-         */
-        @Override
-        public void endAdd() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_ADD);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            OperationStackEntry operation = endOperation(Operations.ADD);
-            if (operation.childCount != 2) {
-                throw failState("Operation Add expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
-            }
-            if (!(operation.data instanceof CustomOperationData operationData)) {
-                throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
-            }
-            int childBci0 = operationData.childBcis[0];
-            int childBci1 = operationData.childBcis[1];
-            doEmitInstructionIII(Instructions.ADD_, -1, allocateNode(), childBci0, childBci1);
-            afterChild(true, bci - 14);
-        }
-
-        /**
          * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Mod Mod} operation.
          * <p>
          * Signature: Mod(left, right) -> long
@@ -12810,7 +12613,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Operations.YIELD :
                 case Operations.TAG :
                 case Operations.EARLYRETURN :
-                case Operations.ADDOPERATION :
+                case Operations.ADD :
                 case Operations.TOSTRING :
                 case Operations.CALL :
                 case Operations.ADDCONSTANTOPERATION :
@@ -12830,7 +12633,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 case Operations.CONTINUE :
                 case Operations.INCREMENTVALUE :
                 case Operations.DOUBLEVALUE :
-                case Operations.ADD :
                 case Operations.MOD :
                 case Operations.LESS :
                     break;
@@ -13141,10 +12943,10 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     }
                     break;
                 }
-                case Operations.ADDOPERATION :
+                case Operations.ADD :
                 {
                     if (!producedValue) {
-                        throw failState("Operation AddOperation expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                        throw failState("Operation Add expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
                         throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
@@ -13346,21 +13148,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                     }
                     if (childIndex == 0) {
                         operationData.childBcis[0] = childBci;
-                    }
-                    break;
-                }
-                case Operations.ADD :
-                {
-                    if (!producedValue) {
-                        throw failState("Operation Add expected a value-producing child at position " + childIndex + ", but a void one was provided.");
-                    }
-                    if (!(operationStack[operationSp - 1].data instanceof CustomOperationData operationData)) {
-                        throw assertionFailed("Data class CustomOperationData expected, but was " + operationStack[operationSp - 1].data);
-                    }
-                    if (childIndex == 0) {
-                        operationData.childBcis[0] = childBci;
-                    } else if (childIndex == 1) {
-                        operationData.childBcis[1] = childBci;
                     }
                     break;
                 }
@@ -14385,14 +14172,14 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                             endEarlyReturn();
                             break;
                         }
-                        case SerializationState.CODE_BEGIN_ADD_OPERATION :
+                        case SerializationState.CODE_BEGIN_ADD :
                         {
-                            beginAddOperation();
+                            beginAdd();
                             break;
                         }
-                        case SerializationState.CODE_END_ADD_OPERATION :
+                        case SerializationState.CODE_END_ADD :
                         {
-                            endAddOperation();
+                            endAdd();
                             break;
                         }
                         case SerializationState.CODE_BEGIN_TO_STRING :
@@ -14649,16 +14436,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                         case SerializationState.CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION :
                         {
                             emitEnableIncrementValueInstrumentation();
-                            break;
-                        }
-                        case SerializationState.CODE_BEGIN_ADD :
-                        {
-                            beginAdd();
-                            break;
-                        }
-                        case SerializationState.CODE_END_ADD :
-                        {
-                            endAdd();
                             break;
                         }
                         case SerializationState.CODE_BEGIN_MOD :
@@ -15725,8 +15502,8 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             private static final short CODE_END_TAG = (25 << 1) | 0b1;
             private static final short CODE_BEGIN_EARLY_RETURN = 26 << 1;
             private static final short CODE_END_EARLY_RETURN = (26 << 1) | 0b1;
-            private static final short CODE_BEGIN_ADD_OPERATION = 27 << 1;
-            private static final short CODE_END_ADD_OPERATION = (27 << 1) | 0b1;
+            private static final short CODE_BEGIN_ADD = 27 << 1;
+            private static final short CODE_END_ADD = (27 << 1) | 0b1;
             private static final short CODE_BEGIN_TO_STRING = 28 << 1;
             private static final short CODE_END_TO_STRING = (28 << 1) | 0b1;
             private static final short CODE_BEGIN_CALL = 29 << 1;
@@ -15776,19 +15553,17 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             private static final short CODE_BEGIN_DOUBLE_VALUE = 56 << 1;
             private static final short CODE_END_DOUBLE_VALUE = (56 << 1) | 0b1;
             private static final short CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION = 57 << 1;
-            private static final short CODE_BEGIN_ADD = 58 << 1;
-            private static final short CODE_END_ADD = (58 << 1) | 0b1;
-            private static final short CODE_BEGIN_MOD = 59 << 1;
-            private static final short CODE_END_MOD = (59 << 1) | 0b1;
-            private static final short CODE_BEGIN_LESS = 60 << 1;
-            private static final short CODE_END_LESS = (60 << 1) | 0b1;
-            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 61 << 1;
-            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 62 << 1;
-            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 63 << 1;
-            private static final short CODE_BEGIN_SC_AND = 64 << 1;
-            private static final short CODE_END_SC_AND = (64 << 1) | 0b1;
-            private static final short CODE_BEGIN_SC_OR = 65 << 1;
-            private static final short CODE_END_SC_OR = (65 << 1) | 0b1;
+            private static final short CODE_BEGIN_MOD = 58 << 1;
+            private static final short CODE_END_MOD = (58 << 1) | 0b1;
+            private static final short CODE_BEGIN_LESS = 59 << 1;
+            private static final short CODE_END_LESS = (59 << 1) | 0b1;
+            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 60 << 1;
+            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 61 << 1;
+            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 62 << 1;
+            private static final short CODE_BEGIN_SC_AND = 63 << 1;
+            private static final short CODE_END_SC_AND = (63 << 1) | 0b1;
+            private static final short CODE_BEGIN_SC_OR = 64 << 1;
+            private static final short CODE_END_SC_OR = (64 << 1) | 0b1;
 
             private final DataOutput buffer;
             private final BytecodeSerializer callback;
@@ -16581,29 +16356,29 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
          */
         private static final short EARLY_RETURN_ = 68;
         /*
-         * Instruction c.AddOperation
+         * Instruction c.Add
          * kind: CUSTOM
          * encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: AddOperation
+         * nodeType: Add
          * signature: Object (Object, Object)
          */
-        private static final short ADD_OPERATION_ = 69;
+        private static final short ADD_ = 69;
         /*
-         * Instruction c.AddOperation$AddLongs
+         * Instruction c.Add$AddLongs
          * kind: CUSTOM
          * encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: AddOperation
+         * nodeType: Add
          * signature: long (long, long)
          */
-        private static final short ADD_OPERATION$ADD_LONGS_ = 70;
+        private static final short ADD$ADD_LONGS_ = 70;
         /*
-         * Instruction c.AddOperation$AddLongs$unboxed
+         * Instruction c.Add$AddLongs$unboxed
          * kind: CUSTOM
          * encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: AddOperation
+         * nodeType: Add
          * signature: long (long, long)
          */
-        private static final short ADD_OPERATION$ADD_LONGS$UNBOXED_ = 71;
+        private static final short ADD$ADD_LONGS$UNBOXED_ = 71;
         /*
          * Instruction c.ToString
          * kind: CUSTOM
@@ -17037,230 +16812,198 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
          */
         private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 125;
         /*
-         * Instruction c.Add
-         * kind: CUSTOM
-         * encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: Add
-         * signature: long (long, long)
-         */
-        private static final short ADD_ = 126;
-        /*
-         * Instruction c.Add$Ints
-         * kind: CUSTOM
-         * encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: Add
-         * signature: long (long, long)
-         */
-        private static final short ADD$INTS_ = 127;
-        /*
-         * Instruction c.Add$Ints$unboxed
-         * kind: CUSTOM
-         * encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: Add
-         * signature: long (long, long)
-         */
-        private static final short ADD$INTS$UNBOXED_ = 128;
-        /*
-         * Instruction c.Add$unboxed
-         * kind: CUSTOM
-         * encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
-         * nodeType: Add
-         * signature: long (long, long)
-         */
-        private static final short ADD$UNBOXED_ = 129;
-        /*
          * Instruction c.Mod
          * kind: CUSTOM
-         * encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [126 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD_ = 130;
+        private static final short MOD_ = 126;
         /*
          * Instruction c.Mod$Ints
          * kind: CUSTOM
-         * encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [127 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD$INTS_ = 131;
+        private static final short MOD$INTS_ = 127;
         /*
          * Instruction c.Mod$Ints$unboxed
          * kind: CUSTOM
-         * encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [128 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD$INTS$UNBOXED_ = 132;
+        private static final short MOD$INTS$UNBOXED_ = 128;
         /*
          * Instruction c.Mod$unboxed
          * kind: CUSTOM
-         * encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [129 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD$UNBOXED_ = 133;
+        private static final short MOD$UNBOXED_ = 129;
         /*
          * Instruction c.Less
          * kind: CUSTOM
-         * encoding: [134 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [130 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS_ = 134;
+        private static final short LESS_ = 130;
         /*
          * Instruction c.Less$Ints
          * kind: CUSTOM
-         * encoding: [135 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [131 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS$INTS_ = 135;
+        private static final short LESS$INTS_ = 131;
         /*
          * Instruction c.Less$Ints$unboxed
          * kind: CUSTOM
-         * encoding: [136 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [132 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS$INTS$UNBOXED_ = 136;
+        private static final short LESS$INTS$UNBOXED_ = 132;
         /*
          * Instruction c.Less$unboxed
          * kind: CUSTOM
-         * encoding: [137 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [133 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS$UNBOXED_ = 137;
+        private static final short LESS$UNBOXED_ = 133;
         /*
          * Instruction c.EnableDoubleValueInstrumentation
          * kind: CUSTOM
-         * encoding: [138 : short, node : int]
+         * encoding: [134 : short, node : int]
          * nodeType: EnableDoubleValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 138;
+        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 134;
         /*
          * Instruction c.ExplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [139 : short, node : int]
+         * encoding: [135 : short, node : int]
          * nodeType: ExplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short EXPLICIT_BINDINGS_TEST_ = 139;
+        private static final short EXPLICIT_BINDINGS_TEST_ = 135;
         /*
          * Instruction c.ImplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [140 : short, node : int]
+         * encoding: [136 : short, node : int]
          * nodeType: ImplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short IMPLICIT_BINDINGS_TEST_ = 140;
+        private static final short IMPLICIT_BINDINGS_TEST_ = 136;
         /*
          * Instruction sc.ScAnd
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [141 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [137 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_AND_ = 141;
+        private static final short SC_AND_ = 137;
         /*
          * Instruction sc.ScOr
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [142 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [138 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_OR_ = 142;
+        private static final short SC_OR_ = 138;
         /*
          * Instruction merge.conditional
          * kind: MERGE_CONDITIONAL
-         * encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [139 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, Object)
          */
-        private static final short MERGE_CONDITIONAL = 143;
+        private static final short MERGE_CONDITIONAL = 139;
         /*
          * Instruction merge.conditional$Boolean
          * kind: MERGE_CONDITIONAL
-         * encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [140 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short MERGE_CONDITIONAL$BOOLEAN = 144;
+        private static final short MERGE_CONDITIONAL$BOOLEAN = 140;
         /*
          * Instruction merge.conditional$Boolean$unboxed
          * kind: MERGE_CONDITIONAL
-         * encoding: [145 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [141 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: boolean (boolean, boolean)
          */
-        private static final short MERGE_CONDITIONAL$BOOLEAN$UNBOXED = 145;
+        private static final short MERGE_CONDITIONAL$BOOLEAN$UNBOXED = 141;
         /*
          * Instruction merge.conditional$Long
          * kind: MERGE_CONDITIONAL
-         * encoding: [146 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [142 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, long)
          */
-        private static final short MERGE_CONDITIONAL$LONG = 146;
+        private static final short MERGE_CONDITIONAL$LONG = 142;
         /*
          * Instruction merge.conditional$Long$unboxed
          * kind: MERGE_CONDITIONAL
-         * encoding: [147 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [143 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: long (boolean, long)
          */
-        private static final short MERGE_CONDITIONAL$LONG$UNBOXED = 147;
+        private static final short MERGE_CONDITIONAL$LONG$UNBOXED = 143;
         /*
          * Instruction merge.conditional$generic
          * kind: MERGE_CONDITIONAL
-         * encoding: [148 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [144 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, Object)
          */
-        private static final short MERGE_CONDITIONAL$GENERIC = 148;
+        private static final short MERGE_CONDITIONAL$GENERIC = 144;
         /*
          * Instruction invalidate0
          * kind: INVALIDATE
-         * encoding: [149 : short]
+         * encoding: [145 : short]
          * signature: void ()
          */
-        private static final short INVALIDATE0 = 149;
+        private static final short INVALIDATE0 = 145;
         /*
          * Instruction invalidate1
          * kind: INVALIDATE
-         * encoding: [150 : short, invalidated0 (short) : short]
+         * encoding: [146 : short, invalidated0 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE1 = 150;
+        private static final short INVALIDATE1 = 146;
         /*
          * Instruction invalidate2
          * kind: INVALIDATE
-         * encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+         * encoding: [147 : short, invalidated0 (short) : short, invalidated1 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE2 = 151;
+        private static final short INVALIDATE2 = 147;
         /*
          * Instruction invalidate3
          * kind: INVALIDATE
-         * encoding: [152 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+         * encoding: [148 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE3 = 152;
+        private static final short INVALIDATE3 = 148;
         /*
          * Instruction invalidate4
          * kind: INVALIDATE
-         * encoding: [153 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+         * encoding: [149 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE4 = 153;
+        private static final short INVALIDATE4 = 149;
         /*
          * Instruction invalidate5
          * kind: INVALIDATE
-         * encoding: [154 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+         * encoding: [150 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE5 = 154;
+        private static final short INVALIDATE5 = 150;
         /*
          * Instruction invalidate6
          * kind: INVALIDATE
-         * encoding: [155 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
+         * encoding: [151 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE6 = 155;
+        private static final short INVALIDATE6 = 151;
 
     }
     private static final class Operations {
@@ -17291,7 +17034,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         private static final int SOURCESECTION = 24;
         private static final int TAG = 25;
         private static final int EARLYRETURN = 26;
-        private static final int ADDOPERATION = 27;
+        private static final int ADD = 27;
         private static final int TOSTRING = 28;
         private static final int CALL = 29;
         private static final int ADDCONSTANTOPERATION = 30;
@@ -17322,14 +17065,13 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         private static final int INCREMENTVALUE = 55;
         private static final int DOUBLEVALUE = 56;
         private static final int ENABLEINCREMENTVALUEINSTRUMENTATION = 57;
-        private static final int ADD = 58;
-        private static final int MOD = 59;
-        private static final int LESS = 60;
-        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 61;
-        private static final int EXPLICITBINDINGSTEST = 62;
-        private static final int IMPLICITBINDINGSTEST = 63;
-        private static final int SCAND = 64;
-        private static final int SCOR = 65;
+        private static final int MOD = 58;
+        private static final int LESS = 59;
+        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 60;
+        private static final int EXPLICITBINDINGSTEST = 61;
+        private static final int IMPLICITBINDINGSTEST = 62;
+        private static final int SCAND = 63;
+        private static final int SCOR = 64;
 
     }
     private static final class FrameTags {
@@ -17772,24 +17514,24 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
     }
     /**
      * Debug Info: <pre>
-     *   Specialization {@link AddOperation#addLongs}
+     *   Specialization {@link Add#addLongs}
      *     Activation probability: 0.48333
      *     With/without class size: 9/0 bytes
-     *   Specialization {@link AddOperation#addStrings}
+     *   Specialization {@link Add#addStrings}
      *     Activation probability: 0.33333
      *     With/without class size: 8/0 bytes
-     *   Specialization {@link AddOperation#addObjects}
+     *   Specialization {@link Add#addObjects}
      *     Activation probability: 0.18333
      *     With/without class size: 6/0 bytes
      * </pre> */
     @SuppressWarnings("javadoc")
-    private static final class AddOperation_Node extends Node implements Introspection.Provider {
+    private static final class Add_Node extends Node implements Introspection.Provider {
 
         /**
          * State Info: <pre>
-         *   0: SpecializationActive {@link AddOperation#addLongs}
-         *   1: SpecializationActive {@link AddOperation#addStrings}
-         *   2: SpecializationActive {@link AddOperation#addObjects}
+         *   0: SpecializationActive {@link Add#addLongs}
+         *   1: SpecializationActive {@link Add#addStrings}
+         *   2: SpecializationActive {@link Add#addObjects}
          * </pre> */
         @CompilationFinal private int state_0_;
 
@@ -17810,24 +17552,24 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
             }
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] || SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
-                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */ && child0Value_ instanceof Long) {
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] || SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] || SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
+                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */ && child0Value_ instanceof Long) {
                     long child0Value__ = (long) child0Value_;
                     if (child1Value_ instanceof Long) {
                         long child1Value__ = (long) child1Value_;
-                        return AddOperation.addLongs(child0Value__, child1Value__);
+                        return Add.addLongs(child0Value__, child1Value__);
                     }
                 }
-                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */ && child0Value_ instanceof String) {
+                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */ && child0Value_ instanceof String) {
                     String child0Value__ = (String) child0Value_;
                     if (child1Value_ instanceof String) {
                         String child1Value__ = (String) child1Value_;
-                        return AddOperation.addStrings(child0Value__, child1Value__);
+                        return Add.addStrings(child0Value__, child1Value__);
                     }
                 }
-                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+                if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
                     if (fallbackGuard_(state_0, child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp)) {
-                        return AddOperation.addObjects(child0Value_, child1Value_);
+                        return Add.addObjects(child0Value_, child1Value_);
                     }
                 }
             }
@@ -17851,7 +17593,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 return expectLong(executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
             }
-            return AddOperation.addLongs(child0Value_, child1Value_);
+            return Add.addLongs(child0Value_, child1Value_);
         }
 
         private long executeAddLongs$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) throws UnexpectedResultException {
@@ -17870,15 +17612,15 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 return expectLong(executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp));
             }
-            return AddOperation.addLongs(child0Value_, child1Value_);
+            return Add.addLongs(child0Value_, child1Value_);
         }
 
         @SuppressWarnings("static-method")
         private boolean fallbackGuard_(int state_0, Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
+            if (!((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */) && child0Value instanceof Long && child1Value instanceof Long) {
                 return false;
             }
-            if (!((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) && child0Value instanceof String && child1Value instanceof String) {
+            if (!((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */) && child0Value instanceof String && child1Value instanceof String) {
                 return false;
             }
             return true;
@@ -17890,29 +17632,29 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
                 long child0Value_ = (long) child0Value;
                 if (child1Value instanceof Long) {
                     long child1Value_ = (long) child1Value;
-                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */;
+                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */;
                     this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$AddLongs");
+                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddLongs");
                     quicken(state_0, $bytecode, $bc, $bci);
-                    return AddOperation.addLongs(child0Value_, child1Value_);
+                    return Add.addLongs(child0Value_, child1Value_);
                 }
             }
             if (child0Value instanceof String) {
                 String child0Value_ = (String) child0Value;
                 if (child1Value instanceof String) {
                     String child1Value_ = (String) child1Value;
-                    state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */;
+                    state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */;
                     this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$AddStrings");
+                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$AddStrings");
                     quicken(state_0, $bytecode, $bc, $bci);
-                    return AddOperation.addStrings(child0Value_, child1Value_);
+                    return Add.addStrings(child0Value_, child1Value_);
                 }
             }
-            state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */;
+            state_0 = state_0 | 0b100 /* add SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */;
             this.state_0_ = state_0;
-            $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "AddOperation$Fallback");
+            $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$Fallback");
             quicken(state_0, $bytecode, $bc, $bci);
-            return AddOperation.addObjects(child0Value, child1Value);
+            return Add.addObjects(child0Value, child1Value);
         }
 
         @Override
@@ -17923,7 +17665,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             int state_0 = this.state_0_;
             s = new Object[3];
             s[0] = "addLongs";
-            if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */) {
+            if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -17932,7 +17674,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             data[1] = s;
             s = new Object[3];
             s[0] = "addStrings";
-            if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] */) {
+            if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -17941,7 +17683,7 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             data[2] = s;
             s = new Object[3];
             s[0] = "addObjects";
-            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */) {
+            if ((state_0 & 0b100) != 0 /* is SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */) {
                 s[1] = (byte)0b01 /* active */;
             }
             if (s[1] == null) {
@@ -17959,18 +17701,18 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             int oldOperandIndex1 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child1 */);
             short oldOperand1 = BYTES.getShort($bc, oldOperandIndex1);
             short newOperand1;
-            if ((state_0 & 0b110) == 0 /* only-active SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.AddOperation.addLongs(long, long)] || SpecializationActive[BasicInterpreter.AddOperation.addStrings(String, String)] || SpecializationActive[BasicInterpreter.AddOperation.addObjects(Object, Object)] */
+            if ((state_0 & 0b110) == 0 /* only-active SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] */ && state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.addLongs(long, long)] || SpecializationActive[BasicInterpreter.Add.addStrings(String, String)] || SpecializationActive[BasicInterpreter.Add.addObjects(Object, Object)] */
                && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1
                && (newOperand1 = applyQuickeningLong(oldOperand1)) != -1) {
                 if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
-                    newInstruction = Instructions.ADD_OPERATION$ADD_LONGS$UNBOXED_;
+                    newInstruction = Instructions.ADD$ADD_LONGS$UNBOXED_;
                 } else {
-                    newInstruction = Instructions.ADD_OPERATION$ADD_LONGS_;
+                    newInstruction = Instructions.ADD$ADD_LONGS_;
                 }
             } else {
                 newOperand0 = undoQuickening(oldOperand0);
                 newOperand1 = undoQuickening(oldOperand1);
-                newInstruction = Instructions.ADD_OPERATION_;
+                newInstruction = Instructions.ADD_;
             }
             BYTES.putShort($bc, oldOperandIndex0, newOperand0);
             $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
@@ -20849,178 +20591,6 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
             }
             data[1] = s;
             return Provider.create(data);
-        }
-
-    }
-    /**
-     * Debug Info: <pre>
-     *   Specialization {@link Add#doInts}
-     *     Activation probability: 1.00000
-     *     With/without class size: 16/0 bytes
-     * </pre> */
-    @SuppressWarnings("javadoc")
-    private static final class Add_Node extends Node implements Introspection.Provider {
-
-        /**
-         * State Info: <pre>
-         *   0: SpecializationActive {@link Add#doInts}
-         * </pre> */
-        @CompilationFinal private int state_0_;
-
-        private long execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            int state_0 = this.state_0_;
-            long child0Value_;
-            try {
-                child0Value_ = BasicInterpreterWithBE.expectLong(FRAMES.expectObject($stackFrame, $sp - 2));
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
-                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            long child1Value_;
-            try {
-                child1Value_ = BasicInterpreterWithBE.expectLong(FRAMES.expectObject($stackFrame, $sp - 1));
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */) {
-                return Add.doInts(child0Value_, child1Value_);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
-        }
-
-        private long executeInts(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            long child0Value_;
-            try {
-                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
-                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            long child1Value_;
-            try {
-                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            return Add.doInts(child0Value_, child1Value_);
-        }
-
-        private long executeInts$unboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            long child0Value_;
-            try {
-                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
-                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            long child1Value_;
-            try {
-                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            return Add.doInts(child0Value_, child1Value_);
-        }
-
-        private long executeunboxed(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            int state_0 = this.state_0_;
-            long child0Value_;
-            try {
-                child0Value_ = FRAMES.expectLong($stackFrame, $sp - 2);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object child1Value = FRAMES.getValue($stackFrame, $sp - 1);
-                return executeAndSpecialize(ex.getResult(), child1Value, $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            long child1Value_;
-            try {
-                child1Value_ = FRAMES.expectLong($stackFrame, $sp - 1);
-            } catch (UnexpectedResultException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                return executeAndSpecialize(child0Value_, ex.getResult(), $stackFrame, $bytecode, $bc, $bci, $sp);
-            }
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */) {
-                return Add.doInts(child0Value_, child1Value_);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            return executeAndSpecialize(child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
-        }
-
-        private long executeAndSpecialize(Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
-            int state_0 = this.state_0_;
-            if (child0Value instanceof Long) {
-                long child0Value_ = (long) child0Value;
-                if (child1Value instanceof Long) {
-                    long child1Value_ = (long) child1Value;
-                    state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */;
-                    this.state_0_ = state_0;
-                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "Add$Ints");
-                    quicken(state_0, $bytecode, $bc, $bci);
-                    return Add.doInts(child0Value_, child1Value_);
-                }
-            }
-            throw new UnsupportedSpecializationException(this, null, child0Value, child1Value);
-        }
-
-        @Override
-        public Introspection getIntrospectionData() {
-            Object[] data = new Object[2];
-            Object[] s;
-            data[0] = 0;
-            int state_0 = this.state_0_;
-            s = new Object[3];
-            s[0] = "doInts";
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */) {
-                s[1] = (byte)0b01 /* active */;
-            }
-            if (s[1] == null) {
-                s[1] = (byte)0b00 /* inactive */;
-            }
-            data[1] = s;
-            return Provider.create(data);
-        }
-
-        private static void quicken(int state_0, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci) {
-            short newInstruction;
-            int oldOperandIndex0 = BYTES.getIntUnaligned($bc, $bci + 6 /* imm child0 */);
-            short oldOperand0 = BYTES.getShort($bc, oldOperandIndex0);
-            short newOperand0;
-            int oldOperandIndex1 = BYTES.getIntUnaligned($bc, $bci + 10 /* imm child1 */);
-            short oldOperand1 = BYTES.getShort($bc, oldOperandIndex1);
-            short newOperand1;
-            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.Add.doInts(long, long)] */
-               && (newOperand0 = applyQuickeningLong(oldOperand0)) != -1
-               && (newOperand1 = applyQuickeningLong(oldOperand1)) != -1) {
-                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
-                    newInstruction = Instructions.ADD$INTS$UNBOXED_;
-                } else {
-                    newInstruction = Instructions.ADD$INTS_;
-                }
-            } else {
-                newOperand0 = undoQuickening(oldOperand0);
-                newOperand1 = undoQuickening(oldOperand1);
-                if (isQuickeningLong(BYTES.getShort($bc, $bci))) {
-                    newInstruction = Instructions.ADD$UNBOXED_;
-                } else {
-                    newInstruction = Instructions.ADD_;
-                }
-            }
-            BYTES.putShort($bc, oldOperandIndex0, newOperand0);
-            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 0, new InstructionImpl($bytecode, oldOperandIndex0, oldOperand0), new InstructionImpl($bytecode, oldOperandIndex0, newOperand0));
-            BYTES.putShort($bc, oldOperandIndex1, newOperand1);
-            $bytecode.getRoot().onQuickenOperand(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), 1, new InstructionImpl($bytecode, oldOperandIndex1, oldOperand1), new InstructionImpl($bytecode, oldOperandIndex1, newOperand1));
-            {
-                InstructionImpl oldInstruction = new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci));
-                BYTES.putShort($bc, $bci, newInstruction);
-                $bytecode.getRoot().onQuicken(oldInstruction, new InstructionImpl($bytecode, $bci, newInstruction));
-            }
         }
 
     }

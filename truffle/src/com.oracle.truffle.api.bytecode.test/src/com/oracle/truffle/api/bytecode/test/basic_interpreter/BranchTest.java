@@ -113,10 +113,10 @@ public class BranchTest extends AbstractBasicInterpreterTest {
                 b.endIfThen();
 
                 b.beginStoreLocal(loc);
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitLoadLocal(loc);
                 b.emitLoadConstant(1L);
-                b.endAddOperation();
+                b.endAdd();
                 b.endStoreLocal();
 
                 b.emitBranch(lbl);
@@ -178,13 +178,13 @@ public class BranchTest extends AbstractBasicInterpreterTest {
             BytecodeLabel lbl = b.createLabel();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(1L);
             b.beginBlock();
               b.emitBranch(lbl);
               b.emitLoadConstant(2L);
             b.endBlock();
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.emitLabel(lbl);
@@ -267,13 +267,13 @@ public class BranchTest extends AbstractBasicInterpreterTest {
                 b.emitBranch(lbl);
 
                 b.beginReturn();
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitLoadConstant(1L);
                 b.beginBlock();
                   b.emitLabel(lbl);
                   b.emitLoadConstant(2L);
                 b.endBlock();
-                b.endAddOperation();
+                b.endAdd();
                 b.endReturn();
 
                 b.endRoot();
@@ -297,7 +297,7 @@ public class BranchTest extends AbstractBasicInterpreterTest {
         RootCallTarget root = parse("branchBalancedStack", b -> {
             b.beginRoot();
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
                 b.emitLoadConstant(40L);
 
@@ -331,7 +331,7 @@ public class BranchTest extends AbstractBasicInterpreterTest {
                     b.emitLoadLocal(result);
                 b.endBlock();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
             b.endRoot();
         });

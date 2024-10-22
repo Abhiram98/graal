@@ -663,10 +663,10 @@ public class TryFinallyTest extends AbstractBasicInterpreterTest {
                             b.endAppenderOperation();
 
                             b.beginTeeLocal(local);
-                                b.beginAddOperation();
+                                b.beginAdd();
                                     b.emitLoadLocal(local);
                                     b.emitLoadConstant(1L);
-                                b.endAddOperation();
+                                b.endAdd();
                             b.endTeeLocal();
                         b.endBlock();
                     b.endWhile();

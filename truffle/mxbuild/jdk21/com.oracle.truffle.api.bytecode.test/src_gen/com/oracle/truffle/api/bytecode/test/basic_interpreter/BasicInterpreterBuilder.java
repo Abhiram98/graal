@@ -118,9 +118,9 @@ public abstract class BasicInterpreterBuilder extends BytecodeBuilder {
 
     public abstract void endEarlyReturn();
 
-    public abstract void beginAddOperation();
+    public abstract void beginAdd();
 
-    public abstract void endAddOperation();
+    public abstract void endAdd();
 
     public abstract void beginToString();
 
@@ -219,10 +219,6 @@ public abstract class BasicInterpreterBuilder extends BytecodeBuilder {
     public abstract void endDoubleValue();
 
     public abstract void emitEnableIncrementValueInstrumentation();
-
-    public abstract void beginAdd();
-
-    public abstract void endAdd();
 
     public abstract void beginMod();
 

@@ -334,10 +334,10 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(20L);
             b.emitLoadConstant(22L);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -358,7 +358,7 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(30L);
             b.beginConditional();
             b.emitLoadArgument(0);
@@ -370,7 +370,7 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
             b.emitLoadConstant(0L);
             b.endBlock();
             b.endConditional();
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -393,10 +393,10 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
 
             b.beginReturn();
             b.beginIncrementValue();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(20L);
             b.emitLoadConstant(22L);
-            b.endAddOperation();
+            b.endAdd();
             b.endIncrementValue();
             b.endReturn();
 
@@ -427,12 +427,12 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(20L);
             b.beginYield();
             b.emitLoadConstant(123L);
             b.endYield();
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -468,12 +468,12 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
 
             b.beginReturn();
             b.beginIncrementValue();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(20L);
             b.beginYield();
             b.emitLoadConstant(123L);
             b.endYield();
-            b.endAddOperation();
+            b.endAdd();
             b.endIncrementValue();
             b.endReturn();
 

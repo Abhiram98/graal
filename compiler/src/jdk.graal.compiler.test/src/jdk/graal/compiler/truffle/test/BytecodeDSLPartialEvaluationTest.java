@@ -72,10 +72,10 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(20L);
             b.emitLoadConstant(22L);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -92,16 +92,16 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(40L);
             b.emitLoadConstant(22L);
-            b.endAddOperation();
+            b.endAdd();
 
             b.emitLoadConstant(-20L);
 
-            b.endAddOperation();
+            b.endAdd();
 
             b.endReturn();
 
@@ -170,17 +170,17 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
             b.beginBlock();
 
             b.beginStoreLocal(i);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(i);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.beginStoreLocal(sum);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(sum);
             b.emitLoadLocal(i);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.endBlock();
@@ -218,7 +218,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
             b.endThrowOperation();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.beginReadExceptionOperation();
             b.emitLoadException();
@@ -226,7 +226,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
 
             b.emitLoadConstant(1L);
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endTryCatch();
@@ -268,18 +268,18 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
             b.endThrowOperation();
 
             b.beginThrowOperation();
-            b.beginAddOperation();
+            b.beginAdd();
             b.beginReadExceptionOperation();
             b.emitLoadException();
             b.endReadExceptionOperation();
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endThrowOperation();
 
             b.endTryCatch();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.beginReadExceptionOperation();
             b.emitLoadException();
@@ -287,7 +287,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
 
             b.emitLoadConstant(1L);
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endTryCatch();

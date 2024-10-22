@@ -232,7 +232,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
     }
 
     @Operation(javadoc = "Adds the two operand values, which must either be longs or Strings.")
-    static final class AddOperation {
+    static final class Add {
         @Specialization
         public static long addLongs(long lhs, long rhs) {
             return lhs + rhs;
@@ -722,14 +722,6 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
             BytecodeConfig.Builder configBuilder = BasicInterpreterBuilder.invokeNewConfigBuilder(root.getClass());
             configBuilder.addInstrumentation(IncrementValue.class);
             return configBuilder.build();
-        }
-    }
-
-    @Operation
-    static final class Add {
-        @Specialization
-        static long doInts(long left, long right) {
-            return left + right;
         }
     }
 

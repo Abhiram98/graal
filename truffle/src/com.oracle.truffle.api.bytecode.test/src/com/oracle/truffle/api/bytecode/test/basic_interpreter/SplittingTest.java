@@ -134,10 +134,10 @@ public class SplittingTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
             b.beginTag(StatementTag.class);
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(21L);
             b.emitLoadConstant(21L);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
             b.endTag(StatementTag.class);
             b.endRoot();

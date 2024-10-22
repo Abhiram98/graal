@@ -110,10 +110,10 @@ public class YieldTest extends AbstractBasicInterpreterTest {
             b.endYield();
 
             b.beginStoreLocal(local);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(local);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.beginYield();
@@ -121,10 +121,10 @@ public class YieldTest extends AbstractBasicInterpreterTest {
             b.endYield();
 
             b.beginStoreLocal(local);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(local);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.beginReturn();
@@ -165,18 +165,18 @@ public class YieldTest extends AbstractBasicInterpreterTest {
 
             b.beginYield();
             b.beginTeeLocal(local);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(local);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endTeeLocal();
             b.endYield();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(local);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -199,7 +199,7 @@ public class YieldTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.beginYield();
             b.emitLoadConstant(1L);
@@ -209,7 +209,7 @@ public class YieldTest extends AbstractBasicInterpreterTest {
             b.emitLoadConstant(2L);
             b.endYield();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();

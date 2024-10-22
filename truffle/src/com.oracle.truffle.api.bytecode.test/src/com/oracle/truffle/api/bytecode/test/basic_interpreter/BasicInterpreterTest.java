@@ -195,10 +195,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadArgument(1);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -427,17 +427,17 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
             b.beginBlock();
             b.beginStoreLocal(locJ);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(locJ);
             b.emitLoadLocal(locI);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.beginStoreLocal(locI);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(locI);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
             b.endBlock();
             b.endWhile();
@@ -502,10 +502,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.endLess();
 
             b.beginThrowOperation();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endThrowOperation();
 
             b.endIfThen();
@@ -541,15 +541,15 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginTryCatch();
 
             b.beginThrowOperation();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endThrowOperation();
 
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(1L);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(2L);
             b.beginBlock();
             b.beginReturn();
@@ -559,8 +559,8 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.endReturn();
             b.emitLoadConstant(3L);
             b.endBlock();
-            b.endAddOperation();
-            b.endAddOperation();
+            b.endAdd();
+            b.endAdd();
 
             b.endTryCatch();
 
@@ -609,10 +609,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadConstant(0L);
             b.endLess();
             b.beginThrowOperation();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadConstant(-100L);
-            b.endAddOperation();
+            b.endAdd();
             b.endThrowOperation();
             b.endIfThen();
 
@@ -841,19 +841,19 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginBlock();
 
             b.beginStoreLocal(local1);
-            b.beginAddOperation();
+            b.beginAdd();
             b.beginAlwaysBoxOperation();
             b.emitLoadLocal(local1);
             b.endAlwaysBoxOperation();
             b.emitLoadLocal(local0);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.beginStoreLocal(local0);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(local0);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.endBlock();
@@ -1173,12 +1173,12 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
             b.emitLoadLocal(f);
 
-            b.beginAddOperation();
+            b.beginAdd();
             b.beginLoadLocalMaterialized(x);
             b.emitLoadLocal(f);
             b.endLoadLocalMaterialized();
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
 
             b.endStoreLocalMaterialized();
 
@@ -1241,17 +1241,17 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             // x = x + 1;
             b.beginStoreLocalMaterialized(x);
             b.emitLoadArgument(0); // materializedFrame
-            b.beginAddOperation();
+            b.beginAdd();
             b.beginLoadLocalMaterialized(x);
             b.emitLoadArgument(0); // materializedFrame
             b.endLoadLocalMaterialized();
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocalMaterialized();
 
             // return x + 1;
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.emitLoadConstant(1L);
 
@@ -1259,7 +1259,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadArgument(0); // materializedFrame
             b.endLoadLocalMaterialized();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             BasicInterpreter callTarget = b.endRoot();
@@ -1602,10 +1602,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.endIfThen();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(xLoc);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -1628,7 +1628,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "pop",
                         "load.local$Long$unboxed", // load BE'd
                         "load.constant$Long",
-                        "c.AddOperation$AddLongs",
+                        "c.Add$AddLongs",
                         "return");
 
         assertEquals(42L, outer.getCallTarget().call(true, 41L));
@@ -1646,7 +1646,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "pop$generic",
                         "load.local$Long$unboxed", // load is not affected by long store.
                         "load.constant$Long",
-                        "c.AddOperation$AddLongs",
+                        "c.Add$AddLongs",
                         "return");
 
         assertEquals("411", outer.getCallTarget().call(true, "41"));
@@ -1664,7 +1664,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         "pop$generic",
                         "load.local$generic", // load unquickens.
                         "load.constant",
-                        "c.AddOperation",
+                        "c.Add",
                         "return");
     }
 
@@ -1865,14 +1865,14 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
     @Test
     public void testValidationTooFewArguments() {
-        assertThrowsWithMessage("Operation AddOperation expected exactly 2 children, but 1 provided. This is probably a bug in the parser.", IllegalStateException.class, () -> {
+        assertThrowsWithMessage("Operation Add expected exactly 2 children, but 1 provided. This is probably a bug in the parser.", IllegalStateException.class, () -> {
             parse("validationTooFewArguments", b -> {
                 b.beginRoot();
 
                 b.beginReturn();
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitLoadConstant(1L);
-                b.endAddOperation();
+                b.endAdd();
                 b.endReturn();
 
                 b.endRoot();
@@ -1882,16 +1882,16 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
     @Test
     public void testValidationTooManyArguments() {
-        assertThrowsWithMessage("Operation AddOperation expected exactly 2 children, but 3 provided. This is probably a bug in the parser.", IllegalStateException.class, () -> {
+        assertThrowsWithMessage("Operation Add expected exactly 2 children, but 3 provided. This is probably a bug in the parser.", IllegalStateException.class, () -> {
             parse("validationTooManyArguments", b -> {
                 b.beginRoot();
 
                 b.beginReturn();
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitLoadConstant(1L);
                 b.emitLoadConstant(2L);
                 b.emitLoadConstant(3L);
-                b.endAddOperation();
+                b.endAdd();
                 b.endReturn();
 
                 b.endRoot();
@@ -1901,15 +1901,15 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
     @Test
     public void testValidationNotValueArgument() {
-        assertThrowsWithMessage("Operation AddOperation expected a value-producing child at position 0, but a void one was provided. ", IllegalStateException.class, () -> {
+        assertThrowsWithMessage("Operation Add expected a value-producing child at position 0, but a void one was provided. ", IllegalStateException.class, () -> {
             parse("validationNotValueArgument", b -> {
                 b.beginRoot();
 
                 b.beginReturn();
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitVoidOperation();
                 b.emitLoadConstant(2L);
-                b.endAddOperation();
+                b.endAdd();
                 b.endReturn();
 
                 b.endRoot();
@@ -2300,18 +2300,18 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             }
             // x = x + 1
             b.beginStoreLocal(x);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(x);
             b.emitLoadConstant(1L);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             // result += x
             b.beginStoreLocal(result);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadLocal(result);
             b.emitLoadLocal(x);
-            b.endAddOperation();
+            b.endAdd();
             b.endStoreLocal();
 
             b.endBlock();
@@ -2334,13 +2334,13 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
             b.beginReturn();
             for (int i = 0; i < Short.MAX_VALUE - 1; i++) {
-                b.beginAddOperation();
+                b.beginAdd();
                 b.emitLoadConstant(1L);
             }
             b.emitLoadConstant(0L);
 
             for (int i = 0; i < Short.MAX_VALUE - 1; i++) {
-                b.endAddOperation();
+                b.endAdd();
             }
 
             b.endReturn();
@@ -2357,13 +2357,13 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                 b.beginRoot();
                 b.beginReturn();
                 for (int i = 0; i < Short.MAX_VALUE; i++) {
-                    b.beginAddOperation();
+                    b.beginAdd();
                     b.emitLoadConstant(1L);
                 }
                 b.emitLoadConstant(0L);
 
                 for (int i = 0; i < Short.MAX_VALUE; i++) {
-                    b.endAddOperation();
+                    b.endAdd();
                 }
 
                 b.endReturn();
@@ -2524,10 +2524,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadArgument(1);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -2536,7 +2536,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         assertInstructionsEqual(node.getBytecodeNode().getInstructionsAsList(),
                         instr("load.argument").arg("index", Argument.Kind.INTEGER, 0).build(),
                         instr("load.argument").arg("index", Argument.Kind.INTEGER, 1).build(),
-                        instr("c.AddOperation").build(),
+                        instr("c.Add").build(),
                         instr("return").build());
 
         node.getBytecodeNode().setUncachedThreshold(0);
@@ -2546,7 +2546,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         assertInstructionsEqual(node.getBytecodeNode().getInstructionsAsList(),
                         instr("load.argument").arg("index", Argument.Kind.INTEGER, 0).build(),
                         instr("load.argument").arg("index", Argument.Kind.INTEGER, 1).build(),
-                        instr("c.AddOperation").specializations("addLongs", "addStrings").build(),
+                        instr("c.Add").specializations("addLongs", "addStrings").build(),
                         instr("return").build());
 
         // Normally, this method is called on parse with uninitialized bytecode.
@@ -2904,7 +2904,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginReturn();
 
             b.beginSourceSection(7, 5);
-            b.beginAddOperation();
+            b.beginAdd();
 
             // intentional duplicate source section
             b.beginSourceSection(7, 1);
@@ -2917,7 +2917,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadConstant(2L);
             b.endSourceSection();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endSourceSection();
 
             b.endReturn();
@@ -2967,12 +2967,12 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginReturn();
 
             b.beginSourceSection(7, 11);
-            b.beginAddOperation();
+            b.beginAdd();
 
             // intentional duplicate source section
             b.beginSourceSection(7, 7);
             b.beginSourceSection(7, 7);
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.beginSourceSection(8, 1);
             b.emitLoadArgument(0);
@@ -2982,7 +2982,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadArgument(1);
             b.endSourceSection();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endSourceSection();
             b.endSourceSection();
 
@@ -2990,7 +2990,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadConstant(2L);
             b.endSourceSection();
 
-            b.endAddOperation();
+            b.endAdd();
             b.endSourceSection();
 
             b.endReturn();
@@ -3024,12 +3024,12 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
 
             b.beginReturn();
             b.beginTag(ExpressionTag.class);
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.beginIncrementValue();
             b.emitLoadArgument(1);
             b.endIncrementValue();
-            b.endAddOperation();
+            b.endAdd();
             b.endTag(ExpressionTag.class);
             b.endReturn();
 
@@ -3039,7 +3039,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         assertInstructionsEqual(node.getBytecodeNode().getInstructionsAsList(),
                         instr("load.argument").instrumented(false).build(),
                         instr("load.argument").instrumented(false).build(),
-                        instr("c.AddOperation").instrumented(false).build(),
+                        instr("c.Add").instrumented(false).build(),
                         instr("return").instrumented(false).build());
 
         node.getRootNodes().update(createBytecodeConfigBuilder().addInstrumentation(BasicInterpreter.IncrementValue.class).build());
@@ -3048,7 +3048,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
                         instr("load.argument").instrumented(false).build(),
                         instr("load.argument").instrumented(false).build(),
                         instr("c.IncrementValue").instrumented(true).build(),
-                        instr("c.AddOperation").instrumented(false).build(),
+                        instr("c.Add").instrumented(false).build(),
                         instr("return").instrumented(false).build());
     }
 
@@ -3058,7 +3058,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
 
             b.beginTag(ExpressionTag.class, StatementTag.class);
             b.emitLoadConstant(1L);
@@ -3068,7 +3068,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.emitLoadConstant(2L);
             b.endTag(ExpressionTag.class);
 
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -3085,10 +3085,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
             b.beginRoot();
 
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadArgument(0);
             b.emitLoadArgument(1);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
 
             b.endRoot();
@@ -3135,10 +3135,10 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         BasicInterpreter node = parseNode("cloneUninitializedUnquicken", b -> {
             b.beginRoot();
             b.beginReturn();
-            b.beginAddOperation();
+            b.beginAdd();
             b.emitLoadConstant(40L);
             b.emitLoadArgument(0);
-            b.endAddOperation();
+            b.endAdd();
             b.endReturn();
             b.endRoot();
         });
@@ -3146,7 +3146,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         AbstractInstructionTest.assertInstructions(node,
                         "load.constant",
                         "load.argument",
-                        "c.AddOperation",
+                        "c.Add",
                         "return");
 
         node.getBytecodeNode().setUncachedThreshold(0); // ensure we use cached
@@ -3155,7 +3155,7 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         AbstractInstructionTest.assertInstructions(node,
                         "load.constant$Long",
                         "load.argument$Long",
-                        "c.AddOperation$AddLongs",
+                        "c.Add$AddLongs",
                         "return");
 
         BasicInterpreter cloned = node.doCloneUninitialized();
@@ -3163,13 +3163,13 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
         AbstractInstructionTest.assertInstructions(cloned,
                         "load.constant",
                         "load.argument",
-                        "c.AddOperation",
+                        "c.Add",
                         "return");
         // original should be unchanged
         AbstractInstructionTest.assertInstructions(node,
                         "load.constant$Long",
                         "load.argument$Long",
-                        "c.AddOperation$AddLongs",
+                        "c.Add$AddLongs",
                         "return");
         // clone call should work like usual
         assertEquals(42L, cloned.getCallTarget().call(2L));
