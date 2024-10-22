@@ -1641,7 +1641,8 @@ public class NativeImage {
          * the host VM.
          */
         Set<String> implicitlyRequiredSystemModules = getImplicitlyRequiredSystemModules(finalImageModulePath);
-        addModules.addAll(implicitlyRequiredSystemModules);     // TODO (ivan-ristovic): add modules to builderVM instead
+        addModules.addAll(implicitlyRequiredSystemModules);     // TODO (ivan-ristovic): add modules
+                                                                // to builderVM instead
 
         if (!addModules.isEmpty()) {
 
@@ -1848,18 +1849,18 @@ public class NativeImage {
         }
 
         Set<Path> applicationModulePath = modulePath.stream()
-                .filter(p -> !p.startsWith(config.rootDir))
-                .collect(Collectors.toSet());
+                        .filter(p -> !p.startsWith(config.rootDir))
+                        .collect(Collectors.toSet());
 
         ModuleFinder finder = ModuleFinder.of(applicationModulePath.toArray(Path[]::new));
         Set<String> modules = finder.findAll().stream()
-                .map(mref -> mref.descriptor().name())
-                .collect(Collectors.toSet());
+                        .map(mref -> mref.descriptor().name())
+                        .collect(Collectors.toSet());
 
         Configuration configuration = ModuleLayer.boot().configuration().resolve(finder, ModuleFinder.ofSystem(), modules);
         Set<String> applicationModulePathRequiredModules = configuration.modules().stream()
-                .map(ResolvedModule::name)
-                .collect(Collectors.toSet());
+                        .map(ResolvedModule::name)
+                        .collect(Collectors.toSet());
 
         Set<String> applicationModulePathRequiredSystemModules = new HashSet<>(getBuiltInModules());
         applicationModulePathRequiredSystemModules.retainAll(applicationModulePathRequiredModules);
