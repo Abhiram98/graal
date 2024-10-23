@@ -166,6 +166,10 @@ public abstract class BasicInterpreterBuilder extends BytecodeBuilder {
 
     public abstract void endTeeLocalRange();
 
+    public abstract void beginTeeMaterializedLocal(BytecodeLocal accessorValue);
+
+    public abstract void endTeeMaterializedLocal();
+
     public abstract void beginInvoke();
 
     public abstract void endInvoke();

@@ -608,6 +608,84 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
         assertCompiled(contTarget);
     }
 
+    /**
+     * When an inner root changes the local tags with a materialized local accessor store, compiled
+     * code should be invalidated.
+     */
+    @Test
+    public void testMaterializedAccessorStoreInvalidatesCode() {
+        assumeTrue(hasBoxingElimination());
+        BytecodeRootNodes<BasicInterpreter> rootNodes = createNodes(interpreterClass, BytecodeDSLTestLanguage.REF.get(null), false, BytecodeConfig.DEFAULT, b -> {
+            b.beginRoot();
+            BytecodeLocal x = b.createLocal("x", null);
+            b.beginStoreLocal(x);
+            b.emitLoadConstant(42L);
+            b.endStoreLocal();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginRoot(); // inner
+            b.beginTeeMaterializedLocal(x);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.endTeeMaterializedLocal();
+            b.endRoot();
+
+            b.beginReturn();
+            b.emitLoadLocal(x);
+            b.endReturn();
+
+            b.endRoot();
+        });
+        BasicInterpreter outer = rootNodes.getNode(0);
+        outer.getBytecodeNode().setUncachedThreshold(0); // force cached
+        BasicInterpreter inner = rootNodes.getNode(1);
+
+        // Run once and check profile.
+        OptimizedCallTarget outerTarget = (OptimizedCallTarget) outer.getCallTarget();
+        ContinuationResult cont = (ContinuationResult) outerTarget.call();
+        OptimizedCallTarget contTarget = (OptimizedCallTarget) cont.getContinuationCallTarget();
+        assertEquals(42L, cont.continueWith(null));
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Now, force compile root node and continuation.
+        outerTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(outerTarget);
+        assertCompiled(contTarget);
+
+        // Run again to ensure nothing deopts.
+        cont = (ContinuationResult) outerTarget.call();
+        assertCompiled(outerTarget);
+        assertEquals(42L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with the same tag, both call targets should stay valid.
+        cont = (ContinuationResult) outerTarget.call();
+        inner.getCallTarget().call(cont.getFrame(), 123L);
+        assertCompiled(outerTarget);
+        assertEquals(123L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with a different tag, both call targets should invalidate.
+        cont = (ContinuationResult) outerTarget.call();
+        inner.getCallTarget().call(cont.getFrame(), "hello");
+        assertNotCompiled(outerTarget);
+        assertNotCompiled(contTarget);
+        assertEquals("hello", cont.continueWith(null));
+        assertEquals(FrameSlotKind.Object, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Both call targets should recompile.
+        outerTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(outerTarget);
+        assertCompiled(contTarget);
+    }
+
     @Test
     public void testInstrumentation() {
         BasicInterpreter root = parseNodeForCompilation(interpreterClass, "addTwoConstantsInstrumented", b -> {

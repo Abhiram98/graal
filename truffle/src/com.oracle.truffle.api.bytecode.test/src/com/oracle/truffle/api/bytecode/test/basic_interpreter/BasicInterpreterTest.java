@@ -1063,6 +1063,80 @@ public class BasicInterpreterTest extends AbstractBasicInterpreterTest {
     }
 
     @Test
+    public void testTeeMaterializedLocalDifferentTypes() {
+        // function inner(frame, arg0) {
+        // tee(local, arg0);
+        // }
+        // inner(materialize(), arg0)
+        // return local;
+
+        RootCallTarget root = parse("teeLocal", b -> {
+            b.beginRoot();
+
+            BytecodeLocal local = b.createLocal();
+
+            b.beginRoot();
+            b.beginTeeMaterializedLocal(local);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.endTeeMaterializedLocal();
+            BasicInterpreter inner = b.endRoot();
+
+            b.beginCall(inner);
+            b.emitMaterializeFrame();
+            b.emitLoadArgument(0);
+            b.endCall();
+
+            b.beginReturn();
+            b.emitLoadLocal(local);
+            b.endReturn();
+
+            b.endRoot();
+        });
+
+        assertEquals(1L, root.call(1L));
+        assertEquals(42, root.call(42));
+        assertEquals((short) 12, root.call((short) 12));
+        assertEquals((byte) 2, root.call((byte) 2));
+        assertEquals(true, root.call(true));
+        assertEquals(3.14f, root.call(3.14f));
+        assertEquals(4.0d, root.call(4.0d));
+        assertEquals("hello", root.call("hello"));
+    }
+
+    @Test
+    public void testTeeMaterializedLocalDifferentTypesSameRoot() {
+        // tee(local, materialize(), arg0);
+        // return local;
+
+        RootCallTarget root = parse("teeLocal", b -> {
+            b.beginRoot();
+
+            BytecodeLocal local = b.createLocal();
+
+            b.beginTeeMaterializedLocal(local);
+            b.emitMaterializeFrame();
+            b.emitLoadArgument(0);
+            b.endTeeMaterializedLocal();
+
+            b.beginReturn();
+            b.emitLoadLocal(local);
+            b.endReturn();
+
+            b.endRoot();
+        });
+
+        assertEquals(1L, root.call(1L));
+        assertEquals(42, root.call(42));
+        assertEquals((short) 12, root.call((short) 12));
+        assertEquals((byte) 2, root.call((byte) 2));
+        assertEquals(true, root.call(true));
+        assertEquals(3.14f, root.call(3.14f));
+        assertEquals(4.0d, root.call(4.0d));
+        assertEquals("hello", root.call("hello"));
+    }
+
+    @Test
     public void testAddConstant() {
         // return 40 + arg0
         RootCallTarget root = parse("addConstant", b -> {

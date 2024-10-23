@@ -28,6 +28,7 @@ import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.LocalAccessor;
 import com.oracle.truffle.api.bytecode.LocalRangeAccessor;
 import com.oracle.truffle.api.bytecode.LocalVariable;
+import com.oracle.truffle.api.bytecode.MaterializedLocalAccessor;
 import com.oracle.truffle.api.bytecode.SourceInformation;
 import com.oracle.truffle.api.bytecode.SourceInformationTree;
 import com.oracle.truffle.api.bytecode.TagTree;
@@ -176,6 +177,8 @@ import java.util.function.Supplier;
  *   - Operation TeeLocal
  *     kind: CUSTOM
  *   - Operation TeeLocalRange
+ *     kind: CUSTOM
+ *   - Operation TeeMaterializedLocal
  *     kind: CUSTOM
  *   - Operation Invoke
  *     kind: CUSTOM
@@ -427,153 +430,158 @@ import java.util.function.Supplier;
  *     encoding: [46 : short, setter (const) : int, node : int]
  *     nodeType: TeeLocalRange
  *     signature: Object (LocalRangeAccessor, Object)
+ *   - Instruction c.TeeMaterializedLocal
+ *     kind: CUSTOM
+ *     encoding: [47 : short, accessor (const) : int, node : int]
+ *     nodeType: TeeMaterializedLocal
+ *     signature: Object (MaterializedLocalAccessor, MaterializedFrame, Object)
  *   - Instruction c.Invoke
  *     kind: CUSTOM
- *     encoding: [47 : short, node : int]
+ *     encoding: [48 : short, node : int]
  *     nodeType: Invoke
  *     signature: Object (Object, Object[]...)
  *   - Instruction c.MaterializeFrame
  *     kind: CUSTOM
- *     encoding: [48 : short, node : int]
+ *     encoding: [49 : short, node : int]
  *     nodeType: MaterializeFrame
  *     signature: MaterializedFrame ()
  *   - Instruction c.CreateClosure
  *     kind: CUSTOM
- *     encoding: [49 : short, node : int]
+ *     encoding: [50 : short, node : int]
  *     nodeType: CreateClosure
  *     signature: TestClosure (BasicInterpreter)
  *   - Instruction c.VoidOperation
  *     kind: CUSTOM
- *     encoding: [50 : short, node : int]
+ *     encoding: [51 : short, node : int]
  *     nodeType: VoidOperation
  *     signature: void ()
  *   - Instruction c.ToBoolean
  *     kind: CUSTOM
- *     encoding: [51 : short, node : int]
+ *     encoding: [52 : short, node : int]
  *     nodeType: ToBoolean
  *     signature: boolean (Object)
  *   - Instruction c.GetSourcePosition
  *     kind: CUSTOM
- *     encoding: [52 : short, node : int]
+ *     encoding: [53 : short, node : int]
  *     nodeType: GetSourcePosition
  *     signature: SourceSection ()
  *   - Instruction c.EnsureAndGetSourcePosition
  *     kind: CUSTOM
- *     encoding: [53 : short, node : int]
+ *     encoding: [54 : short, node : int]
  *     nodeType: EnsureAndGetSourcePosition
  *     signature: SourceSection (boolean)
  *   - Instruction c.GetSourcePositions
  *     kind: CUSTOM
- *     encoding: [54 : short, node : int]
+ *     encoding: [55 : short, node : int]
  *     nodeType: GetSourcePositions
  *     signature: SourceSection[] ()
  *   - Instruction c.CopyLocalsToFrame
  *     kind: CUSTOM
- *     encoding: [55 : short, node : int]
+ *     encoding: [56 : short, node : int]
  *     nodeType: CopyLocalsToFrame
  *     signature: Frame (Object)
  *   - Instruction c.GetBytecodeLocation
  *     kind: CUSTOM
- *     encoding: [56 : short, node : int]
+ *     encoding: [57 : short, node : int]
  *     nodeType: GetBytecodeLocation
  *     signature: BytecodeLocation ()
  *   - Instruction c.CollectBytecodeLocations
  *     kind: CUSTOM
- *     encoding: [57 : short, node : int]
+ *     encoding: [58 : short, node : int]
  *     nodeType: CollectBytecodeLocations
  *     signature: List<BytecodeLocation> ()
  *   - Instruction c.CollectSourceLocations
  *     kind: CUSTOM
- *     encoding: [58 : short, node : int]
+ *     encoding: [59 : short, node : int]
  *     nodeType: CollectSourceLocations
  *     signature: List<SourceSection> ()
  *   - Instruction c.CollectAllSourceLocations
  *     kind: CUSTOM
- *     encoding: [59 : short, node : int]
+ *     encoding: [60 : short, node : int]
  *     nodeType: CollectAllSourceLocations
  *     signature: List<SourceSection[]> ()
  *   - Instruction c.Continue
  *     kind: CUSTOM
- *     encoding: [60 : short, node : int]
+ *     encoding: [61 : short, node : int]
  *     nodeType: ContinueNode
  *     signature: Object (ContinuationResult, Object)
  *   - Instruction c.CurrentLocation
  *     kind: CUSTOM
- *     encoding: [61 : short, node : int]
+ *     encoding: [62 : short, node : int]
  *     nodeType: CurrentLocation
  *     signature: BytecodeLocation ()
  *   - Instruction c.PrintHere
  *     kind: CUSTOM
- *     encoding: [62 : short, node : int]
+ *     encoding: [63 : short, node : int]
  *     nodeType: PrintHere
  *     signature: void ()
  *   - Instruction c.IncrementValue
  *     kind: CUSTOM
- *     encoding: [63 : short, node : int]
+ *     encoding: [64 : short, node : int]
  *     nodeType: IncrementValue
  *     signature: long (long)
  *   - Instruction c.DoubleValue
  *     kind: CUSTOM
- *     encoding: [64 : short, node : int]
+ *     encoding: [65 : short, node : int]
  *     nodeType: DoubleValue
  *     signature: long (long)
  *   - Instruction c.EnableIncrementValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [65 : short, node : int]
+ *     encoding: [66 : short, node : int]
  *     nodeType: EnableIncrementValueInstrumentation
  *     signature: void ()
  *   - Instruction c.Mod
  *     kind: CUSTOM
- *     encoding: [66 : short, node : int]
+ *     encoding: [67 : short, node : int]
  *     nodeType: Mod
  *     signature: long (long, long)
  *   - Instruction c.Less
  *     kind: CUSTOM
- *     encoding: [67 : short, node : int]
+ *     encoding: [68 : short, node : int]
  *     nodeType: Less
  *     signature: boolean (long, long)
  *   - Instruction c.EnableDoubleValueInstrumentation
  *     kind: CUSTOM
- *     encoding: [68 : short, node : int]
+ *     encoding: [69 : short, node : int]
  *     nodeType: EnableDoubleValueInstrumentation
  *     signature: void ()
  *   - Instruction c.ExplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [69 : short, node : int]
+ *     encoding: [70 : short, node : int]
  *     nodeType: ExplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction c.ImplicitBindingsTest
  *     kind: CUSTOM
- *     encoding: [70 : short, node : int]
+ *     encoding: [71 : short, node : int]
  *     nodeType: ImplicitBindingsTest
  *     signature: Bindings ()
  *   - Instruction sc.ScAnd
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction sc.ScOr
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [73 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction invalidate0
  *     kind: INVALIDATE
- *     encoding: [73 : short]
+ *     encoding: [74 : short]
  *     signature: void ()
  *   - Instruction invalidate1
  *     kind: INVALIDATE
- *     encoding: [74 : short, invalidated0 (short) : short]
+ *     encoding: [75 : short, invalidated0 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate2
  *     kind: INVALIDATE
- *     encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+ *     encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate3
  *     kind: INVALIDATE
- *     encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+ *     encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate4
  *     kind: INVALIDATE
- *     encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     encoding: [78 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
  *     signature: void ()
  */
 @SuppressWarnings({"javadoc", "unused", "deprecation", "static-method"})
@@ -1082,6 +1090,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                 case Instructions.TEE_LOCAL_ :
                 case Instructions.TEE_LOCAL_RANGE_ :
+                case Instructions.TEE_MATERIALIZED_LOCAL_ :
                 case Instructions.SC_AND_ :
                 case Instructions.SC_OR_ :
                 case Instructions.INVALIDATE4 :
@@ -1204,6 +1213,10 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     return List.of(
                         new ConstantArgument(bytecode, "setter", bci + 2),
                         new NodeProfileArgument(bytecode, "node", bci + 6));
+                case Instructions.TEE_MATERIALIZED_LOCAL_ :
+                    return List.of(
+                        new ConstantArgument(bytecode, "accessor", bci + 2),
+                        new NodeProfileArgument(bytecode, "node", bci + 6));
                 case Instructions.INVALIDATE1 :
                     return List.of(
                         new IntegerArgument(bytecode, "invalidated0", bci + 2, 2));
@@ -1321,6 +1334,8 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     return "c.TeeLocal";
                 case Instructions.TEE_LOCAL_RANGE_ :
                     return "c.TeeLocalRange";
+                case Instructions.TEE_MATERIALIZED_LOCAL_ :
+                    return "c.TeeMaterializedLocal";
                 case Instructions.INVOKE_ :
                     return "c.Invoke";
                 case Instructions.MATERIALIZE_FRAME_ :
@@ -1431,6 +1446,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Instructions.APPENDER_OPERATION_ :
                 case Instructions.TEE_LOCAL_ :
                 case Instructions.TEE_LOCAL_RANGE_ :
+                case Instructions.TEE_MATERIALIZED_LOCAL_ :
                 case Instructions.INVOKE_ :
                 case Instructions.MATERIALIZE_FRAME_ :
                 case Instructions.CREATE_CLOSURE_ :
@@ -1976,6 +1992,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
                     case Instructions.INVALIDATE4 :
@@ -2250,6 +2267,19 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                             bci = bci + 10;
                             break;
                         }
+                        case Instructions.TEE_MATERIALIZED_LOCAL_ :
+                        {
+                            int accessor = BYTES.getIntUnaligned(bc, bci + 2 /* imm accessor */);
+                            if (accessor < 0 || accessor >= constants.length) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. constant is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            int node = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
+                            if (node < 0 || node >= numNodes) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. node profile is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 10;
+                            break;
+                        }
                         case Instructions.INVALIDATE1 :
                         {
                             bci = bci + 4;
@@ -2423,7 +2453,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 throw new IllegalArgumentException("Bytecode index out of range " + bci);
             }
             int op = readValidBytecode(bc, bci);
-            if (op < 0 || op > 77) {
+            if (op < 0 || op > 78) {
                 throw new IllegalArgumentException("Invalid op at bytecode index " + op);
             }
             return true;
@@ -2725,6 +2755,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
                     case Instructions.INVALIDATE4 :
@@ -2834,6 +2865,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
                     case Instructions.INVALIDATE4 :
@@ -3183,6 +3215,10 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         break;
                     case Instructions.TEE_LOCAL_RANGE_ :
                         result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeLocalRange_Node());
+                        bci += 10;
+                        break;
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
+                        result[BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)] = insert(new TeeMaterializedLocal_Node());
                         bci += 10;
                         break;
                     case Instructions.BRANCH_FALSE :
@@ -3545,6 +3581,13 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                         case Instructions.TEE_LOCAL_RANGE_ :
                         {
                             doTeeLocalRange_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            bci += 10;
+                            break;
+                        }
+                        case Instructions.TEE_MATERIALIZED_LOCAL_ :
+                        {
+                            doTeeMaterializedLocal_(frame, localFrame, cachedNodes, bc, bci, sp);
+                            sp -= 1;
                             bci += 10;
                             break;
                         }
@@ -4008,6 +4051,13 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             FRAMES.setObject(frame, sp - 1, result);
         }
 
+        private void doTeeMaterializedLocal_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
+            TeeMaterializedLocal_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 6 /* imm node */)), TeeMaterializedLocal_Node.class);
+            Object result = node.execute(localFrame, frame, this, bc, bci, sp);
+            FRAMES.setObject(frame, sp - 2, result);
+            FRAMES.clear(frame, sp - 1);
+        }
+
         private void doInvoke_(VirtualFrame frame, VirtualFrame localFrame, Node[] cachedNodes, byte[] bc, int bci, int sp) {
             Invoke_Node node = ACCESS.uncheckedCast(ACCESS.readObject(cachedNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm node */)), Invoke_Node.class);
             Object result = node.execute(localFrame, frame, this, bc, bci, sp);
@@ -4459,6 +4509,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.ADD_CONSTANT_OPERATION_AT_END_ :
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
                     {
                         nodeIndex = BYTES.getIntUnaligned(bc, bci + 6 /* imm node */);
                         bci += 10;
@@ -4653,6 +4704,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                     case Instructions.CALL_ :
                     case Instructions.TEE_LOCAL_ :
                     case Instructions.TEE_LOCAL_RANGE_ :
+                    case Instructions.TEE_MATERIALIZED_LOCAL_ :
                     case Instructions.INVALIDATE4 :
                     case Instructions.SC_AND_ :
                     case Instructions.SC_OR_ :
@@ -4771,7 +4823,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
     public static final class Builder extends BasicInterpreterBuilder {
 
         private static final byte UNINITIALIZED = -1;
-        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
+        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "TeeMaterializedLocal", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
         private static final Class<?>[] TAGS_ROOT_TAG_ROOT_BODY_TAG = new Class<?>[]{RootTag.class, RootBodyTag.class};
 
         private int operationSequenceNumber;
@@ -7310,6 +7362,66 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         }
 
         /**
+         * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.TeeMaterializedLocal TeeMaterializedLocal} operation.
+         * <p>
+         * Signature: TeeMaterializedLocal(materializedFrame, value) -> Object
+         * <p>
+         * A corresponding call to {@link #endTeeMaterializedLocal} is required to end the operation.
+         *
+         * @param accessorValue
+         */
+        @Override
+        public void beginTeeMaterializedLocal(BytecodeLocal accessorValue) {
+            if (serialization != null) {
+                try {
+                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_TEE_MATERIALIZED_LOCAL);
+                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) accessorValue).contextDepth));
+                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) accessorValue).localIndex));
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+                return;
+            }
+            validateRootOperationBegin();
+            if (accessorValue == null) {
+                throw failArgument("The accessorValue parameter must not be null. Constant operands do not permit null values.");
+            }
+            validateMaterializedLocalScope(accessorValue);
+            int accessorIndex = constantPool.addConstant(MaterializedLocalAccessor.constantOf(((BytecodeLocalImpl) accessorValue).rootIndex, accessorValue));
+            beforeChild();
+            CustomOperationData operationData = new CustomOperationData(EMPTY_INT_ARRAY, new int[] {accessorIndex});
+            beginOperation(Operations.TEEMATERIALIZEDLOCAL, operationData);
+        }
+
+        /**
+         * Ends a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.TeeMaterializedLocal TeeMaterializedLocal} operation.
+         * <p>
+         * Signature: TeeMaterializedLocal(materializedFrame, value) -> Object
+         *
+         * @see #beginTeeMaterializedLocal
+         */
+        @Override
+        public void endTeeMaterializedLocal() {
+            if (serialization != null) {
+                try {
+                    serialization.buffer.writeShort(SerializationState.CODE_END_TEE_MATERIALIZED_LOCAL);
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+                return;
+            }
+            OperationStackEntry operation = endOperation(Operations.TEEMATERIALIZEDLOCAL);
+            if (operation.childCount != 2) {
+                throw failState("Operation TeeMaterializedLocal expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
+            }
+            if (!(operation.data instanceof CustomOperationData operationData)) {
+                throw assertionFailed("Data class CustomOperationData expected, but was " + operation.data);
+            }
+            doEmitInstructionII(Instructions.TEE_MATERIALIZED_LOCAL_, -1, operationData.constants[0], allocateNode());
+            afterChild(true, bci - 10);
+        }
+
+        /**
          * Begins a custom {@link com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter.Invoke Invoke} operation.
          * <p>
          * Signature: Invoke(root, args...) -> Object
@@ -8675,6 +8787,7 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 case Operations.APPENDEROPERATION :
                 case Operations.TEELOCAL :
                 case Operations.TEELOCALRANGE :
+                case Operations.TEEMATERIALIZEDLOCAL :
                 case Operations.INVOKE :
                 case Operations.CREATECLOSURE :
                 case Operations.TOBOOLEAN :
@@ -9063,6 +9176,13 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                 {
                     if (!producedValue) {
                         throw failState("Operation TeeLocalRange expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    break;
+                }
+                case Operations.TEEMATERIALIZEDLOCAL :
+                {
+                    if (!producedValue) {
+                        throw failState("Operation TeeMaterializedLocal expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     break;
                 }
@@ -10258,6 +10378,17 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
                             endTeeLocalRange();
                             break;
                         }
+                        case SerializationState.CODE_BEGIN_TEE_MATERIALIZED_LOCAL :
+                        {
+                            BytecodeLocal accessorValue = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
+                            beginTeeMaterializedLocal(accessorValue);
+                            break;
+                        }
+                        case SerializationState.CODE_END_TEE_MATERIALIZED_LOCAL :
+                        {
+                            endTeeMaterializedLocal();
+                            break;
+                        }
                         case SerializationState.CODE_BEGIN_INVOKE :
                         {
                             beginInvoke();
@@ -11373,44 +11504,46 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             private static final short CODE_END_TEE_LOCAL = (37 << 1) | 0b1;
             private static final short CODE_BEGIN_TEE_LOCAL_RANGE = 38 << 1;
             private static final short CODE_END_TEE_LOCAL_RANGE = (38 << 1) | 0b1;
-            private static final short CODE_BEGIN_INVOKE = 39 << 1;
-            private static final short CODE_END_INVOKE = (39 << 1) | 0b1;
-            private static final short CODE_EMIT_MATERIALIZE_FRAME = 40 << 1;
-            private static final short CODE_BEGIN_CREATE_CLOSURE = 41 << 1;
-            private static final short CODE_END_CREATE_CLOSURE = (41 << 1) | 0b1;
-            private static final short CODE_EMIT_VOID_OPERATION = 42 << 1;
-            private static final short CODE_BEGIN_TO_BOOLEAN = 43 << 1;
-            private static final short CODE_END_TO_BOOLEAN = (43 << 1) | 0b1;
-            private static final short CODE_EMIT_GET_SOURCE_POSITION = 44 << 1;
-            private static final short CODE_BEGIN_ENSURE_AND_GET_SOURCE_POSITION = 45 << 1;
-            private static final short CODE_END_ENSURE_AND_GET_SOURCE_POSITION = (45 << 1) | 0b1;
-            private static final short CODE_EMIT_GET_SOURCE_POSITIONS = 46 << 1;
-            private static final short CODE_BEGIN_COPY_LOCALS_TO_FRAME = 47 << 1;
-            private static final short CODE_END_COPY_LOCALS_TO_FRAME = (47 << 1) | 0b1;
-            private static final short CODE_EMIT_GET_BYTECODE_LOCATION = 48 << 1;
-            private static final short CODE_EMIT_COLLECT_BYTECODE_LOCATIONS = 49 << 1;
-            private static final short CODE_EMIT_COLLECT_SOURCE_LOCATIONS = 50 << 1;
-            private static final short CODE_EMIT_COLLECT_ALL_SOURCE_LOCATIONS = 51 << 1;
-            private static final short CODE_BEGIN_CONTINUE = 52 << 1;
-            private static final short CODE_END_CONTINUE = (52 << 1) | 0b1;
-            private static final short CODE_EMIT_CURRENT_LOCATION = 53 << 1;
-            private static final short CODE_EMIT_PRINT_HERE = 54 << 1;
-            private static final short CODE_BEGIN_INCREMENT_VALUE = 55 << 1;
-            private static final short CODE_END_INCREMENT_VALUE = (55 << 1) | 0b1;
-            private static final short CODE_BEGIN_DOUBLE_VALUE = 56 << 1;
-            private static final short CODE_END_DOUBLE_VALUE = (56 << 1) | 0b1;
-            private static final short CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION = 57 << 1;
-            private static final short CODE_BEGIN_MOD = 58 << 1;
-            private static final short CODE_END_MOD = (58 << 1) | 0b1;
-            private static final short CODE_BEGIN_LESS = 59 << 1;
-            private static final short CODE_END_LESS = (59 << 1) | 0b1;
-            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 60 << 1;
-            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 61 << 1;
-            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 62 << 1;
-            private static final short CODE_BEGIN_SC_AND = 63 << 1;
-            private static final short CODE_END_SC_AND = (63 << 1) | 0b1;
-            private static final short CODE_BEGIN_SC_OR = 64 << 1;
-            private static final short CODE_END_SC_OR = (64 << 1) | 0b1;
+            private static final short CODE_BEGIN_TEE_MATERIALIZED_LOCAL = 39 << 1;
+            private static final short CODE_END_TEE_MATERIALIZED_LOCAL = (39 << 1) | 0b1;
+            private static final short CODE_BEGIN_INVOKE = 40 << 1;
+            private static final short CODE_END_INVOKE = (40 << 1) | 0b1;
+            private static final short CODE_EMIT_MATERIALIZE_FRAME = 41 << 1;
+            private static final short CODE_BEGIN_CREATE_CLOSURE = 42 << 1;
+            private static final short CODE_END_CREATE_CLOSURE = (42 << 1) | 0b1;
+            private static final short CODE_EMIT_VOID_OPERATION = 43 << 1;
+            private static final short CODE_BEGIN_TO_BOOLEAN = 44 << 1;
+            private static final short CODE_END_TO_BOOLEAN = (44 << 1) | 0b1;
+            private static final short CODE_EMIT_GET_SOURCE_POSITION = 45 << 1;
+            private static final short CODE_BEGIN_ENSURE_AND_GET_SOURCE_POSITION = 46 << 1;
+            private static final short CODE_END_ENSURE_AND_GET_SOURCE_POSITION = (46 << 1) | 0b1;
+            private static final short CODE_EMIT_GET_SOURCE_POSITIONS = 47 << 1;
+            private static final short CODE_BEGIN_COPY_LOCALS_TO_FRAME = 48 << 1;
+            private static final short CODE_END_COPY_LOCALS_TO_FRAME = (48 << 1) | 0b1;
+            private static final short CODE_EMIT_GET_BYTECODE_LOCATION = 49 << 1;
+            private static final short CODE_EMIT_COLLECT_BYTECODE_LOCATIONS = 50 << 1;
+            private static final short CODE_EMIT_COLLECT_SOURCE_LOCATIONS = 51 << 1;
+            private static final short CODE_EMIT_COLLECT_ALL_SOURCE_LOCATIONS = 52 << 1;
+            private static final short CODE_BEGIN_CONTINUE = 53 << 1;
+            private static final short CODE_END_CONTINUE = (53 << 1) | 0b1;
+            private static final short CODE_EMIT_CURRENT_LOCATION = 54 << 1;
+            private static final short CODE_EMIT_PRINT_HERE = 55 << 1;
+            private static final short CODE_BEGIN_INCREMENT_VALUE = 56 << 1;
+            private static final short CODE_END_INCREMENT_VALUE = (56 << 1) | 0b1;
+            private static final short CODE_BEGIN_DOUBLE_VALUE = 57 << 1;
+            private static final short CODE_END_DOUBLE_VALUE = (57 << 1) | 0b1;
+            private static final short CODE_EMIT_ENABLE_INCREMENT_VALUE_INSTRUMENTATION = 58 << 1;
+            private static final short CODE_BEGIN_MOD = 59 << 1;
+            private static final short CODE_END_MOD = (59 << 1) | 0b1;
+            private static final short CODE_BEGIN_LESS = 60 << 1;
+            private static final short CODE_END_LESS = (60 << 1) | 0b1;
+            private static final short CODE_EMIT_ENABLE_DOUBLE_VALUE_INSTRUMENTATION = 61 << 1;
+            private static final short CODE_EMIT_EXPLICIT_BINDINGS_TEST = 62 << 1;
+            private static final short CODE_EMIT_IMPLICIT_BINDINGS_TEST = 63 << 1;
+            private static final short CODE_BEGIN_SC_AND = 64 << 1;
+            private static final short CODE_END_SC_AND = (64 << 1) | 0b1;
+            private static final short CODE_BEGIN_SC_OR = 65 << 1;
+            private static final short CODE_END_SC_OR = (65 << 1) | 0b1;
 
             private final DataOutput buffer;
             private final BytecodeSerializer callback;
@@ -12061,246 +12194,254 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
          */
         private static final short TEE_LOCAL_RANGE_ = 46;
         /*
+         * Instruction c.TeeMaterializedLocal
+         * kind: CUSTOM
+         * encoding: [47 : short, accessor (const) : int, node : int]
+         * nodeType: TeeMaterializedLocal
+         * signature: Object (MaterializedLocalAccessor, MaterializedFrame, Object)
+         */
+        private static final short TEE_MATERIALIZED_LOCAL_ = 47;
+        /*
          * Instruction c.Invoke
          * kind: CUSTOM
-         * encoding: [47 : short, node : int]
+         * encoding: [48 : short, node : int]
          * nodeType: Invoke
          * signature: Object (Object, Object[]...)
          */
-        private static final short INVOKE_ = 47;
+        private static final short INVOKE_ = 48;
         /*
          * Instruction c.MaterializeFrame
          * kind: CUSTOM
-         * encoding: [48 : short, node : int]
+         * encoding: [49 : short, node : int]
          * nodeType: MaterializeFrame
          * signature: MaterializedFrame ()
          */
-        private static final short MATERIALIZE_FRAME_ = 48;
+        private static final short MATERIALIZE_FRAME_ = 49;
         /*
          * Instruction c.CreateClosure
          * kind: CUSTOM
-         * encoding: [49 : short, node : int]
+         * encoding: [50 : short, node : int]
          * nodeType: CreateClosure
          * signature: TestClosure (BasicInterpreter)
          */
-        private static final short CREATE_CLOSURE_ = 49;
+        private static final short CREATE_CLOSURE_ = 50;
         /*
          * Instruction c.VoidOperation
          * kind: CUSTOM
-         * encoding: [50 : short, node : int]
+         * encoding: [51 : short, node : int]
          * nodeType: VoidOperation
          * signature: void ()
          */
-        private static final short VOID_OPERATION_ = 50;
+        private static final short VOID_OPERATION_ = 51;
         /*
          * Instruction c.ToBoolean
          * kind: CUSTOM
-         * encoding: [51 : short, node : int]
+         * encoding: [52 : short, node : int]
          * nodeType: ToBoolean
          * signature: boolean (Object)
          */
-        private static final short TO_BOOLEAN_ = 51;
+        private static final short TO_BOOLEAN_ = 52;
         /*
          * Instruction c.GetSourcePosition
          * kind: CUSTOM
-         * encoding: [52 : short, node : int]
+         * encoding: [53 : short, node : int]
          * nodeType: GetSourcePosition
          * signature: SourceSection ()
          */
-        private static final short GET_SOURCE_POSITION_ = 52;
+        private static final short GET_SOURCE_POSITION_ = 53;
         /*
          * Instruction c.EnsureAndGetSourcePosition
          * kind: CUSTOM
-         * encoding: [53 : short, node : int]
+         * encoding: [54 : short, node : int]
          * nodeType: EnsureAndGetSourcePosition
          * signature: SourceSection (boolean)
          */
-        private static final short ENSURE_AND_GET_SOURCE_POSITION_ = 53;
+        private static final short ENSURE_AND_GET_SOURCE_POSITION_ = 54;
         /*
          * Instruction c.GetSourcePositions
          * kind: CUSTOM
-         * encoding: [54 : short, node : int]
+         * encoding: [55 : short, node : int]
          * nodeType: GetSourcePositions
          * signature: SourceSection[] ()
          */
-        private static final short GET_SOURCE_POSITIONS_ = 54;
+        private static final short GET_SOURCE_POSITIONS_ = 55;
         /*
          * Instruction c.CopyLocalsToFrame
          * kind: CUSTOM
-         * encoding: [55 : short, node : int]
+         * encoding: [56 : short, node : int]
          * nodeType: CopyLocalsToFrame
          * signature: Frame (Object)
          */
-        private static final short COPY_LOCALS_TO_FRAME_ = 55;
+        private static final short COPY_LOCALS_TO_FRAME_ = 56;
         /*
          * Instruction c.GetBytecodeLocation
          * kind: CUSTOM
-         * encoding: [56 : short, node : int]
+         * encoding: [57 : short, node : int]
          * nodeType: GetBytecodeLocation
          * signature: BytecodeLocation ()
          */
-        private static final short GET_BYTECODE_LOCATION_ = 56;
+        private static final short GET_BYTECODE_LOCATION_ = 57;
         /*
          * Instruction c.CollectBytecodeLocations
          * kind: CUSTOM
-         * encoding: [57 : short, node : int]
+         * encoding: [58 : short, node : int]
          * nodeType: CollectBytecodeLocations
          * signature: List<BytecodeLocation> ()
          */
-        private static final short COLLECT_BYTECODE_LOCATIONS_ = 57;
+        private static final short COLLECT_BYTECODE_LOCATIONS_ = 58;
         /*
          * Instruction c.CollectSourceLocations
          * kind: CUSTOM
-         * encoding: [58 : short, node : int]
+         * encoding: [59 : short, node : int]
          * nodeType: CollectSourceLocations
          * signature: List<SourceSection> ()
          */
-        private static final short COLLECT_SOURCE_LOCATIONS_ = 58;
+        private static final short COLLECT_SOURCE_LOCATIONS_ = 59;
         /*
          * Instruction c.CollectAllSourceLocations
          * kind: CUSTOM
-         * encoding: [59 : short, node : int]
+         * encoding: [60 : short, node : int]
          * nodeType: CollectAllSourceLocations
          * signature: List<SourceSection[]> ()
          */
-        private static final short COLLECT_ALL_SOURCE_LOCATIONS_ = 59;
+        private static final short COLLECT_ALL_SOURCE_LOCATIONS_ = 60;
         /*
          * Instruction c.Continue
          * kind: CUSTOM
-         * encoding: [60 : short, node : int]
+         * encoding: [61 : short, node : int]
          * nodeType: ContinueNode
          * signature: Object (ContinuationResult, Object)
          */
-        private static final short CONTINUE_ = 60;
+        private static final short CONTINUE_ = 61;
         /*
          * Instruction c.CurrentLocation
          * kind: CUSTOM
-         * encoding: [61 : short, node : int]
+         * encoding: [62 : short, node : int]
          * nodeType: CurrentLocation
          * signature: BytecodeLocation ()
          */
-        private static final short CURRENT_LOCATION_ = 61;
+        private static final short CURRENT_LOCATION_ = 62;
         /*
          * Instruction c.PrintHere
          * kind: CUSTOM
-         * encoding: [62 : short, node : int]
+         * encoding: [63 : short, node : int]
          * nodeType: PrintHere
          * signature: void ()
          */
-        private static final short PRINT_HERE_ = 62;
+        private static final short PRINT_HERE_ = 63;
         /*
          * Instruction c.IncrementValue
          * kind: CUSTOM
-         * encoding: [63 : short, node : int]
+         * encoding: [64 : short, node : int]
          * nodeType: IncrementValue
          * signature: long (long)
          */
-        private static final short INCREMENT_VALUE_ = 63;
+        private static final short INCREMENT_VALUE_ = 64;
         /*
          * Instruction c.DoubleValue
          * kind: CUSTOM
-         * encoding: [64 : short, node : int]
+         * encoding: [65 : short, node : int]
          * nodeType: DoubleValue
          * signature: long (long)
          */
-        private static final short DOUBLE_VALUE_ = 64;
+        private static final short DOUBLE_VALUE_ = 65;
         /*
          * Instruction c.EnableIncrementValueInstrumentation
          * kind: CUSTOM
-         * encoding: [65 : short, node : int]
+         * encoding: [66 : short, node : int]
          * nodeType: EnableIncrementValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 65;
+        private static final short ENABLE_INCREMENT_VALUE_INSTRUMENTATION_ = 66;
         /*
          * Instruction c.Mod
          * kind: CUSTOM
-         * encoding: [66 : short, node : int]
+         * encoding: [67 : short, node : int]
          * nodeType: Mod
          * signature: long (long, long)
          */
-        private static final short MOD_ = 66;
+        private static final short MOD_ = 67;
         /*
          * Instruction c.Less
          * kind: CUSTOM
-         * encoding: [67 : short, node : int]
+         * encoding: [68 : short, node : int]
          * nodeType: Less
          * signature: boolean (long, long)
          */
-        private static final short LESS_ = 67;
+        private static final short LESS_ = 68;
         /*
          * Instruction c.EnableDoubleValueInstrumentation
          * kind: CUSTOM
-         * encoding: [68 : short, node : int]
+         * encoding: [69 : short, node : int]
          * nodeType: EnableDoubleValueInstrumentation
          * signature: void ()
          */
-        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 68;
+        private static final short ENABLE_DOUBLE_VALUE_INSTRUMENTATION_ = 69;
         /*
          * Instruction c.ExplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [69 : short, node : int]
+         * encoding: [70 : short, node : int]
          * nodeType: ExplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short EXPLICIT_BINDINGS_TEST_ = 69;
+        private static final short EXPLICIT_BINDINGS_TEST_ = 70;
         /*
          * Instruction c.ImplicitBindingsTest
          * kind: CUSTOM
-         * encoding: [70 : short, node : int]
+         * encoding: [71 : short, node : int]
          * nodeType: ImplicitBindingsTest
          * signature: Bindings ()
          */
-        private static final short IMPLICIT_BINDINGS_TEST_ = 70;
+        private static final short IMPLICIT_BINDINGS_TEST_ = 71;
         /*
          * Instruction sc.ScAnd
-         * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [71 : short, branch_target (bci) : int, branch_profile : int]
-         * signature: Object (boolean, boolean)
-         */
-        private static final short SC_AND_ = 71;
-        /*
-         * Instruction sc.ScOr
          * kind: CUSTOM_SHORT_CIRCUIT
          * encoding: [72 : short, branch_target (bci) : int, branch_profile : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short SC_OR_ = 72;
+        private static final short SC_AND_ = 72;
+        /*
+         * Instruction sc.ScOr
+         * kind: CUSTOM_SHORT_CIRCUIT
+         * encoding: [73 : short, branch_target (bci) : int, branch_profile : int]
+         * signature: Object (boolean, boolean)
+         */
+        private static final short SC_OR_ = 73;
         /*
          * Instruction invalidate0
          * kind: INVALIDATE
-         * encoding: [73 : short]
+         * encoding: [74 : short]
          * signature: void ()
          */
-        private static final short INVALIDATE0 = 73;
+        private static final short INVALIDATE0 = 74;
         /*
          * Instruction invalidate1
          * kind: INVALIDATE
-         * encoding: [74 : short, invalidated0 (short) : short]
+         * encoding: [75 : short, invalidated0 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE1 = 74;
+        private static final short INVALIDATE1 = 75;
         /*
          * Instruction invalidate2
          * kind: INVALIDATE
-         * encoding: [75 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+         * encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE2 = 75;
+        private static final short INVALIDATE2 = 76;
         /*
          * Instruction invalidate3
          * kind: INVALIDATE
-         * encoding: [76 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+         * encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE3 = 76;
+        private static final short INVALIDATE3 = 77;
         /*
          * Instruction invalidate4
          * kind: INVALIDATE
-         * encoding: [77 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+         * encoding: [78 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE4 = 77;
+        private static final short INVALIDATE4 = 78;
 
     }
     private static final class Operations {
@@ -12343,32 +12484,33 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         private static final int APPENDEROPERATION = 36;
         private static final int TEELOCAL = 37;
         private static final int TEELOCALRANGE = 38;
-        private static final int INVOKE = 39;
-        private static final int MATERIALIZEFRAME = 40;
-        private static final int CREATECLOSURE = 41;
-        private static final int VOIDOPERATION = 42;
-        private static final int TOBOOLEAN = 43;
-        private static final int GETSOURCEPOSITION = 44;
-        private static final int ENSUREANDGETSOURCEPOSITION = 45;
-        private static final int GETSOURCEPOSITIONS = 46;
-        private static final int COPYLOCALSTOFRAME = 47;
-        private static final int GETBYTECODELOCATION = 48;
-        private static final int COLLECTBYTECODELOCATIONS = 49;
-        private static final int COLLECTSOURCELOCATIONS = 50;
-        private static final int COLLECTALLSOURCELOCATIONS = 51;
-        private static final int CONTINUE = 52;
-        private static final int CURRENTLOCATION = 53;
-        private static final int PRINTHERE = 54;
-        private static final int INCREMENTVALUE = 55;
-        private static final int DOUBLEVALUE = 56;
-        private static final int ENABLEINCREMENTVALUEINSTRUMENTATION = 57;
-        private static final int MOD = 58;
-        private static final int LESS = 59;
-        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 60;
-        private static final int EXPLICITBINDINGSTEST = 61;
-        private static final int IMPLICITBINDINGSTEST = 62;
-        private static final int SCAND = 63;
-        private static final int SCOR = 64;
+        private static final int TEEMATERIALIZEDLOCAL = 39;
+        private static final int INVOKE = 40;
+        private static final int MATERIALIZEFRAME = 41;
+        private static final int CREATECLOSURE = 42;
+        private static final int VOIDOPERATION = 43;
+        private static final int TOBOOLEAN = 44;
+        private static final int GETSOURCEPOSITION = 45;
+        private static final int ENSUREANDGETSOURCEPOSITION = 46;
+        private static final int GETSOURCEPOSITIONS = 47;
+        private static final int COPYLOCALSTOFRAME = 48;
+        private static final int GETBYTECODELOCATION = 49;
+        private static final int COLLECTBYTECODELOCATIONS = 50;
+        private static final int COLLECTSOURCELOCATIONS = 51;
+        private static final int COLLECTALLSOURCELOCATIONS = 52;
+        private static final int CONTINUE = 53;
+        private static final int CURRENTLOCATION = 54;
+        private static final int PRINTHERE = 55;
+        private static final int INCREMENTVALUE = 56;
+        private static final int DOUBLEVALUE = 57;
+        private static final int ENABLEINCREMENTVALUEINSTRUMENTATION = 58;
+        private static final int MOD = 59;
+        private static final int LESS = 60;
+        private static final int ENABLEDOUBLEVALUEINSTRUMENTATION = 61;
+        private static final int EXPLICITBINDINGSTEST = 62;
+        private static final int IMPLICITBINDINGSTEST = 63;
+        private static final int SCAND = 64;
+        private static final int SCOR = 65;
 
     }
     private static final class ExceptionHandlerImpl extends ExceptionHandler {
@@ -13759,6 +13901,116 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             s = new Object[3];
             s[0] = "doGeneric";
             if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.TeeLocalRange.doGeneric(VirtualFrame, LocalRangeAccessor, Object[], BytecodeNode)] */) {
+                s[1] = (byte)0b01 /* active */;
+                ArrayList<Object> cached = new ArrayList<>();
+                cached.add(Arrays.<Object>asList());
+                s[2] = cached;
+            }
+            if (s[1] == null) {
+                s[1] = (byte)0b00 /* inactive */;
+            }
+            data[2] = s;
+            return Provider.create(data);
+        }
+
+    }
+    /**
+     * Debug Info: <pre>
+     *   Specialization {@link TeeMaterializedLocal#doLong}
+     *     Activation probability: 0.65000
+     *     With/without class size: 11/0 bytes
+     *   Specialization {@link TeeMaterializedLocal#doGeneric}
+     *     Activation probability: 0.35000
+     *     With/without class size: 8/0 bytes
+     * </pre> */
+    @SuppressWarnings("javadoc")
+    private static final class TeeMaterializedLocal_Node extends Node implements Introspection.Provider {
+
+        /**
+         * State Info: <pre>
+         *   0: SpecializationActive {@link TeeMaterializedLocal#doLong}
+         *   1: SpecializationActive {@link TeeMaterializedLocal#doGeneric}
+         * </pre> */
+        @CompilationFinal private int state_0_;
+
+        private Object execute(VirtualFrame frameValue, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            MaterializedLocalAccessor accessorValue_ = ACCESS.uncheckedCast(ACCESS.readObject($bytecode.constants, BYTES.getIntUnaligned($bc, $bci + 2 /* imm accessor */)), MaterializedLocalAccessor.class);
+            Object child0Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 2);
+            Object child1Value_ = FRAMES.uncheckedGetObject($stackFrame, $sp - 1);
+            if (state_0 != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doLong(MaterializedLocalAccessor, MaterializedFrame, long, BytecodeNode)] || SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */ && child0Value_ instanceof MaterializedFrame) {
+                MaterializedFrame child0Value__ = (MaterializedFrame) child0Value_;
+                if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doLong(MaterializedLocalAccessor, MaterializedFrame, long, BytecodeNode)] */ && child1Value_ instanceof Long) {
+                    long child1Value__ = (long) child1Value_;
+                    {
+                        BytecodeNode bytecode__ = ($bytecode);
+                        return TeeMaterializedLocal.doLong(accessorValue_, child0Value__, child1Value__, bytecode__);
+                    }
+                }
+                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */) {
+                    {
+                        BytecodeNode bytecode__1 = ($bytecode);
+                        return TeeMaterializedLocal.doGeneric(accessorValue_, child0Value__, child1Value_, bytecode__1);
+                    }
+                }
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return executeAndSpecialize(accessorValue_, child0Value_, child1Value_, $stackFrame, $bytecode, $bc, $bci, $sp);
+        }
+
+        private Object executeAndSpecialize(MaterializedLocalAccessor accessorValue, Object child0Value, Object child1Value, VirtualFrame $stackFrame, AbstractBytecodeNode $bytecode, byte[] $bc, int $bci, int $sp) {
+            int state_0 = this.state_0_;
+            if (child0Value instanceof MaterializedFrame) {
+                MaterializedFrame child0Value_ = (MaterializedFrame) child0Value;
+                {
+                    BytecodeNode bytecode__ = null;
+                    if (((state_0 & 0b10)) == 0 /* is-not SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */ && child1Value instanceof Long) {
+                        long child1Value_ = (long) child1Value;
+                        bytecode__ = ($bytecode);
+                        state_0 = state_0 | 0b1 /* add SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doLong(MaterializedLocalAccessor, MaterializedFrame, long, BytecodeNode)] */;
+                        this.state_0_ = state_0;
+                        $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "TeeMaterializedLocal$Long");
+                        return TeeMaterializedLocal.doLong(accessorValue, child0Value_, child1Value_, bytecode__);
+                    }
+                }
+                {
+                    BytecodeNode bytecode__1 = null;
+                    bytecode__1 = ($bytecode);
+                    state_0 = state_0 & 0xfffffffe /* remove SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doLong(MaterializedLocalAccessor, MaterializedFrame, long, BytecodeNode)] */;
+                    state_0 = state_0 | 0b10 /* add SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */;
+                    this.state_0_ = state_0;
+                    $bytecode.getRoot().onSpecialize(new InstructionImpl($bytecode, $bci, BYTES.getShort($bc, $bci)), "TeeMaterializedLocal$Generic");
+                    return TeeMaterializedLocal.doGeneric(accessorValue, child0Value_, child1Value, bytecode__1);
+                }
+            }
+            throw new UnsupportedSpecializationException(this, null, accessorValue, child0Value, child1Value);
+        }
+
+        @Override
+        public Introspection getIntrospectionData() {
+            Object[] data = new Object[3];
+            Object[] s;
+            data[0] = 0;
+            int state_0 = this.state_0_;
+            s = new Object[3];
+            s[0] = "doLong";
+            if ((state_0 & 0b1) != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doLong(MaterializedLocalAccessor, MaterializedFrame, long, BytecodeNode)] */) {
+                s[1] = (byte)0b01 /* active */;
+                ArrayList<Object> cached = new ArrayList<>();
+                cached.add(Arrays.<Object>asList());
+                s[2] = cached;
+            }
+            if (s[1] == null) {
+                if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */) {
+                    s[1] = (byte)0b10 /* excluded */;
+                } else {
+                    s[1] = (byte)0b00 /* inactive */;
+                }
+            }
+            data[1] = s;
+            s = new Object[3];
+            s[0] = "doGeneric";
+            if ((state_0 & 0b10) != 0 /* is SpecializationActive[BasicInterpreter.TeeMaterializedLocal.doGeneric(MaterializedLocalAccessor, MaterializedFrame, Object, BytecodeNode)] */) {
                 s[1] = (byte)0b01 /* active */;
                 ArrayList<Object> cached = new ArrayList<>();
                 cached.add(Arrays.<Object>asList());

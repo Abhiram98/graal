@@ -96,7 +96,7 @@ public abstract class BytecodeRootNodes<T extends RootNode & BytecodeRootNode> {
 
     /**
      * Returns the list of bytecode root nodes. The order of the list corresponds to the order of
-     * {@code endRoot()} calls on the builder.
+     * {@code beginRoot()} calls on the builder.
      *
      * @since 24.2
      */
@@ -106,7 +106,7 @@ public abstract class BytecodeRootNodes<T extends RootNode & BytecodeRootNode> {
 
     /**
      * Returns the bytecode root node at index {@code i}. The order of the list corresponds to the
-     * order of {@code endRoot()} calls on the builder.
+     * order of {@code beginRoot()} calls on the builder.
      *
      * @since 24.2
      */

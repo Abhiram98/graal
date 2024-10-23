@@ -437,22 +437,19 @@ public final class CustomOperationParser extends AbstractParser<CustomOperationM
             ConstantOperandModel constantOperand = operands.get(i);
             String argumentName = operandNames.get(i);
             TypeMirror builderType;
-            TypeMirror constantType;
             OperationArgument.Encoding encoding;
-            if (ElementUtils.typeEquals(constantOperand.type(), types.LocalAccessor)) {
+            // Special cases: local accessors are supplied by BytecodeLocal builder arguments.
+            if (ElementUtils.typeEqualsAny(constantOperand.type(), types.LocalAccessor, types.MaterializedLocalAccessor)) {
                 builderType = types.BytecodeLocal;
-                constantType = constantOperand.type();
                 encoding = OperationArgument.Encoding.LOCAL;
             } else if (ElementUtils.typeEquals(constantOperand.type(), types.LocalRangeAccessor)) {
                 builderType = new ArrayCodeTypeMirror(types.BytecodeLocal);
-                constantType = constantOperand.type();
                 encoding = OperationArgument.Encoding.LOCAL_ARRAY;
             } else {
                 builderType = constantOperand.type();
-                constantType = constantOperand.type();
                 encoding = OperationArgument.Encoding.OBJECT;
             }
-            arguments[i] = new OperationArgument(builderType, constantType, encoding,
+            arguments[i] = new OperationArgument(builderType, constantOperand.type(), encoding,
                             sanitizeConstantArgumentName(argumentName),
                             constantOperand.doc());
         }

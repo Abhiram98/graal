@@ -3490,19 +3490,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.declaration(type(int.class), "tableIndex", "doEmitLocal(localIndex, frameIndex, name, info) /* index in global table */");
                 b.statement("scope.registerLocal(tableIndex)");
             } else {
-                b.declaration(type(short.class), "frameIndex", "allocateBytecodeLocal() /* location in frame */");
+                b.declaration(type(short.class), "localIndex", "allocateBytecodeLocal() /* unique global index */");
+                b.declaration(type(short.class), "frameIndex", safeCastShort("USER_LOCALS_START_INDEX + localIndex") + " /* location in frame */");
                 b.statement("doEmitLocal(name, info)");
             }
 
             b.startDeclaration(bytecodeLocalImpl.asType(), "local");
 
             b.startNew(bytecodeLocalImpl.asType()).string("frameIndex");
-
-            if (model.enableBlockScoping) {
-                b.string("localIndex");
-            } else {
-                b.string("frameIndex");
-            }
+            b.string("localIndex");
             b.string("((RootData) operationStack[this.rootOperationSp].data).index");
             if (model.enableBlockScoping) {
                 b.string("scope");
@@ -3928,7 +3924,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 case STORE_LOCAL: /* LOAD_LOCAL handled by createEmit */
                 case STORE_LOCAL_MATERIALIZED:
                 case LOAD_LOCAL_MATERIALIZED:
-                    createThrowInvalidScope(b, operation);
+                    emitValidateLocalScope(b, operation);
                     break;
             }
 
@@ -3975,24 +3971,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
-        private CodeExecutableElement getValidateLocalScope(OperationModel operation) {
-            return switch (operation.kind) {
-                case LOAD_LOCAL, STORE_LOCAL -> {
-                    if (validateLocalScope == null) {
-                        validateLocalScope = createValidateLocalScope(false);
-                        this.add(validateLocalScope);
-                    }
-                    yield validateLocalScope;
+        private CodeExecutableElement getValidateLocalScope(boolean materialized) {
+            if (materialized) {
+                if (validateMaterializedLocalScope == null) {
+                    validateMaterializedLocalScope = createValidateLocalScope(true);
+                    this.add(validateMaterializedLocalScope);
                 }
-                case LOAD_LOCAL_MATERIALIZED, STORE_LOCAL_MATERIALIZED -> {
-                    if (validateMaterializedLocalScope == null) {
-                        validateMaterializedLocalScope = createValidateLocalScope(true);
-                        this.add(validateMaterializedLocalScope);
-                    }
-                    yield validateMaterializedLocalScope;
+                return validateMaterializedLocalScope;
+            } else {
+                if (validateLocalScope == null) {
+                    validateLocalScope = createValidateLocalScope(false);
+                    this.add(validateLocalScope);
                 }
-                default -> throw new AssertionError("Unknown operation");
-            };
+                return validateLocalScope;
+            }
         }
 
         private CodeExecutableElement createValidateLocalScope(boolean materialized) {
@@ -4046,8 +4038,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return method;
         }
 
-        private void createThrowInvalidScope(CodeTreeBuilder b, OperationModel operation) {
-            b.startStatement().startCall(getValidateLocalScope(operation).getSimpleName().toString()).string(operation.getOperationBeginArgumentName(0)).end().end();
+        private void emitValidateLocalScope(CodeTreeBuilder b, OperationModel operation) {
+            boolean materialized = operation.instruction.kind.isLocalVariableMaterializedAccess();
+            emitValidateLocalScope(b, materialized, operation.getOperationBeginArgumentName(0));
+        }
+
+        private void emitValidateLocalScope(CodeTreeBuilder b, boolean materialized, String localName) {
+            b.startStatement().startCall(getValidateLocalScope(materialized).getSimpleName().toString()).string(localName).end().end();
         }
 
         private CodeExecutableElement createBeginRoot(OperationModel rootOperation) {
@@ -5531,7 +5528,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startStatement().startCall("beforeChild").end(2);
 
             if (operation.kind == OperationKind.LOAD_LOCAL) {
-                createThrowInvalidScope(b, operation);
+                emitValidateLocalScope(b, operation);
             }
 
             // emit the instruction
@@ -5580,12 +5577,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             if (ElementUtils.typeEquals(type, types.LocalAccessor)) {
-                b.startStatement().startCall("validateLocalScope").string(name).end(2);
+                emitValidateLocalScope(b, false, name);
             } else if (ElementUtils.typeEquals(type, types.LocalRangeAccessor)) {
                 String element = name + "Element";
                 b.startFor().type(types.BytecodeLocal).string(" " + element + " : " + name).end().startBlock();
-                b.startStatement().startCall("validateLocalScope").string(element).end(2);
+                emitValidateLocalScope(b, false, element);
                 b.end();
+            } else if (ElementUtils.typeEquals(type, types.MaterializedLocalAccessor)) {
+                emitValidateLocalScope(b, true, name);
             }
         }
 
@@ -5747,6 +5746,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.string(argument.name());
             } else {
                 b.startStaticCall(argument.constantType(), "constantOf");
+                if (ElementUtils.typeEquals(argument.constantType(), types.MaterializedLocalAccessor)) {
+                    // Materialized accessors also need the root index.
+                    b.startGroup();
+                    b.startParantheses().cast(bytecodeLocalImpl.asType()).string(argument.name()).end();
+                    b.string(".rootIndex");
+                    b.end();
+                }
                 b.string(argument.name());
                 b.end();
             }
@@ -7293,11 +7299,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeTreeBuilder b = ex.createBuilder();
 
             b.startReturn().startCall("checkOverflowShort");
-            if (model.enableBlockScoping) {
-                b.string("(short) numLocals++");
-            } else {
-                b.string("(short) (USER_LOCALS_START_INDEX + numLocals++)");
-            }
+            b.string("(short) numLocals++");
             b.doubleQuote("Number of locals");
             b.end(2);
 

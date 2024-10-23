@@ -61,6 +61,7 @@ import org.junit.runners.Parameterized.Parameters;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.bytecode.GenerateBytecodeTestVariants;
 import com.oracle.truffle.api.bytecode.GenerateBytecodeTestVariants.Variant;
 import com.oracle.truffle.api.bytecode.LocalAccessor;
 import com.oracle.truffle.api.bytecode.LocalRangeAccessor;
+import com.oracle.truffle.api.bytecode.MaterializedLocalAccessor;
 import com.oracle.truffle.api.bytecode.Operation;
 import com.oracle.truffle.api.bytecode.Variadic;
 import com.oracle.truffle.api.dsl.Bind;
@@ -87,6 +89,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
@@ -101,7 +104,8 @@ public class LocalHelpersTest {
                         BytecodeNodeWithLocalIntrospectionBaseDefault.class,
                         BytecodeNodeWithLocalIntrospectionWithBEObjectDefault.class,
                         BytecodeNodeWithLocalIntrospectionWithBENullDefault.class,
-                        BytecodeNodeWithLocalIntrospectionWithBEIllegal.class);
+                        BytecodeNodeWithLocalIntrospectionWithBEIllegal.class,
+                        BytecodeNodeWithLocalIntrospectionWithBEIllegalRootScoped.class);
     }
 
     @Parameter(0) public Class<? extends BytecodeNodeWithLocalIntrospection> interpreterClass;
@@ -110,11 +114,16 @@ public class LocalHelpersTest {
         return b.createLocal(name, null);
     }
 
+    public static <T extends BytecodeNodeWithLocalIntrospectionBuilder> BytecodeRootNodes<BytecodeNodeWithLocalIntrospection> parseNodes(
+                    Class<? extends BytecodeNodeWithLocalIntrospection> interpreterClass,
+                    BytecodeParser<T> builder) {
+        return BytecodeNodeWithLocalIntrospectionBuilder.invokeCreate((Class<? extends BytecodeNodeWithLocalIntrospection>) interpreterClass,
+                        null, BytecodeConfig.DEFAULT, builder);
+    }
+
     public static <T extends BytecodeNodeWithLocalIntrospectionBuilder> BytecodeNodeWithLocalIntrospection parseNode(Class<? extends BytecodeNodeWithLocalIntrospection> interpreterClass,
                     BytecodeParser<T> builder) {
-        BytecodeRootNodes<BytecodeNodeWithLocalIntrospection> nodes = BytecodeNodeWithLocalIntrospectionBuilder.invokeCreate((Class<? extends BytecodeNodeWithLocalIntrospection>) interpreterClass,
-                        null, BytecodeConfig.DEFAULT, builder);
-        return nodes.getNode(0);
+        return parseNodes(interpreterClass, builder).getNode(0);
     }
 
     private Object getLocalDefaultValue() {
@@ -437,6 +446,83 @@ public class LocalHelpersTest {
         });
 
         assertEquals("hello", root.getCallTarget().call());
+    }
+
+    @Test
+    public void testGetSetMaterializedLocalAccessor() {
+        /* @formatter:off
+         * var foo
+         * function setValue(materialized, tag, value) {
+         *   setMaterializedLocal(foo, tag, materialized, value)
+         * }
+         * function getValue(materialized, tag) {
+         *   return getMaterializedLocal(foo, tag, materialized)
+         * }
+         * yield null
+         * return foo
+         * @formatter:on
+         */
+        BytecodeRootNodes<BytecodeNodeWithLocalIntrospection> roots = parseNodes(interpreterClass, b -> {
+            b.beginRoot();
+            b.beginBlock();
+            BytecodeLocal foo = makeLocal(b, "foo");
+
+            b.beginRoot(); // setValue
+            b.beginSetMaterializedLocalAccessor(foo);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.emitLoadArgument(2);
+            b.endSetMaterializedLocalAccessor();
+            b.endRoot();
+
+            b.beginRoot(); // getValue
+            b.beginReturn();
+            b.beginGetMaterializedLocalAccessor(foo);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.endGetMaterializedLocalAccessor();
+            b.endReturn();
+            b.endRoot();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginReturn();
+            b.emitLoadLocal(foo);
+            b.endReturn();
+
+            b.endBlock();
+            b.endRoot();
+        });
+        RootCallTarget outer = roots.getNode(0).getCallTarget();
+        RootCallTarget setValue = roots.getNode(1).getCallTarget();
+        RootCallTarget getValue = roots.getNode(2).getCallTarget();
+
+        ContinuationResult cont = (ContinuationResult) outer.call();
+        MaterializedFrame frame = cont.getFrame();
+
+        setValue.call(FrameSlotKind.Boolean, frame, true);
+        assertEquals(true, getValue.call(FrameSlotKind.Boolean, frame));
+
+        setValue.call(FrameSlotKind.Byte, frame, (byte) 2);
+        assertEquals((byte) 2, getValue.call(FrameSlotKind.Byte, frame));
+
+        setValue.call(FrameSlotKind.Int, frame, 42);
+        assertEquals(42, getValue.call(FrameSlotKind.Int, frame));
+
+        setValue.call(FrameSlotKind.Long, frame, 42L);
+        assertEquals(42L, getValue.call(FrameSlotKind.Long, frame));
+
+        setValue.call(FrameSlotKind.Float, frame, 3.14f);
+        assertEquals(3.14f, getValue.call(FrameSlotKind.Float, frame));
+
+        setValue.call(FrameSlotKind.Double, frame, 4.0d);
+        assertEquals(4.0d, getValue.call(FrameSlotKind.Double, frame));
+
+        setValue.call(FrameSlotKind.Object, frame, "hello");
+        assertEquals("hello", getValue.call(FrameSlotKind.Object, frame));
+        assertEquals("hello", cont.continueWith(null));
     }
 
     @Test
@@ -1359,6 +1445,66 @@ public class LocalHelpersTest {
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> root.getCallTarget().call(true, -1));
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> root.getCallTarget().call(true, 2));
     }
+
+    @Test
+    public void testIsClearedMaterializedAccessor() {
+        // @formatter:off
+        // var l0
+        // l0 = 42
+        // function clear(materialized) {
+        //   clearMaterializedLocal(l0, materialized);
+        // }
+        // function isCleared(materialized) {
+        //   return isClearedMaterializedLocal(l0, materialized);
+        // }
+        // yield null
+        // return isCleared l0
+        // @formatter:on
+
+        BytecodeRootNodes<BytecodeNodeWithLocalIntrospection> roots = parseNodes(interpreterClass, b -> {
+            b.beginRoot();
+
+            BytecodeLocal l = makeLocal(b, "l0");
+            b.beginStoreLocal(l);
+            b.emitLoadConstant(42);
+            b.endStoreLocal();
+
+            b.beginRoot(); // clear
+            b.beginClearMaterializedLocalAccessor(l);
+            b.emitLoadArgument(0);
+            b.endClearMaterializedLocalAccessor();
+            b.endRoot();
+
+            b.beginRoot(); // isCleared
+            b.beginReturn();
+            b.beginIsClearedMaterializedLocalAccessor(l);
+            b.emitLoadArgument(0);
+            b.endIsClearedMaterializedLocalAccessor();
+            b.endReturn();
+            b.endRoot();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginReturn();
+            b.emitIsClearedLocalAccessor(l);
+            b.endReturn();
+
+            b.endRoot();
+        });
+        RootCallTarget outer = roots.getNode(0).getCallTarget();
+        RootCallTarget clear = roots.getNode(1).getCallTarget();
+        RootCallTarget isCleared = roots.getNode(2).getCallTarget();
+
+        ContinuationResult cont = (ContinuationResult) outer.call();
+        MaterializedFrame frame = cont.getFrame();
+
+        assertEquals(false, isCleared.call(frame));
+        clear.call(frame);
+        assertEquals(true, isCleared.call(frame));
+        assertEquals(true, cont.continueWith(null));
+    }
 }
 
 @GenerateBytecodeTestVariants({
@@ -1372,6 +1518,11 @@ public class LocalHelpersTest {
                                 enableUncachedInterpreter = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
                                 enableYield = true)),
+                @Variant(suffix = "WithBEIllegalRootScoped", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
+                                enableQuickening = true, //
+                                enableUncachedInterpreter = true, //
+                                boxingEliminationTypes = {boolean.class, long.class}, //
+                                enableBlockScoping = false, enableYield = true)),
                 @Variant(suffix = "WithBEObjectDefault", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableQuickening = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
@@ -1497,6 +1648,38 @@ abstract class BytecodeNodeWithLocalIntrospection extends DebugBytecodeRootNode 
     }
 
     @Operation
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    public static final class GetMaterializedLocalAccessor {
+        @Specialization
+        public static Object perform(MaterializedLocalAccessor accessor, FrameSlotKind kind,
+                        MaterializedFrame materializedFrame,
+                        @Bind BytecodeNode node) {
+            try {
+                switch (kind) {
+                    case Boolean:
+                        return accessor.getBoolean(node, materializedFrame);
+                    case Byte:
+                        return accessor.getByte(node, materializedFrame);
+                    case Int:
+                        return accessor.getInt(node, materializedFrame);
+                    case Long:
+                        return accessor.getLong(node, materializedFrame);
+                    case Double:
+                        return accessor.getDouble(node, materializedFrame);
+                    case Float:
+                        return accessor.getFloat(node, materializedFrame);
+                    case Object:
+                        return accessor.getObject(node, materializedFrame);
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere();
+                }
+            } catch (UnexpectedResultException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @Operation
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ConstantOperand(type = FrameSlotKind.class)
     @ConstantOperand(type = int.class)
@@ -1570,6 +1753,41 @@ abstract class BytecodeNodeWithLocalIntrospection extends DebugBytecodeRootNode 
     }
 
     @Operation
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    public static final class SetMaterializedLocalAccessor {
+        @Specialization
+        public static Object doDefault(MaterializedLocalAccessor accessor, FrameSlotKind kind, MaterializedFrame materializedFrame, Object value,
+                        @Bind BytecodeNode node) {
+            switch (kind) {
+                case Boolean:
+                    accessor.setBoolean(node, materializedFrame, (boolean) value);
+                    break;
+                case Byte:
+                    accessor.setByte(node, materializedFrame, (byte) value);
+                    break;
+                case Int:
+                    accessor.setInt(node, materializedFrame, (int) value);
+                    break;
+                case Long:
+                    accessor.setLong(node, materializedFrame, (long) value);
+                    break;
+                case Double:
+                    accessor.setDouble(node, materializedFrame, (double) value);
+                    break;
+                case Float:
+                    accessor.setFloat(node, materializedFrame, (float) value);
+                    break;
+                case Object:
+                    accessor.setObject(node, materializedFrame, value);
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+            return value;
+        }
+    }
+
+    @Operation
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ClearLocalAccessor {
         @Specialization
@@ -1590,6 +1808,16 @@ abstract class BytecodeNodeWithLocalIntrospection extends DebugBytecodeRootNode 
     }
 
     @Operation
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    public static final class ClearMaterializedLocalAccessor {
+        @Specialization
+        public static void perform(MaterializedLocalAccessor accessor, MaterializedFrame materializedFrame,
+                        @Bind BytecodeNode node) {
+            accessor.clear(node, materializedFrame);
+        }
+    }
+
+    @Operation
     @ConstantOperand(type = LocalAccessor.class)
     public static final class IsClearedLocalAccessor {
         @Specialization
@@ -1606,6 +1834,16 @@ abstract class BytecodeNodeWithLocalIntrospection extends DebugBytecodeRootNode 
         public static boolean perform(VirtualFrame frame, LocalRangeAccessor accessor, int offset,
                         @Bind BytecodeNode node) {
             return accessor.isCleared(node, frame, offset);
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    public static final class IsClearedMaterializedLocalAccessor {
+        @Specialization
+        public static boolean perform(MaterializedLocalAccessor accessor, MaterializedFrame materializedFrame,
+                        @Bind BytecodeNode node) {
+            return accessor.isCleared(node, materializedFrame);
         }
     }
 

@@ -326,6 +326,7 @@ In some cases, you may need to access locals from a different frame; for example
 The `LoadLocalMaterialized` and `StoreLocalMaterialized` operations are intended for such cases.
 They take an extra operand for the frame to read from/write to; this frame must be materialized.
 They can only access locals of the current root or an enclosing root.
+You can also use [`MaterializedLocalAccessor`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/MaterializedLocalAccessor.java) to access locals of a materialized frame from a custom operation.
 
 Below is a simple example where the inner root reads the outer local from the outer root's frame.
 ```java

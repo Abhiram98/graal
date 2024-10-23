@@ -63,6 +63,7 @@ import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.Instrumentation;
 import com.oracle.truffle.api.bytecode.LocalAccessor;
 import com.oracle.truffle.api.bytecode.LocalRangeAccessor;
+import com.oracle.truffle.api.bytecode.MaterializedLocalAccessor;
 import com.oracle.truffle.api.bytecode.Operation;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation.Operator;
@@ -427,6 +428,42 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
                 } else {
                     setter.setObject(bytecode, frame, i, value[i]);
                 }
+            }
+            return value;
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    static final class TeeMaterializedLocal {
+        @Specialization
+        public static long doLong(MaterializedLocalAccessor accessor,
+                        MaterializedFrame materializedFrame,
+                        long value,
+                        @Bind BytecodeNode bytecode) {
+            accessor.setLong(bytecode, materializedFrame, value);
+            return value;
+        }
+
+        @Specialization(replaces = "doLong")
+        public static Object doGeneric(MaterializedLocalAccessor accessor,
+                        MaterializedFrame materializedFrame,
+                        Object value,
+                        @Bind BytecodeNode bytecode) {
+            if (value instanceof Long l) {
+                accessor.setLong(bytecode, materializedFrame, l);
+            } else if (value instanceof Integer i) {
+                accessor.setInt(bytecode, materializedFrame, i);
+            } else if (value instanceof Byte b) {
+                accessor.setByte(bytecode, materializedFrame, b);
+            } else if (value instanceof Boolean b) {
+                accessor.setBoolean(bytecode, materializedFrame, b);
+            } else if (value instanceof Float f) {
+                accessor.setFloat(bytecode, materializedFrame, f);
+            } else if (value instanceof Double d) {
+                accessor.setDouble(bytecode, materializedFrame, d);
+            } else {
+                accessor.setObject(bytecode, materializedFrame, value);
             }
             return value;
         }

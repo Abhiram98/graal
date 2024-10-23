@@ -385,6 +385,7 @@ public class TruffleTypes {
     public static final String ForceQuickening_Name = "com.oracle.truffle.api.bytecode.ForceQuickening";
     public static final String LocalAccessor_Name = "com.oracle.truffle.api.bytecode.LocalAccessor";
     public static final String LocalRangeAccessor_Name = "com.oracle.truffle.api.bytecode.LocalRangeAccessor";
+    public static final String MaterializedLocalAccessor_Name = "com.oracle.truffle.api.bytecode.MaterializedLocalAccessor";
     public static final String Operation_Name = "com.oracle.truffle.api.bytecode.Operation";
     public static final String OperationProxy_Name = "com.oracle.truffle.api.bytecode.OperationProxy";
     public static final String OperationProxy_Proxyable_Name = "com.oracle.truffle.api.bytecode.OperationProxy.Proxyable";
@@ -447,6 +448,7 @@ public class TruffleTypes {
     public final DeclaredType ForceQuickening = c.getDeclaredTypeOptional(ForceQuickening_Name);
     public final DeclaredType LocalAccessor = c.getDeclaredTypeOptional(LocalAccessor_Name);
     public final DeclaredType LocalRangeAccessor = c.getDeclaredTypeOptional(LocalRangeAccessor_Name);
+    public final DeclaredType MaterializedLocalAccessor = c.getDeclaredTypeOptional(MaterializedLocalAccessor_Name);
     public final DeclaredType Operation = c.getDeclaredTypeOptional(Operation_Name);
     public final DeclaredType OperationProxy = c.getDeclaredTypeOptional(OperationProxy_Name);
     public final DeclaredType Prolog = c.getDeclaredTypeOptional(Prolog_Name);

@@ -63,20 +63,22 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  * boxing elimination}. Local accessors should be preferred over {@link BytecodeNode} helpers like
  * {@link BytecodeNode#getLocalValue(int, Frame, int)}, since the helpers use extra indirection.
  * <p>
- * All of the accessor methods take a {@link BytecodeNode} and the current {@link Frame}. The
- * bytecode node should be the node declaring the local, and it should be compilation-final. The
- * local should belong to the {@link Frame}.
+ * All of the accessor methods take a {@link BytecodeNode bytecode node} and the current
+ * {@link VirtualFrame frame}. The bytecode node should be the current bytecode node and correspond
+ * to the root that declares the local; it should be compilation-final. The frame should contain the
+ * local.
  * <p>
  * Example usage:
  *
  * <pre>
  * &#64;Operation
  * &#64;ConstantOperand(type = LocalAccessor.class)
- * public static final class GetLocalAccessor {
+ * public static final class GetLocal {
  *     &#64;Specialization
- *     public static Object perform(VirtualFrame frame, LocalAccessor accessor,
- *                     @Bind BytecodeNode node) {
- *         return accessor.getObject(node, frame);
+ *     public static Object perform(VirtualFrame frame,
+ *                     LocalAccessor accessor,
+ *                     &#64;Bind BytecodeNode bytecodeNode) {
+ *         return accessor.getObject(bytecodeNode, frame);
  *     }
  * }
  * </pre>
@@ -292,7 +294,7 @@ public final class LocalAccessor {
     @CompilationFinal(dimensions = 1) private static final LocalAccessor[] CACHE = createCache();
 
     private static LocalAccessor[] createCache() {
-        LocalAccessor[] setters = new LocalAccessor[64];
+        LocalAccessor[] setters = new LocalAccessor[CACHE_SIZE];
         for (int i = 0; i < setters.length; i++) {
             setters[i] = new LocalAccessor(i, i);
         }
@@ -318,7 +320,7 @@ public final class LocalAccessor {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof LocalAccessor otherSetter && this.localOffset == otherSetter.localOffset && this.localIndex == otherSetter.localIndex;
+        return obj instanceof LocalAccessor otherAccessor && this.localOffset == otherAccessor.localOffset && this.localIndex == otherAccessor.localIndex;
     }
 
     @Override
