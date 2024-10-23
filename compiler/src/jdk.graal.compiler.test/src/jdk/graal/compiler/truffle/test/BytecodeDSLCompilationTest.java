@@ -24,10 +24,12 @@
  */
 package jdk.graal.compiler.truffle.test;
 
+import static com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest.createNodes;
 import static com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest.parseNode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.util.List;
 
@@ -40,13 +42,18 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeLocal;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeParser;
+import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.bytecode.test.BytecodeDSLTestLanguage;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterBuilder;
+import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ExecutionEventNode;
 import com.oracle.truffle.api.instrumentation.Instrumenter;
@@ -67,6 +74,10 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
     }
 
     @Parameter(0) public Class<? extends BasicInterpreter> interpreterClass;
+
+    private boolean hasBoxingElimination() {
+        return new AbstractBasicInterpreterTest.TestRun(interpreterClass, false).hasBoxingElimination();
+    }
 
     Context context;
     Instrumenter instrumenter;
@@ -384,6 +395,217 @@ public class BytecodeDSLCompilationTest extends TestWithSynchronousCompiling {
         assertEquals(42L, target.call(true));
         assertEquals(123L, target.call(false));
         assertCompiled(target);
+    }
+
+    /**
+     * When an root changes its local tags, compiled code should be invalidated.
+     */
+    @Test
+    public void testStoreInvalidatesCode() {
+        assumeTrue(hasBoxingElimination());
+        BytecodeRootNodes<BasicInterpreter> rootNodes = createNodes(interpreterClass, BytecodeDSLTestLanguage.REF.get(null), false, BytecodeConfig.DEFAULT, b -> {
+            b.beginRoot();
+            BytecodeLocal x = b.createLocal("x", null);
+            b.beginStoreLocal(x);
+            b.emitLoadArgument(0);
+            b.endStoreLocal();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginReturn();
+            b.emitLoadLocal(x);
+            b.endReturn();
+
+            b.endRoot();
+        });
+        BasicInterpreter root = rootNodes.getNode(0);
+        root.getBytecodeNode().setUncachedThreshold(0); // force cached
+
+        // Run once and check profile.
+        OptimizedCallTarget rootTarget = (OptimizedCallTarget) root.getCallTarget();
+        ContinuationResult cont = (ContinuationResult) rootTarget.call(42L);
+        OptimizedCallTarget contTarget = (OptimizedCallTarget) cont.getContinuationCallTarget();
+        assertEquals(42L, cont.continueWith(null));
+        assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Now, force compile root node and continuation.
+        rootTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(rootTarget);
+        assertCompiled(contTarget);
+
+        // Run again to ensure nothing deopts.
+        cont = (ContinuationResult) rootTarget.call(123L);
+        assertCompiled(rootTarget);
+        assertEquals(123L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with a different tag, both call targets should invalidate.
+        cont = (ContinuationResult) rootTarget.call("hello");
+        assertNotCompiled(rootTarget);
+        assertNotCompiled(contTarget);
+        assertEquals("hello", cont.continueWith(null));
+        assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Both call targets should recompile.
+        rootTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(rootTarget);
+        assertCompiled(contTarget);
+    }
+
+    /**
+     * When a BytecodeNode store changes the local tags, compiled code should be invalidated.
+     */
+    @Test
+    public void testBytecodeNodeStoreInvalidatesCode() {
+        assumeTrue(hasBoxingElimination());
+        BytecodeRootNodes<BasicInterpreter> rootNodes = createNodes(interpreterClass, BytecodeDSLTestLanguage.REF.get(null), false, BytecodeConfig.DEFAULT, b -> {
+            b.beginRoot();
+            BytecodeLocal x = b.createLocal("x", null);
+            b.beginStoreLocal(x);
+            b.emitLoadConstant(42L);
+            b.endStoreLocal();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginReturn();
+            b.emitLoadLocal(x);
+            b.endReturn();
+
+            b.endRoot();
+        });
+        BasicInterpreter root = rootNodes.getNode(0);
+        root.getBytecodeNode().setUncachedThreshold(0); // force cached
+
+        // Run once and check profile.
+        OptimizedCallTarget rootTarget = (OptimizedCallTarget) root.getCallTarget();
+        ContinuationResult cont = (ContinuationResult) rootTarget.call();
+        OptimizedCallTarget contTarget = (OptimizedCallTarget) cont.getContinuationCallTarget();
+        assertEquals(42L, cont.continueWith(null));
+        assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Now, force compile root node and continuation.
+        rootTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(rootTarget);
+        assertCompiled(contTarget);
+
+        // Run again to ensure nothing deopts.
+        cont = (ContinuationResult) rootTarget.call();
+        assertCompiled(rootTarget);
+        assertEquals(42L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with the same tag, both call targets should stay valid.
+        cont = (ContinuationResult) rootTarget.call();
+        BytecodeLocation location = cont.getBytecodeLocation();
+        BytecodeNode bytecodeNode = location.getBytecodeNode();
+        bytecodeNode.setLocalValue(location.getBytecodeIndex(), cont.getFrame(), 0, 123L);
+        assertCompiled(rootTarget);
+        assertCompiled(contTarget);
+        assertEquals(123L, cont.continueWith(null));
+        assertEquals(FrameSlotKind.Long, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with a different tag, both call targets should invalidate.
+        cont = (ContinuationResult) rootTarget.call();
+        location = cont.getBytecodeLocation();
+        bytecodeNode = location.getBytecodeNode();
+        bytecodeNode.setLocalValue(location.getBytecodeIndex(), cont.getFrame(), 0, "hello");
+        assertNotCompiled(rootTarget);
+        assertNotCompiled(contTarget);
+        assertEquals("hello", cont.continueWith(null));
+        assertEquals(FrameSlotKind.Object, root.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Both call targets should recompile.
+        rootTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(rootTarget);
+        assertCompiled(contTarget);
+    }
+
+    /**
+     * When an inner root changes the local tags with a materialized store, compiled code should be
+     * invalidated.
+     */
+    @Test
+    public void testMaterializedStoreInvalidatesCode() {
+        assumeTrue(hasBoxingElimination());
+        BytecodeRootNodes<BasicInterpreter> rootNodes = createNodes(interpreterClass, BytecodeDSLTestLanguage.REF.get(null), false, BytecodeConfig.DEFAULT, b -> {
+            b.beginRoot();
+            BytecodeLocal x = b.createLocal("x", null);
+            b.beginStoreLocal(x);
+            b.emitLoadConstant(42L);
+            b.endStoreLocal();
+
+            b.beginYield();
+            b.emitLoadNull();
+            b.endYield();
+
+            b.beginRoot(); // inner
+            b.beginStoreLocalMaterialized(x);
+            b.emitLoadArgument(0);
+            b.emitLoadArgument(1);
+            b.endStoreLocalMaterialized();
+            b.endRoot();
+
+            b.beginReturn();
+            b.emitLoadLocal(x);
+            b.endReturn();
+
+            b.endRoot();
+        });
+        BasicInterpreter outer = rootNodes.getNode(0);
+        outer.getBytecodeNode().setUncachedThreshold(0); // force cached
+        BasicInterpreter inner = rootNodes.getNode(1);
+
+        // Run once and check profile.
+        OptimizedCallTarget outerTarget = (OptimizedCallTarget) outer.getCallTarget();
+        ContinuationResult cont = (ContinuationResult) outerTarget.call();
+        OptimizedCallTarget contTarget = (OptimizedCallTarget) cont.getContinuationCallTarget();
+        assertEquals(42L, cont.continueWith(null));
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Now, force compile root node and continuation.
+        outerTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(outerTarget);
+        assertCompiled(contTarget);
+
+        // Run again to ensure nothing deopts.
+        cont = (ContinuationResult) outerTarget.call();
+        assertCompiled(outerTarget);
+        assertEquals(42L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with the same tag, both call targets should stay valid.
+        cont = (ContinuationResult) outerTarget.call();
+        inner.getCallTarget().call(cont.getFrame(), 123L);
+        assertCompiled(outerTarget);
+        assertEquals(123L, cont.continueWith(null));
+        assertCompiled(contTarget);
+        assertEquals(FrameSlotKind.Long, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // If we store a value with a different tag, both call targets should invalidate.
+        cont = (ContinuationResult) outerTarget.call();
+        inner.getCallTarget().call(cont.getFrame(), "hello");
+        assertNotCompiled(outerTarget);
+        assertNotCompiled(contTarget);
+        assertEquals("hello", cont.continueWith(null));
+        assertEquals(FrameSlotKind.Object, outer.getBytecodeNode().getLocals().get(0).getTypeProfile());
+
+        // Both call targets should recompile.
+        outerTarget.compile(true);
+        contTarget.compile(true);
+        assertCompiled(outerTarget);
+        assertCompiled(contTarget);
     }
 
     @Test

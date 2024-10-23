@@ -9953,6 +9953,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private final CodeExecutableElement continueAt;
         private final CodeExecutableElement getCachedLocalTagInternal;
         private final CodeExecutableElement setCachedLocalTagInternal;
+        private final CodeExecutableElement checkStableTagsAssumption;
 
         AbstractBytecodeNodeElement() {
             super(Set.of(PRIVATE, STATIC, ABSTRACT, SEALED), ElementKind.CLASS, null, "AbstractBytecodeNode");
@@ -10044,14 +10045,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(new CodeExecutableElement(Set.of(ABSTRACT), arrayOf(type(byte.class)), "getLocalTags"));
                 /**
                  * Even though tags are only cached on cached nodes, all nodes need to implement
-                 * these methods. For materialized local accesses, the CachedBytecodeNode will call
-                 * these methods on the local's bytecode node, and that node may not be cached.
+                 * these methods, because the callee does not know if the node is cached/uncached.
                  */
                 getCachedLocalTagInternal = this.add(createGetCachedLocalTagInternal());
                 setCachedLocalTagInternal = this.add(createSetCachedLocalTagInternal());
+                if (model.enableYield) {
+                    checkStableTagsAssumption = this.add(createCheckStableTagsAssumption());
+                } else {
+                    checkStableTagsAssumption = null;
+                }
             } else {
                 getCachedLocalTagInternal = null;
                 setCachedLocalTagInternal = null;
+                checkStableTagsAssumption = null;
             }
 
             // Define methods for introspecting the bytecode and source.
@@ -10327,7 +10333,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (!model.usesBoxingElimination()) {
                 throw new AssertionError("Not supported.");
             }
-
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(ABSTRACT), type(byte.class), "getCachedLocalTagInternal");
             ex.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
             ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
@@ -10338,12 +10343,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (!model.usesBoxingElimination()) {
                 throw new AssertionError("Not supported.");
             }
-
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(ABSTRACT), type(void.class), "setCachedLocalTagInternal");
             ex.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
             ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
             ex.addParameter(new CodeVariableElement(type(byte.class), "tag"));
+            return ex;
+        }
 
+        private CodeExecutableElement createCheckStableTagsAssumption() {
+            if (!model.usesBoxingElimination()) {
+                throw new AssertionError("Not supported.");
+            }
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(ABSTRACT), type(boolean.class), "checkStableTagsAssumption");
             return ex;
         }
 
@@ -11582,6 +11593,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 if (model.usesBoxingElimination()) {
                     this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE, FINAL), arrayOf(type(byte.class)), "localTags_")));
+                    if (model.enableYield) {
+                        this.add(compFinal(new CodeVariableElement(Set.of(PRIVATE, VOLATILE), types.Assumption, "stableTagsAssumption_")));
+                    }
                 }
 
                 this.add(createLoadConstantCompiled());
@@ -11653,6 +11667,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
                 this.add(createGetCachedLocalTagInternal());
                 this.add(createSetCachedLocalTagInternal());
+                if (model.enableYield) {
+                    this.add(createCheckStableTagsAssumption());
+                }
             } else {
                 // generated in AbstractBytecodeNode
             }
@@ -12183,7 +12200,22 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeTreeBuilder b = ex.createBuilder();
 
             if (tier.isCached()) {
+                b.tree(createNeverPartOfCompilation());
                 b.statement(writeByte("localTags", "localIndex", "tag"));
+                // Invalidate call targets.
+                b.startStatement().startCall("reportReplace");
+                b.string("this").string("this").doubleQuote("local tags updated");
+                b.end(2);
+                if (model.usesBoxingElimination() && model.enableYield) {
+                    // Invalidate continuation call targets.
+                    b.declaration(types.Assumption, "oldStableTagsAssumption", "this.stableTagsAssumption_");
+                    b.startIf().string("oldStableTagsAssumption != null").end().startBlock();
+                    b.startAssign("this.stableTagsAssumption_").startStaticCall(types.Assumption, "create");
+                    b.doubleQuote("Stable local tags");
+                    b.end(2);
+                    b.startStatement().startCall("oldStableTagsAssumption.invalidate").doubleQuote("local tags updated").end(2);
+                    b.end(); // if
+                }
             } else {
                 // nothing to do
             }
@@ -12204,6 +12236,22 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             } else {
                 b.startReturn().staticReference(frameTagsElement.getObject()).end();
+            }
+            return ex;
+        }
+
+        private CodeExecutableElement createCheckStableTagsAssumption() {
+            if (!model.usesBoxingElimination() || !model.enableYield) {
+                throw new AssertionError("Not supported.");
+            }
+
+            CodeExecutableElement ex = GeneratorUtils.override(abstractBytecodeNode.checkStableTagsAssumption);
+            CodeTreeBuilder b = ex.createBuilder();
+
+            if (tier.isCached()) {
+                b.startReturn().string("this.stableTagsAssumption_.isValid()").end();
+            } else {
+                b.startReturn().string("true").end();
             }
             return ex;
         }
@@ -12738,16 +12786,25 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
         private CodeExecutableElement createCachedConstructor() {
 
-            record CachedInitializationKey(int instructionLength, List<InstructionImmediate> immediates, String nodeName) implements Comparable<CachedInitializationKey> {
-                CachedInitializationKey(InstructionModel instr) {
-                    this(instr.getInstructionLength(), instr.getImmediates().stream().filter((i) -> needsCachedInitialization(instr, i)).toList(),
-                                    cachedDataClassName(instr));
+            record CachedInitializationKey(int instructionLength, List<InstructionImmediate> immediates, String nodeName, boolean separateYield) implements Comparable<CachedInitializationKey> {
+                CachedInitializationKey(InstructionModel instr, BytecodeDSLModel m) {
+                    this(instr.getInstructionLength(),
+                                    instr.getImmediates().stream().filter((i) -> needsCachedInitialization(instr, i)).toList(),
+                                    cachedDataClassName(instr),
+                                    // We need to allocate a stable tag assumption if the node has
+                                    // continuations.
+                                    m.usesBoxingElimination() && instr.kind == InstructionKind.YIELD);
                 }
 
                 @Override
                 public int compareTo(CachedInitializationKey o) {
+                    // Put a separate yield at the end.
+                    int compare = Boolean.compare(this.separateYield, o.separateYield);
+                    if (compare != 0) {
+                        return compare;
+                    }
                     // Order by # of immediates to initialize.
-                    int compare = Integer.compare(this.immediates.size(), o.immediates.size());
+                    compare = Integer.compare(this.immediates.size(), o.immediates.size());
                     if (compare != 0) {
                         return compare;
                     }
@@ -12784,12 +12841,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("byte[] bc = bytecodes");
             b.statement("int bci = 0");
             b.statement("int numConditionalBranches = 0");
+            if (model.usesBoxingElimination() && model.enableYield) {
+                b.statement("boolean hasContinuations = false");
+            }
+
             b.string("loop: ").startWhile().string("bci < bc.length").end().startBlock();
             b.startSwitch().tree(readInstruction("bc", "bci")).end().startBlock();
 
             Map<CachedInitializationKey, List<InstructionModel>> grouped = model.getInstructions().stream()//
                             .filter((i -> !i.isQuickening())) //
-                            .collect(deterministicGroupingBy(CachedInitializationKey::new));
+                            .collect(deterministicGroupingBy(i -> new CachedInitializationKey(i, model)));
             List<CachedInitializationKey> sortedKeys = grouped.keySet().stream().sorted().toList();
 
             for (CachedInitializationKey key : sortedKeys) {
@@ -12818,6 +12879,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     }
                 }
 
+                if (key.separateYield) {
+                    if (!model.usesBoxingElimination() || !model.enableYield) {
+                        throw new AssertionError();
+                    }
+                    b.statement("hasContinuations = true");
+                }
+
                 b.statement("bci += " + key.instructionLength());
                 b.statement("break");
                 b.end();
@@ -12843,6 +12911,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.declaration(type(byte[].class), "localTags", "new byte[numLocals]");
                 b.statement("Arrays.fill(localTags, FrameSlotKind.Illegal.tag)");
                 b.startAssign("this.localTags_").string("localTags").end();
+                if (model.enableYield) {
+                    b.startAssign("this.stableTagsAssumption_");
+                    b.string("hasContinuations ? ");
+                    b.startStaticCall(types.Assumption, "create").doubleQuote("Stable local tags").end();
+                    b.string(" : null");
+                    b.end();
+                }
             }
 
             this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(boolean[].class), "EMPTY_EXCEPTION_PROFILES")).createInitBuilder().string("new boolean[0]");
@@ -15477,6 +15552,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
             b.end(); // else
 
+            b.startIf().string("newTag != oldTag").end().startBlock();
             b.startStatement().startCall(bytecodeNode, "setCachedLocalTagInternal");
             if (materialized) {
                 b.startCall(bytecodeNode, "getLocalTags").end();
@@ -15489,7 +15565,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.string("slot - " + USER_LOCALS_START_INDEX);
             }
             b.string("newTag");
-            b.end().end();
+            b.end(2);
+            b.end(); // if newTag != oldTag
 
             emitQuickeningOperand(b, "this", "bc", "bci", null, 0, "operandIndex", "operand", "newOperand");
 
@@ -15996,6 +16073,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = ex.createBuilder();
 
+            b.declaration(types.BytecodeLocation, "bytecodeLocation", "location");
+            b.startDeclaration(abstractBytecodeNode.asType(), "bytecodeNode");
+            b.startGroup().cast(abstractBytecodeNode.asType()).string("bytecodeLocation.getBytecodeNode()").end();
+            b.end();
+
+            if (model.usesBoxingElimination()) {
+                b.startIf().string("!bytecodeNode.checkStableTagsAssumption()").end().startBlock();
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+                b.end();
+            }
+
             b.statement("Object[] args = frame.getArguments()");
             b.startIf().string("args.length != 2").end().startBlock();
             emitThrow(b, IllegalArgumentException.class, "\"Expected 2 arguments: (parentFrame, inputValue)\"");
@@ -16012,11 +16100,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement(copyFrameTo("parentFrame", "root.maxLocals", "frame", "root.maxLocals", "sp - 1"));
             b.statement(setFrameObject(COROUTINE_FRAME_INDEX, "parentFrame"));
             b.statement(setFrameObject("root.maxLocals + sp - 1", "inputValue"));
-            b.declaration(types.BytecodeLocation, "bytecodeLocation", "location");
 
             b.startReturn();
             b.startCall("root.continueAt");
-            b.startGroup().cast(abstractBytecodeNode.asType()).string("bytecodeLocation.getBytecodeNode()").end();
+            b.string("bytecodeNode");
             b.string("bytecodeLocation.getBytecodeIndex()"); // bci
             b.string("sp + root.maxLocals"); // sp
             b.string("frame");

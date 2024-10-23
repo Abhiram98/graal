@@ -5390,7 +5390,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 newTag = FrameTags.OBJECT;
                 FRAMES.setObject(frame, slot, local);
             }
-            this.setCachedLocalTagInternal(localTags, localIndex, newTag);
+            if (newTag != oldTag) {
+                this.setCachedLocalTagInternal(localTags, localIndex, newTag);
+            }
             BYTES.putShort(bc, operandIndex, newOperand);
             BYTES.putShort(bc, bci, newInstruction);
             FRAMES.clear(frame, sp - 1);
@@ -5774,7 +5776,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 newTag = FrameTags.OBJECT;
                 FRAMES.setObject(frame, slot, local);
             }
-            bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, newTag);
+            if (newTag != oldTag) {
+                bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, newTag);
+            }
             BYTES.putShort(bc, operandIndex, newOperand);
             BYTES.putShort(bc, bci, newInstruction);
             FRAMES.clear(stackFrame, sp - 1);
@@ -6734,7 +6738,9 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
 
         @Override
         void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
+            CompilerAsserts.neverPartOfCompilation();
             BYTES.putByte(localTags, localIndex, tag);
+            reportReplace(this, this, "local tags updated");
         }
 
         @Override

@@ -1,6 +1,7 @@
 // CheckStyle: start generated
 package com.oracle.truffle.api.bytecode.test.basic_interpreter;
 
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -3693,6 +3694,8 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
 
         abstract void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag);
 
+        abstract boolean checkStableTagsAssumption();
+
         @Override
         @TruffleBoundary
         public SourceSection getSourceSection() {
@@ -4483,6 +4486,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         @CompilationFinal(dimensions = 1) private Node[] cachedNodes_;
         @CompilationFinal(dimensions = 1) private final boolean[] exceptionProfiles_;
         @CompilationFinal(dimensions = 1) private final byte[] localTags_;
+        @CompilationFinal private volatile Assumption stableTagsAssumption_;
         @CompilationFinal(dimensions = 1) private final int[] branchProfiles_;
         @CompilationFinal private Object osrMetadata_;
 
@@ -4493,6 +4497,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
             byte[] bc = bytecodes;
             int bci = 0;
             int numConditionalBranches = 0;
+            boolean hasContinuations = false;
             loop: while (bci < bc.length) {
                 switch (BYTES.getShort(bc, bci)) {
                     case Instructions.DUP :
@@ -4541,7 +4546,6 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                     case Instructions.LOAD_LOCAL_MAT$LONG :
                     case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
                     case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                    case Instructions.YIELD :
                     case Instructions.TAG_ENTER :
                     case Instructions.TAG_LEAVE_VOID :
                     case Instructions.TAG_YIELD :
@@ -4777,6 +4781,10 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                         numConditionalBranches++;
                         bci += 14;
                         break;
+                    case Instructions.YIELD :
+                        hasContinuations = true;
+                        bci += 6;
+                        break;
                     default :
                     {
                         throw assertionFailed("Should not reach here");
@@ -4790,13 +4798,15 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
             byte[] localTags = new byte[numLocals];
             Arrays.fill(localTags, FrameSlotKind.Illegal.tag);
             this.localTags_ = localTags;
+            this.stableTagsAssumption_ = hasContinuations ? Assumption.create("Stable local tags") : null;
         }
 
-        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot, Node[] cachedNodes_, boolean[] exceptionProfiles_, byte[] localTags_, int[] branchProfiles_, Object osrMetadata_) {
+        CachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot, Node[] cachedNodes_, boolean[] exceptionProfiles_, byte[] localTags_, Assumption stableTagsAssumption_, int[] branchProfiles_, Object osrMetadata_) {
             super(bytecodes, constants, handlers, locals, sourceInfo, sources, numNodes, tagRoot);
             this.cachedNodes_ = cachedNodes_;
             this.exceptionProfiles_ = exceptionProfiles_;
             this.localTags_ = localTags_;
+            this.stableTagsAssumption_ = stableTagsAssumption_;
             this.branchProfiles_ = branchProfiles_;
             this.osrMetadata_ = osrMetadata_;
         }
@@ -6037,7 +6047,9 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                 this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
                 FRAMES.setObject(frame, slot, local);
             }
-            this.setCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX, newTag);
+            if (newTag != oldTag) {
+                this.setCachedLocalTagInternal(localTags, slot - USER_LOCALS_START_INDEX, newTag);
+            }
             BYTES.putShort(bc, operandIndex, newOperand);
             this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
             {
@@ -6443,7 +6455,9 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                 this.getRoot().onSpecialize(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), "StoreLocal$generic");
                 FRAMES.setObject(frame, slot, local);
             }
-            bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX, newTag);
+            if (newTag != oldTag) {
+                bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), slot - USER_LOCALS_START_INDEX, newTag);
+            }
             BYTES.putShort(bc, operandIndex, newOperand);
             this.getRoot().onQuickenOperand(new InstructionImpl(this, bci, BYTES.getShort(bc, bci)), 0, new InstructionImpl(this, operandIndex, operand), new InstructionImpl(this, operandIndex, newOperand));
             {
@@ -7526,7 +7540,19 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
 
         @Override
         void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
+            CompilerAsserts.neverPartOfCompilation();
             BYTES.putByte(localTags, localIndex, tag);
+            reportReplace(this, this, "local tags updated");
+            Assumption oldStableTagsAssumption = this.stableTagsAssumption_;
+            if (oldStableTagsAssumption != null) {
+                this.stableTagsAssumption_ = Assumption.create("Stable local tags");
+                oldStableTagsAssumption.invalidate("local tags updated");
+            }
+        }
+
+        @Override
+        boolean checkStableTagsAssumption() {
+            return this.stableTagsAssumption_.isValid();
         }
 
         @Override
@@ -7572,7 +7598,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                 return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.localTags_.length);
             } else {
                 // Can reuse profile if bytecodes are unchanged.
-                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.cachedNodes_, this.exceptionProfiles_, this.localTags_, this.branchProfiles_, this.osrMetadata_);
+                return new CachedBytecodeNode(bytecodes__, constants__, handlers__, locals__, sourceInfo__, sources__, numNodes__, tagRoot__, this.cachedNodes_, this.exceptionProfiles_, this.localTags_, this.stableTagsAssumption_, this.branchProfiles_, this.osrMetadata_);
             }
         }
 
@@ -9618,6 +9644,11 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
 
         @Override
         void setCachedLocalTagInternal(byte[] localTags, int localIndex, byte tag) {
+        }
+
+        @Override
+        boolean checkStableTagsAssumption() {
+            return true;
         }
 
         @Override
@@ -18245,6 +18276,11 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
 
         @Override
         public Object execute(VirtualFrame frame) {
+            BytecodeLocation bytecodeLocation = location;
+            AbstractBytecodeNode bytecodeNode = (AbstractBytecodeNode) bytecodeLocation.getBytecodeNode();
+            if (!bytecodeNode.checkStableTagsAssumption()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
             Object[] args = frame.getArguments();
             if (args.length != 2) {
                 throw new IllegalArgumentException("Expected 2 arguments: (parentFrame, inputValue)");
@@ -18258,8 +18294,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
             FRAMES.copyTo(parentFrame, root.maxLocals, frame, root.maxLocals, sp - 1);
             FRAMES.setObject(frame, COROUTINE_FRAME_INDEX, parentFrame);
             FRAMES.setObject(frame, root.maxLocals + sp - 1, inputValue);
-            BytecodeLocation bytecodeLocation = location;
-            return root.continueAt((AbstractBytecodeNode) bytecodeLocation.getBytecodeNode(), bytecodeLocation.getBytecodeIndex(), sp + root.maxLocals, frame, parentFrame, this);
+            return root.continueAt(bytecodeNode, bytecodeLocation.getBytecodeIndex(), sp + root.maxLocals, frame, parentFrame, this);
         }
 
         @Override

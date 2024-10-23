@@ -13685,6 +13685,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
 
         @Override
         public Object execute(VirtualFrame frame) {
+            BytecodeLocation bytecodeLocation = location;
+            AbstractBytecodeNode bytecodeNode = (AbstractBytecodeNode) bytecodeLocation.getBytecodeNode();
             Object[] args = frame.getArguments();
             if (args.length != 2) {
                 throw new IllegalArgumentException("Expected 2 arguments: (parentFrame, inputValue)");
@@ -13698,8 +13700,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             FRAMES.copyTo(parentFrame, root.maxLocals, frame, root.maxLocals, sp - 1);
             FRAMES.setObject(frame, COROUTINE_FRAME_INDEX, parentFrame);
             FRAMES.setObject(frame, root.maxLocals + sp - 1, inputValue);
-            BytecodeLocation bytecodeLocation = location;
-            return root.continueAt((AbstractBytecodeNode) bytecodeLocation.getBytecodeNode(), bytecodeLocation.getBytecodeIndex(), sp + root.maxLocals, frame, parentFrame, this);
+            return root.continueAt(bytecodeNode, bytecodeLocation.getBytecodeIndex(), sp + root.maxLocals, frame, parentFrame, this);
         }
 
         @Override
