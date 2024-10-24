@@ -115,6 +115,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     public boolean enableQuickening;
     public boolean allowUnsafe;
     public boolean enableYield;
+    public boolean enableMaterializedLocalAccesses;
     public boolean storeBciInFrame;
     public boolean bytecodeDebugListener;
     public boolean enableSpecializationIntrospection;
@@ -529,7 +530,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     public boolean materializedLocalAccessesNeedLocalIndex() {
         // With block scoping, we need a local index to resolve boxing elimination tags. We also use
         // it to do liveness checks when the bci is stored in the frame.
-        return enableBlockScoping && (usesBoxingElimination() || storeBciInFrame);
+        return enableMaterializedLocalAccesses && enableBlockScoping && (usesBoxingElimination() || storeBciInFrame);
     }
 
     public boolean canValidateMaterializedLocalLiveness() {

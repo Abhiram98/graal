@@ -263,6 +263,34 @@ public @interface GenerateBytecode {
     boolean enableYield() default false;
 
     /**
+     * Enables materialized local accesses. Materialized local accesses allow a root node to access
+     * the locals of any outer root nodes (root nodes created by enclosing {@code Root} operations)
+     * in addition to its own locals. These accesses take the
+     * {@link com.oracle.truffle.api.frame.MaterializedFrame materialized frame} containing the
+     * local as an operand. Materialized local accesses can be used to implement closures and nested
+     * functions with lexical scoping.
+     * <p>
+     * When materialized local accesses are enabled, the interpreter defines two additional
+     * operations, {@code LoadLocalMaterialized} and {@code StoreLocalMaterialized}, which implement
+     * the local accesses. Implementations can also use {@link MaterializedLocalAccessor}s to access
+     * locals from user-defined operations.
+     * <p>
+     * Materialized local accesses can <i>only</i> be used where the local is
+     * {@link #enableBlockScoping() in scope}. The bytecode generator guarantees that each
+     * materialized access's local is in scope at the static location of the access, but since root
+     * nodes can be called at any time, it is still possible to execute the root node (and thus
+     * perform the access) when the local is out of scope, leading to unexpected behaviour (e.g.,
+     * reading an incorrect local value). When the bytecode index is
+     * {@link #storeBytecodeIndexInFrame() stored in the frame}, the interpreter will dynamically
+     * validate each materialized access, throwing a runtime exception when the local is not in
+     * scope. Thus, to diagnose issues with invalid materialized accesses, it is recommended to
+     * enable storing the bytecode index in the frame.
+     *
+     * @since 24.2
+     */
+    boolean enableMaterializedLocalAccesses() default false;
+
+    /**
      * Enables block scoping, which limits a local's lifetime to the lifetime of the enclosing
      * Block/Root operation. Block scoping is enabled by default. If this flag is set to
      * <code>false</code>, locals use root scoping, which keeps locals alive for the lifetime of the
@@ -338,12 +366,6 @@ public @interface GenerateBytecode {
      * bci access outside of the current operation (e.g., for closures or frame introspection).
      * Storing the bci in the frame increases frame size and requires additional frame writes, so it
      * can negatively affect performance.
-     * <p>
-     * When the bytecode index is stored in the frame, the interpreter includes extra Java
-     * assertions to validate materialized local accesses. Each access dynamically checks whether
-     * the local is in scope at the current bytecode index in the local's frame, throwing an
-     * exception if it is out of scope. Thus, enabling this flag (and Java assertions) may be
-     * helpful for debugging issues with materialized local accesses.
      *
      * @since 24.2
      */

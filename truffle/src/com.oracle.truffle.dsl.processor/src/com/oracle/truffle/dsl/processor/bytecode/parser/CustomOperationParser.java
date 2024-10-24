@@ -642,6 +642,9 @@ public final class CustomOperationParser extends AbstractParser<CustomOperationM
                 // adopted, and if the root node splits it will not be duplicated.
                 customOperation.addError(constantOperandMirror, ElementUtils.getAnnotationValue(constantOperandMirror, "type"),
                                 "Nodes cannot be used as constant operands.");
+            } else if (ElementUtils.typeEquals(type, types.MaterializedLocalAccessor) && !parent.enableMaterializedLocalAccesses) {
+                customOperation.addError(constantOperandMirror, ElementUtils.getAnnotationValue(constantOperandMirror, "type"),
+                                "MaterializedLocalAccessor cannot be used because materialized local accesses are disabled. They can be enabled using the enableMaterializedLocalAccesses field of @GenerateBytecode.");
             }
 
             if (!isValidOperandName(operandName)) {

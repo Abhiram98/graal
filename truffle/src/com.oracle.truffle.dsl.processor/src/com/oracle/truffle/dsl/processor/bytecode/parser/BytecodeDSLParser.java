@@ -159,6 +159,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         Set<String> suffixes = new HashSet<>();
         TypeMirror languageClass = null;
         boolean enableYield = false;
+        boolean enableMaterializedLocalAccessors = false;
         boolean enableTagInstrumentation = false;
 
         TypeMirror abstractBuilderType = BytecodeDSLCodeGenerator.createAbstractBuilderType(typeElement).asType();
@@ -188,17 +189,24 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
             }
 
             AnnotationValue variantEnableYieldValue = ElementUtils.getAnnotationValue(generateBytecodeMirror, "enableYield");
-            boolean variantEnableYield = ElementUtils.resolveAnnotationValue(Boolean.class,
-                            variantEnableYieldValue);
+            boolean variantEnableYield = ElementUtils.resolveAnnotationValue(Boolean.class, variantEnableYieldValue);
             if (first) {
                 enableYield = variantEnableYield;
             } else if (variantEnableYield != enableYield) {
                 model.addError(generateBytecodeMirror, variantEnableYieldValue, "Incompatible variant: all variants must have the same value for enableYield.");
             }
 
+            AnnotationValue variantEnableMaterializedLocalAccessesValue = ElementUtils.getAnnotationValue(generateBytecodeMirror, "enableMaterializedLocalAccesses");
+            boolean variantEnableMaterializedLocalAccesses = ElementUtils.resolveAnnotationValue(Boolean.class, variantEnableMaterializedLocalAccessesValue);
+            if (first) {
+                enableMaterializedLocalAccessors = variantEnableMaterializedLocalAccesses;
+            } else if (variantEnableMaterializedLocalAccesses != enableMaterializedLocalAccessors) {
+                model.addError(generateBytecodeMirror, variantEnableMaterializedLocalAccessesValue,
+                                "Incompatible variant: all variants must have the same value for enableMaterializedLocalAccesses.");
+            }
+
             AnnotationValue variantEnableTagInstrumentationValue = ElementUtils.getAnnotationValue(generateBytecodeMirror, "enableTagInstrumentation");
-            boolean variantEnableTagInstrumentation = ElementUtils.resolveAnnotationValue(Boolean.class,
-                            variantEnableTagInstrumentationValue);
+            boolean variantEnableTagInstrumentation = ElementUtils.resolveAnnotationValue(Boolean.class, variantEnableTagInstrumentationValue);
             if (first) {
                 enableTagInstrumentation = variantEnableTagInstrumentation;
             } else if (variantEnableTagInstrumentation != enableTagInstrumentation) {
@@ -223,6 +231,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         model.enableSerialization = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableSerialization");
         model.enableSpecializationIntrospection = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableSpecializationIntrospection");
         model.allowUnsafe = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "allowUnsafe");
+        model.enableMaterializedLocalAccesses = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableMaterializedLocalAccesses");
         model.enableYield = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableYield");
         model.storeBciInFrame = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "storeBytecodeIndexInFrame");
         model.enableQuickening = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableQuickening");

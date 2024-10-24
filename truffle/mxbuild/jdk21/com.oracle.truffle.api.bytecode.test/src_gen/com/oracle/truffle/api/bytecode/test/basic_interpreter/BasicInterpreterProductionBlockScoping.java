@@ -10298,8 +10298,8 @@ public final class BasicInterpreterProductionBlockScoping extends BasicInterpret
          * The result of {@link Node#getSourceSection} on the generated root is undefined if there is no enclosing SourceSection operation.
          * <p>
          * This method can also be called inside of another root operation. Bytecode generation for the outer root node suspends until generation for the inner root node finishes.
-         * The inner root node is not lexically nested in the first (you can invoke the inner root node independently), but the inner root *can* manipulate the outer root's locals using
-         * materialized local accesses if the outer frame is provided to it.
+         * The inner root node is not lexically nested in the outer (you can invoke the inner root node independently), but the inner root <i>can</i> manipulate the outer root's locals
+         * using materialized local accesses if the outer frame is provided to it.
          * Multiple root nodes can be obtained from the {@link BytecodeNodes} object in the order of their {@link #beginRoot} calls.
          *
          */
@@ -11234,7 +11234,7 @@ public final class BasicInterpreterProductionBlockScoping extends BasicInterpret
             }
             RootData rootOperationData = getCurrentRootOperationData();
             if (rootOperationData.index != localImpl.rootIndex) {
-                throw failArgument("Local variable must belong to the current root node. Consider using materialized local accesses to access locals from an outer root node.");
+                throw failArgument("Local variable must belong to the current root node. Consider using materialized local accesses (i.e., LoadLocalMaterialized/StoreLocalMaterialized or MaterializedLocalAccessor) to access locals from an outer root node.");
             }
         }
 
@@ -11337,10 +11337,10 @@ public final class BasicInterpreterProductionBlockScoping extends BasicInterpret
          * <p>
          * Signature: LoadLocalMaterialized(frame) -> Object
          * <p>
-         * LoadLocalMaterialized reads {@code local} from the frame produced by {@code frame}.
-         * This operation can be used to read locals from materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-         * The given local must be in scope at the point that LoadLocalMaterialized executes, otherwise it may produce unexpected values.
-         * The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
+         * LoadLocalMaterialized reads {@code local} from the materialized frame produced by {@code frame}.
+         * This operation can be used to read a local defined by the current root or an enclosing root.
+         * The local must belong to the materialized frame. It should also be in scope, otherwise the operation may produce unexpected values.
+         * The interpreter will validate the scope if the interpreter is configured to {@link com.oracle.truffle.api.bytecode.GenerateBytecode#storeBytecodeIndexInFrame store the bytecode index in the frame}.
          * <p>
          * A corresponding call to {@link #endLoadLocalMaterialized} is required to end the operation.
          *
@@ -11398,10 +11398,10 @@ public final class BasicInterpreterProductionBlockScoping extends BasicInterpret
          * <p>
          * Signature: StoreLocalMaterialized(frame, value) -> void
          * <p>
-         * StoreLocalMaterialized writes the value produced by {@code value} into the {@code local} in the frame produced by {@code frame}.
-         * This operation can be used to store locals into materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-         * The given local must be in scope at the point that StoreLocalMaterialized executes, otherwise it may produce unexpected values.
-         * The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
+         * StoreLocalMaterialized writes the value produced by {@code value} into {@code local} in the materialized frame produced by {@code frame}.
+         * This operation can be used to store locals defined by the current root or an enclosing root.
+         * The local must belong to the materialized frame. It should also be in scope, otherwise the operation may produce unexpected values.
+         * The interpreter will validate the scope if the interpreter is configured to {@link com.oracle.truffle.api.bytecode.GenerateBytecode#storeBytecodeIndexInFrame store the bytecode index in the frame}.
          * <p>
          * A corresponding call to {@link #endStoreLocalMaterialized} is required to end the operation.
          *

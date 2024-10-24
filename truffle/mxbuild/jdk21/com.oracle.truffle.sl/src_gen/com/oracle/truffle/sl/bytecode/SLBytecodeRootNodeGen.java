@@ -173,10 +173,6 @@ import java.util.function.Supplier;
  *     kind: LOAD_LOCAL
  *   - Operation StoreLocal
  *     kind: STORE_LOCAL
- *   - Operation LoadLocalMaterialized
- *     kind: LOAD_LOCAL_MATERIALIZED
- *   - Operation StoreLocalMaterialized
- *     kind: STORE_LOCAL_MATERIALIZED
  *   - Operation Return
  *     kind: RETURN
  *   - Operation Source
@@ -352,433 +348,385 @@ import java.util.function.Supplier;
  *     kind: STORE_LOCAL
  *     encoding: [32 : short, frame_index : short, local_index : short, child0 (bci) : int]
  *     signature: void (Object)
- *   - Instruction load.local.mat
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [33 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: Object (Object)
- *   - Instruction load.local.mat$Long
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [34 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: Object (Object)
- *   - Instruction load.local.mat$Long$unboxed
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [35 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: long (Object)
- *   - Instruction load.local.mat$Boolean
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [36 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: Object (Object)
- *   - Instruction load.local.mat$Boolean$unboxed
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [37 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: boolean (Object)
- *   - Instruction load.local.mat$generic
- *     kind: LOAD_LOCAL_MATERIALIZED
- *     encoding: [38 : short, frame_index : short, root_index (local_root) : short, local_index : short]
- *     signature: Object (Object)
- *   - Instruction store.local.mat
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [39 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (Object, Object)
- *   - Instruction store.local.mat$Long
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [40 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (Object, Object)
- *   - Instruction store.local.mat$Long$Long
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [41 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (long, Object)
- *   - Instruction store.local.mat$Boolean
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [42 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (Object, Object)
- *   - Instruction store.local.mat$Boolean$Boolean
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [43 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (boolean, Object)
- *   - Instruction store.local.mat$generic
- *     kind: STORE_LOCAL_MATERIALIZED
- *     encoding: [44 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
- *     signature: void (Object, Object)
  *   - Instruction tag.enter
  *     kind: TAG_ENTER
- *     encoding: [45 : short, tag : int]
+ *     encoding: [33 : short, tag : int]
  *     signature: void ()
  *   - Instruction tag.leave
  *     kind: TAG_LEAVE
- *     encoding: [46 : short, tag : int, child0 (bci) : int]
+ *     encoding: [34 : short, tag : int, child0 (bci) : int]
  *     signature: Object (Object)
  *   - Instruction tag.leave$Long
  *     kind: TAG_LEAVE
- *     encoding: [47 : short, tag : int, child0 (bci) : int]
+ *     encoding: [35 : short, tag : int, child0 (bci) : int]
  *     signature: Object (long)
  *   - Instruction tag.leave$Long$unboxed
  *     kind: TAG_LEAVE
- *     encoding: [48 : short, tag : int, child0 (bci) : int]
+ *     encoding: [36 : short, tag : int, child0 (bci) : int]
  *     signature: long (Object)
  *   - Instruction tag.leave$Boolean
  *     kind: TAG_LEAVE
- *     encoding: [49 : short, tag : int, child0 (bci) : int]
+ *     encoding: [37 : short, tag : int, child0 (bci) : int]
  *     signature: Object (boolean)
  *   - Instruction tag.leave$Boolean$unboxed
  *     kind: TAG_LEAVE
- *     encoding: [50 : short, tag : int, child0 (bci) : int]
+ *     encoding: [38 : short, tag : int, child0 (bci) : int]
  *     signature: boolean (Object)
  *   - Instruction tag.leave$generic
  *     kind: TAG_LEAVE
- *     encoding: [51 : short, tag : int, child0 (bci) : int]
+ *     encoding: [39 : short, tag : int, child0 (bci) : int]
  *     signature: Object (Object)
  *   - Instruction tag.leaveVoid
  *     kind: TAG_LEAVE_VOID
- *     encoding: [52 : short, tag : int]
+ *     encoding: [40 : short, tag : int]
  *     signature: Object ()
  *   - Instruction load.variadic_0
  *     kind: LOAD_VARIADIC
- *     encoding: [53 : short]
+ *     encoding: [41 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_1
  *     kind: LOAD_VARIADIC
- *     encoding: [54 : short]
+ *     encoding: [42 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_2
  *     kind: LOAD_VARIADIC
- *     encoding: [55 : short]
+ *     encoding: [43 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_3
  *     kind: LOAD_VARIADIC
- *     encoding: [56 : short]
+ *     encoding: [44 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_4
  *     kind: LOAD_VARIADIC
- *     encoding: [57 : short]
+ *     encoding: [45 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_5
  *     kind: LOAD_VARIADIC
- *     encoding: [58 : short]
+ *     encoding: [46 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_6
  *     kind: LOAD_VARIADIC
- *     encoding: [59 : short]
+ *     encoding: [47 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_7
  *     kind: LOAD_VARIADIC
- *     encoding: [60 : short]
+ *     encoding: [48 : short]
  *     signature: void (Object)
  *   - Instruction load.variadic_8
  *     kind: LOAD_VARIADIC
- *     encoding: [61 : short]
+ *     encoding: [49 : short]
  *     signature: void (Object)
  *   - Instruction merge.variadic
  *     kind: MERGE_VARIADIC
- *     encoding: [62 : short]
+ *     encoding: [50 : short]
  *     signature: Object (Object)
  *   - Instruction constant_null
  *     kind: STORE_NULL
- *     encoding: [63 : short]
+ *     encoding: [51 : short]
  *     signature: Object ()
  *   - Instruction clear.local
  *     kind: CLEAR_LOCAL
- *     encoding: [64 : short, frame_index : short]
+ *     encoding: [52 : short, frame_index : short]
  *     signature: void ()
  *   - Instruction c.SLAlwaysHalt
  *     kind: CUSTOM
- *     encoding: [65 : short, node : int]
+ *     encoding: [53 : short, node : int]
  *     nodeType: SLAlwaysHalt
  *     signature: void ()
  *   - Instruction c.SLLoadArgument
  *     kind: CUSTOM
- *     encoding: [66 : short, index (const) : int, node : int]
+ *     encoding: [54 : short, index (const) : int, node : int]
  *     nodeType: SLLoadArgument
  *     signature: Object (int)
  *   - Instruction c.SLLoadArgument$LoadInBounds
  *     kind: CUSTOM
- *     encoding: [67 : short, index (const) : int, node : int]
+ *     encoding: [55 : short, index (const) : int, node : int]
  *     nodeType: SLLoadArgument
  *     signature: Object (int)
  *   - Instruction c.Builtin
  *     kind: CUSTOM
- *     encoding: [68 : short, factory (const) : int, argumentCount (const) : int, node : int]
+ *     encoding: [56 : short, factory (const) : int, argumentCount (const) : int, node : int]
  *     nodeType: Builtin
  *     signature: Object (NodeFactory<?>, int)
  *   - Instruction c.SLInvoke
  *     kind: CUSTOM
- *     encoding: [69 : short, node : int]
+ *     encoding: [57 : short, node : int]
  *     nodeType: SLInvoke
  *     signature: Object (Object, Object[]...)
  *   - Instruction c.SLAdd
  *     kind: CUSTOM
- *     encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [58 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLAddNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLAdd$Long
  *     kind: CUSTOM
- *     encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [59 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLAddNode
  *     signature: long (long, long)
  *   - Instruction c.SLAdd$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [72 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [60 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLAddNode
  *     signature: long (long, long)
  *   - Instruction c.SLDiv
  *     kind: CUSTOM
- *     encoding: [73 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [61 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLDivNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLDiv$Long
  *     kind: CUSTOM
- *     encoding: [74 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [62 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLDivNode
  *     signature: long (long, long)
  *   - Instruction c.SLDiv$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [75 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [63 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLDivNode
  *     signature: long (long, long)
  *   - Instruction c.SLEqual
  *     kind: CUSTOM
- *     encoding: [76 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [64 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLEqual$Long
  *     kind: CUSTOM
- *     encoding: [77 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [65 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLEqual$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [78 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [66 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLEqual$Boolean
  *     kind: CUSTOM
- *     encoding: [79 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [67 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (boolean, boolean)
  *   - Instruction c.SLEqual$Boolean$unboxed
  *     kind: CUSTOM
- *     encoding: [80 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [68 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (boolean, boolean)
  *   - Instruction c.SLEqual$unboxed
  *     kind: CUSTOM
- *     encoding: [81 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLEqualNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLLessOrEqual
  *     kind: CUSTOM
- *     encoding: [82 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessOrEqualNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLLessOrEqual$Long
  *     kind: CUSTOM
- *     encoding: [83 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessOrEqualNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLLessOrEqual$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [84 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [72 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessOrEqualNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLLessOrEqual$SLBigInteger#InteropBigInteger0#InteropBigInteger1
  *     kind: CUSTOM
- *     encoding: [85 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [73 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessOrEqualNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLLessOrEqual$SLBigInteger#InteropBigInteger0#InteropBigInteger1$unboxed
  *     kind: CUSTOM
- *     encoding: [86 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [74 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessOrEqualNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLLessThan
  *     kind: CUSTOM
- *     encoding: [87 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [75 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessThanNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLLessThan$Long
  *     kind: CUSTOM
- *     encoding: [88 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [76 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessThanNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLLessThan$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [89 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [77 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessThanNode
  *     signature: boolean (long, long)
  *   - Instruction c.SLLessThan$unboxed
  *     kind: CUSTOM
- *     encoding: [90 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [78 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLLessThanNode
  *     signature: boolean (Object, Object)
  *   - Instruction c.SLLogicalNot
  *     kind: CUSTOM
- *     encoding: [91 : short, node : int, child0 (bci) : int]
+ *     encoding: [79 : short, node : int, child0 (bci) : int]
  *     nodeType: SLLogicalNotNode
  *     signature: boolean (Object)
  *   - Instruction c.SLLogicalNot$Boolean
  *     kind: CUSTOM
- *     encoding: [92 : short, node : int, child0 (bci) : int]
+ *     encoding: [80 : short, node : int, child0 (bci) : int]
  *     nodeType: SLLogicalNotNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLLogicalNot$Boolean$unboxed
  *     kind: CUSTOM
- *     encoding: [93 : short, node : int, child0 (bci) : int]
+ *     encoding: [81 : short, node : int, child0 (bci) : int]
  *     nodeType: SLLogicalNotNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLLogicalNot$unboxed
  *     kind: CUSTOM
- *     encoding: [94 : short, node : int, child0 (bci) : int]
+ *     encoding: [82 : short, node : int, child0 (bci) : int]
  *     nodeType: SLLogicalNotNode
  *     signature: boolean (Object)
  *   - Instruction c.SLMul
  *     kind: CUSTOM
- *     encoding: [95 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [83 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLMulNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLMul$Long
  *     kind: CUSTOM
- *     encoding: [96 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [84 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLMulNode
  *     signature: long (long, long)
  *   - Instruction c.SLMul$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [97 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [85 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLMulNode
  *     signature: long (long, long)
  *   - Instruction c.SLReadProperty
  *     kind: CUSTOM
- *     encoding: [98 : short, node : int]
+ *     encoding: [86 : short, node : int]
  *     nodeType: SLReadPropertyNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLSub
  *     kind: CUSTOM
- *     encoding: [99 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [87 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLSubNode
  *     signature: Object (Object, Object)
  *   - Instruction c.SLSub$Long
  *     kind: CUSTOM
- *     encoding: [100 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [88 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLSubNode
  *     signature: long (long, long)
  *   - Instruction c.SLSub$Long$unboxed
  *     kind: CUSTOM
- *     encoding: [101 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [89 : short, node : int, child0 (bci) : int, child1 (bci) : int]
  *     nodeType: SLSubNode
  *     signature: long (long, long)
  *   - Instruction c.SLWriteProperty
  *     kind: CUSTOM
- *     encoding: [102 : short, node : int]
+ *     encoding: [90 : short, node : int]
  *     nodeType: SLWritePropertyNode
  *     signature: Object (Object, Object, Object)
  *   - Instruction c.SLUnbox
  *     kind: CUSTOM
- *     encoding: [103 : short, node : int, child0 (bci) : int]
+ *     encoding: [91 : short, node : int, child0 (bci) : int]
  *     nodeType: SLUnboxNode
  *     signature: Object (Object)
  *   - Instruction c.SLUnbox$FromBoolean
  *     kind: CUSTOM
- *     encoding: [104 : short, node : int, child0 (bci) : int]
+ *     encoding: [92 : short, node : int, child0 (bci) : int]
  *     nodeType: SLUnboxNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLUnbox$FromBoolean$unboxed
  *     kind: CUSTOM
- *     encoding: [105 : short, node : int, child0 (bci) : int]
+ *     encoding: [93 : short, node : int, child0 (bci) : int]
  *     nodeType: SLUnboxNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLUnbox$FromLong
  *     kind: CUSTOM
- *     encoding: [106 : short, node : int, child0 (bci) : int]
+ *     encoding: [94 : short, node : int, child0 (bci) : int]
  *     nodeType: SLUnboxNode
  *     signature: long (long)
  *   - Instruction c.SLUnbox$FromLong$unboxed
  *     kind: CUSTOM
- *     encoding: [107 : short, node : int, child0 (bci) : int]
+ *     encoding: [95 : short, node : int, child0 (bci) : int]
  *     nodeType: SLUnboxNode
  *     signature: long (long)
  *   - Instruction c.SLFunctionLiteral
  *     kind: CUSTOM
- *     encoding: [108 : short, node : int]
+ *     encoding: [96 : short, node : int]
  *     nodeType: SLFunctionLiteralNode
  *     signature: SLFunction (TruffleString)
  *   - Instruction c.SLToBoolean
  *     kind: CUSTOM
- *     encoding: [109 : short, node : int, child0 (bci) : int]
+ *     encoding: [97 : short, node : int, child0 (bci) : int]
  *     nodeType: SLToBooleanNode
  *     signature: boolean (Object)
  *   - Instruction c.SLToBoolean$Boolean
  *     kind: CUSTOM
- *     encoding: [110 : short, node : int, child0 (bci) : int]
+ *     encoding: [98 : short, node : int, child0 (bci) : int]
  *     nodeType: SLToBooleanNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLToBoolean$Boolean$unboxed
  *     kind: CUSTOM
- *     encoding: [111 : short, node : int, child0 (bci) : int]
+ *     encoding: [99 : short, node : int, child0 (bci) : int]
  *     nodeType: SLToBooleanNode
  *     signature: boolean (boolean)
  *   - Instruction c.SLToBoolean$unboxed
  *     kind: CUSTOM
- *     encoding: [112 : short, node : int, child0 (bci) : int]
+ *     encoding: [100 : short, node : int, child0 (bci) : int]
  *     nodeType: SLToBooleanNode
  *     signature: boolean (Object)
  *   - Instruction sc.SLAnd
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [113 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [101 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: boolean (boolean, boolean)
  *   - Instruction sc.SLOr
  *     kind: CUSTOM_SHORT_CIRCUIT
- *     encoding: [114 : short, branch_target (bci) : int, branch_profile : int]
+ *     encoding: [102 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: boolean (boolean, boolean)
  *   - Instruction merge.conditional
  *     kind: MERGE_CONDITIONAL
- *     encoding: [115 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [103 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, Object)
  *   - Instruction merge.conditional$Long
  *     kind: MERGE_CONDITIONAL
- *     encoding: [116 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [104 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, long)
  *   - Instruction merge.conditional$Long$unboxed
  *     kind: MERGE_CONDITIONAL
- *     encoding: [117 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [105 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: long (boolean, long)
  *   - Instruction merge.conditional$Boolean
  *     kind: MERGE_CONDITIONAL
- *     encoding: [118 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [106 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, boolean)
  *   - Instruction merge.conditional$Boolean$unboxed
  *     kind: MERGE_CONDITIONAL
- *     encoding: [119 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [107 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: boolean (boolean, boolean)
  *   - Instruction merge.conditional$generic
  *     kind: MERGE_CONDITIONAL
- *     encoding: [120 : short, child0 (bci) : int, child1 (bci) : int]
+ *     encoding: [108 : short, child0 (bci) : int, child1 (bci) : int]
  *     signature: Object (boolean, Object)
  *   - Instruction invalidate0
  *     kind: INVALIDATE
- *     encoding: [121 : short]
+ *     encoding: [109 : short]
  *     signature: void ()
  *   - Instruction invalidate1
  *     kind: INVALIDATE
- *     encoding: [122 : short, invalidated0 (short) : short]
+ *     encoding: [110 : short, invalidated0 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate2
  *     kind: INVALIDATE
- *     encoding: [123 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+ *     encoding: [111 : short, invalidated0 (short) : short, invalidated1 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate3
  *     kind: INVALIDATE
- *     encoding: [124 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+ *     encoding: [112 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate4
  *     kind: INVALIDATE
- *     encoding: [125 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+ *     encoding: [113 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate5
  *     kind: INVALIDATE
- *     encoding: [126 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+ *     encoding: [114 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
  *     signature: void ()
  *   - Instruction invalidate6
  *     kind: INVALIDATE
- *     encoding: [127 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
+ *     encoding: [115 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
  *     signature: void ()
  */
 @SuppressWarnings({"javadoc", "unused", "deprecation", "static-method"})
@@ -1234,9 +1182,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             case Instructions.LOAD_LOCAL$LONG :
             case Instructions.LOAD_LOCAL$LONG$UNBOXED :
                 return Instructions.LOAD_LOCAL$LONG$UNBOXED;
-            case Instructions.LOAD_LOCAL_MAT$LONG :
-            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                return Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED;
             case Instructions.TAG_LEAVE$LONG :
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
                 return Instructions.TAG_LEAVE$LONG$UNBOXED;
@@ -1268,7 +1213,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             case Instructions.LOAD_CONSTANT$LONG :
             case Instructions.LOAD_ARGUMENT$LONG :
             case Instructions.LOAD_LOCAL$LONG$UNBOXED :
-            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
             case Instructions.SL_ADD$LONG$UNBOXED_ :
             case Instructions.SL_DIV$LONG$UNBOXED_ :
@@ -1293,9 +1237,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             case Instructions.LOAD_LOCAL$BOOLEAN :
             case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
                 return Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED;
-            case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                return Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED;
             case Instructions.TAG_LEAVE$BOOLEAN :
             case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
                 return Instructions.TAG_LEAVE$BOOLEAN$UNBOXED;
@@ -1348,7 +1289,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             case Instructions.LOAD_CONSTANT$BOOLEAN :
             case Instructions.LOAD_ARGUMENT$BOOLEAN :
             case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
-            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
             case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
             case Instructions.SL_EQUAL$LONG$UNBOXED_ :
             case Instructions.SL_EQUAL$BOOLEAN$UNBOXED_ :
@@ -1385,10 +1325,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 return Instructions.LOAD_LOCAL$LONG;
             case Instructions.LOAD_LOCAL$BOOLEAN$UNBOXED :
                 return Instructions.LOAD_LOCAL$BOOLEAN;
-            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                return Instructions.LOAD_LOCAL_MAT$LONG;
-            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                return Instructions.LOAD_LOCAL_MAT$BOOLEAN;
             case Instructions.TAG_LEAVE$LONG$UNBOXED :
                 return Instructions.TAG_LEAVE$LONG;
             case Instructions.TAG_LEAVE$BOOLEAN$UNBOXED :
@@ -1514,12 +1450,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.SL_FUNCTION_LITERAL_ :
                 case Instructions.INVALIDATE2 :
                     return 6;
-                case Instructions.LOAD_LOCAL_MAT :
-                case Instructions.LOAD_LOCAL_MAT$LONG :
-                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$GENERIC :
                 case Instructions.INVALIDATE3 :
                     return 8;
                 case Instructions.BRANCH_BACKWARD :
@@ -1560,12 +1490,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.MERGE_CONDITIONAL$GENERIC :
                 case Instructions.INVALIDATE4 :
                     return 10;
-                case Instructions.STORE_LOCAL_MAT :
-                case Instructions.STORE_LOCAL_MAT$LONG :
-                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$GENERIC :
                 case Instructions.INVALIDATE5 :
                     return 12;
                 case Instructions.BRANCH_FALSE :
@@ -1677,27 +1601,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
                         new LocalIndexArgument(bytecode, "local_index", bci + 4),
                         new BytecodeIndexArgument(bytecode, "child0", bci + 6));
-                case Instructions.LOAD_LOCAL_MAT :
-                case Instructions.LOAD_LOCAL_MAT$LONG :
-                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                    return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
-                        new IntegerArgument(bytecode, "root_index", bci + 4, 2),
-                        new LocalIndexArgument(bytecode, "local_index", bci + 6));
-                case Instructions.STORE_LOCAL_MAT :
-                case Instructions.STORE_LOCAL_MAT$LONG :
-                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$GENERIC :
-                    return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2),
-                        new IntegerArgument(bytecode, "root_index", bci + 4, 2),
-                        new LocalIndexArgument(bytecode, "local_index", bci + 6),
-                        new BytecodeIndexArgument(bytecode, "child0", bci + 8));
                 case Instructions.TAG_ENTER :
                 case Instructions.TAG_LEAVE_VOID :
                     return List.of(
@@ -1896,30 +1799,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                     return "store.local$Boolean$Boolean";
                 case Instructions.STORE_LOCAL$GENERIC :
                     return "store.local$generic";
-                case Instructions.LOAD_LOCAL_MAT :
-                    return "load.local.mat";
-                case Instructions.LOAD_LOCAL_MAT$LONG :
-                    return "load.local.mat$Long";
-                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    return "load.local.mat$Long$unboxed";
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    return "load.local.mat$Boolean";
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    return "load.local.mat$Boolean$unboxed";
-                case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                    return "load.local.mat$generic";
-                case Instructions.STORE_LOCAL_MAT :
-                    return "store.local.mat";
-                case Instructions.STORE_LOCAL_MAT$LONG :
-                    return "store.local.mat$Long";
-                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    return "store.local.mat$Long$Long";
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    return "store.local.mat$Boolean";
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    return "store.local.mat$Boolean$Boolean";
-                case Instructions.STORE_LOCAL_MAT$GENERIC :
-                    return "store.local.mat$generic";
                 case Instructions.TAG_ENTER :
                     return "tag.enter";
                 case Instructions.TAG_LEAVE :
@@ -2125,18 +2004,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Instructions.STORE_LOCAL$BOOLEAN :
                 case Instructions.STORE_LOCAL$BOOLEAN$BOOLEAN :
                 case Instructions.STORE_LOCAL$GENERIC :
-                case Instructions.LOAD_LOCAL_MAT :
-                case Instructions.LOAD_LOCAL_MAT$LONG :
-                case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                case Instructions.STORE_LOCAL_MAT :
-                case Instructions.STORE_LOCAL_MAT$LONG :
-                case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                case Instructions.STORE_LOCAL_MAT$GENERIC :
                 case Instructions.LOAD_VARIADIC_0 :
                 case Instructions.LOAD_VARIADIC_1 :
                 case Instructions.LOAD_VARIADIC_2 :
@@ -2724,12 +2591,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE2);
                         bci += 6;
                         break;
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE3 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE3);
                         bci += 8;
@@ -2774,12 +2635,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE4);
                         bci += 10;
                         break;
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE5 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE5);
                         bci += 12;
@@ -3012,48 +2867,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 10;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT :
-                        case Instructions.LOAD_LOCAL_MAT$LONG :
-                        case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                        case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                        {
-                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-                            root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
-                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            short local_index = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-                            if (local_index < 0 || local_index >= root.numLocals) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            bci = bci + 8;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT :
-                        case Instructions.STORE_LOCAL_MAT$LONG :
-                        case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                        case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                        case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                        case Instructions.STORE_LOCAL_MAT$GENERIC :
-                        {
-                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-                            root = this.getRoot().getBytecodeRootNodeImpl(BYTES.getShort(bc, bci + 4 /* imm root_index */));
-                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            short local_index = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-                            if (local_index < 0 || local_index >= root.numLocals) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            int child0 = BYTES.getIntUnaligned(bc, bci + 8 /* imm child0 */);
-                            if (child0 < 0 || child0 >= bc.length) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. bytecode index is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            bci = bci + 12;
                             break;
                         }
                         case Instructions.TAG_ENTER :
@@ -3459,7 +3272,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 throw new IllegalArgumentException("Bytecode index out of range " + bci);
             }
             int op = readValidBytecode(bc, bci);
-            if (op < 0 || op > 127) {
+            if (op < 0 || op > 115) {
                 throw new IllegalArgumentException("Invalid op at bytecode index " + op);
             }
             return true;
@@ -3693,12 +3506,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 6;
                         stableBci += 6;
                         break;
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         stableBci += 8;
@@ -3737,12 +3544,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 10;
                         stableBci += 10;
                         break;
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE5 :
                         bci += 12;
                         stableBci += 12;
@@ -3860,12 +3661,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 6;
                         stableBci += 6;
                         break;
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         stableBci += 8;
@@ -3904,12 +3699,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 10;
                         stableBci += 10;
                         break;
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE5 :
                         bci += 12;
                         stableBci += 12;
@@ -4149,12 +3938,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                     case Instructions.INVALIDATE2 :
                         bci += 6;
                         break;
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE3 :
                         bci += 8;
                         break;
@@ -4180,12 +3963,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                     case Instructions.INVALIDATE4 :
                         bci += 10;
                         break;
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE5 :
                         bci += 12;
                         break;
@@ -4597,86 +4374,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                             FRAMES.clear(frame, sp - 1);
                             sp -= 1;
                             bci += 10;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT :
-                        {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            doLoadLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT$LONG :
-                        {
-                            doLoadLocalMat$Long(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                        {
-                            doLoadLocalMat$Long$unboxed(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                        {
-                            doLoadLocalMat$Boolean(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                        {
-                            doLoadLocalMat$Boolean$unboxed(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                        {
-                            doLoadLocalMat$generic(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                            bci += 8;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT :
-                        {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            doStoreLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp, FRAMES.getObject(frame, sp - 1));
-                            sp -= 2;
-                            bci += 12;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT$LONG :
-                        {
-                            doStoreLocalMat$Long(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                            sp -= 2;
-                            bci += 12;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                        {
-                            doStoreLocalMat$Long$Long(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                            sp -= 2;
-                            bci += 12;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                        {
-                            doStoreLocalMat$Boolean(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                            sp -= 2;
-                            bci += 12;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                        {
-                            doStoreLocalMat$Boolean$Boolean(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                            sp -= 2;
-                            bci += 12;
-                            break;
-                        }
-                        case Instructions.STORE_LOCAL_MAT$GENERIC :
-                        {
-                            doStoreLocalMat$generic(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                            sp -= 2;
-                            bci += 12;
                             break;
                         }
                         case Instructions.TAG_ENTER :
@@ -5598,343 +5295,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             }
             FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(frame, sp - 1);
-        }
-
-        private void doLoadLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            Object value;
-            short newInstruction;
-            try {
-                switch (tag) {
-                    case FrameTags.LONG :
-                        newInstruction = Instructions.LOAD_LOCAL_MAT$LONG;
-                        value = FRAMES.expectLong(frame, slot);
-                        break;
-                    case FrameTags.BOOLEAN :
-                        newInstruction = Instructions.LOAD_LOCAL_MAT$BOOLEAN;
-                        value = FRAMES.expectBoolean(frame, slot);
-                        break;
-                    case FrameTags.OBJECT :
-                    case FrameTags.ILLEGAL :
-                        newInstruction = Instructions.LOAD_LOCAL_MAT$GENERIC;
-                        value = FRAMES.expectObject(frame, slot);
-                        break;
-                    default :
-                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                }
-            } catch (UnexpectedResultException ex) {
-                newInstruction = Instructions.LOAD_LOCAL_MAT$GENERIC;
-                value = ex.getResult();
-            }
-            BYTES.putShort(bc, bci, newInstruction);
-            FRAMES.setObject(stackFrame, sp - 1, value);
-        }
-
-        private void doLoadLocalMat$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            try {
-                FRAMES.setObject(stackFrame, sp - 1, FRAMES.expectLong(frame, slot));
-            } catch (UnexpectedResultException ex) {
-                doLoadLocalMat(stackFrame, frame, bc, bci, sp);
-            }
-        }
-
-        private void doLoadLocalMat$Long$unboxed(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            try {
-                FRAMES.setLong(stackFrame, sp - 1, FRAMES.expectLong(frame, slot));
-            } catch (UnexpectedResultException ex) {
-                doLoadLocalMat(stackFrame, frame, bc, bci, sp);
-            }
-        }
-
-        private void doLoadLocalMat$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            try {
-                FRAMES.setObject(stackFrame, sp - 1, FRAMES.expectBoolean(frame, slot));
-            } catch (UnexpectedResultException ex) {
-                doLoadLocalMat(stackFrame, frame, bc, bci, sp);
-            }
-        }
-
-        private void doLoadLocalMat$Boolean$unboxed(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            try {
-                FRAMES.setBoolean(stackFrame, sp - 1, FRAMES.expectBoolean(frame, slot));
-            } catch (UnexpectedResultException ex) {
-                doLoadLocalMat(stackFrame, frame, bc, bci, sp);
-            }
-        }
-
-        private void doLoadLocalMat$generic(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            FRAMES.setObject(stackFrame, sp - 1, FRAMES.requireObject(frame, slot));
-        }
-
-        private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp, Object local) {
-            short newInstruction;
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            int operandIndex = BYTES.getIntUnaligned(bc, bci + 8 /* imm child0 */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            short newOperand;
-            short operand = BYTES.getShort(bc, operandIndex);
-            byte oldTag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            byte newTag;
-            if (local instanceof Long) {
-                switch (oldTag) {
-                    case FrameTags.LONG :
-                    case FrameTags.ILLEGAL :
-                        if ((newOperand = applyQuickeningLong(operand)) != -1) {
-                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG$LONG;
-                        } else {
-                            newInstruction = Instructions.STORE_LOCAL_MAT$LONG;
-                            newOperand = operand;
-                        }
-                        newTag = FrameTags.LONG;
-                        FRAMES.setLong(frame, slot, (long) local);
-                        break;
-                    case FrameTags.BOOLEAN :
-                    case FrameTags.OBJECT :
-                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                        newOperand = undoQuickening(operand);
-                        newTag = FrameTags.OBJECT;
-                        FRAMES.setObject(frame, slot, local);
-                        break;
-                    default :
-                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                }
-            } else if (local instanceof Boolean) {
-                switch (oldTag) {
-                    case FrameTags.BOOLEAN :
-                    case FrameTags.ILLEGAL :
-                        if ((newOperand = applyQuickeningBoolean(operand)) != -1) {
-                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN;
-                        } else {
-                            newInstruction = Instructions.STORE_LOCAL_MAT$BOOLEAN;
-                            newOperand = operand;
-                        }
-                        newTag = FrameTags.BOOLEAN;
-                        FRAMES.setBoolean(frame, slot, (boolean) local);
-                        break;
-                    case FrameTags.LONG :
-                    case FrameTags.OBJECT :
-                        newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                        newOperand = undoQuickening(operand);
-                        newTag = FrameTags.OBJECT;
-                        FRAMES.setObject(frame, slot, local);
-                        break;
-                    default :
-                        throw CompilerDirectives.shouldNotReachHere("Unexpected frame tag.");
-                }
-            } else {
-                newInstruction = Instructions.STORE_LOCAL_MAT$GENERIC;
-                newOperand = undoQuickening(operand);
-                newTag = FrameTags.OBJECT;
-                FRAMES.setObject(frame, slot, local);
-            }
-            if (newTag != oldTag) {
-                bytecodeNode.setCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex, newTag);
-            }
-            BYTES.putShort(bc, operandIndex, newOperand);
-            BYTES.putShort(bc, bci, newInstruction);
-            FRAMES.clear(stackFrame, sp - 1);
-            FRAMES.clear(stackFrame, sp - 2);
-        }
-
-        private void doStoreLocalMat$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local;
-            try {
-                local = FRAMES.expectObject(stackFrame, sp - 1);
-            } catch (UnexpectedResultException ex) {
-                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
-                return;
-            }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            if (tag == FrameTags.LONG) {
-                try {
-                    FRAMES.setLong(frame, slot, SLBytecodeRootNodeGen.expectLong(local));
-                    FRAMES.clear(stackFrame, sp - 1);
-                    if (CompilerDirectives.inCompiledCode()) {
-                        // Clear primitive for compiler liveness analysis
-                        FRAMES.clear(stackFrame, sp - 2);
-                    }
-                    return;
-                } catch (UnexpectedResultException ex) {
-                    local = ex.getResult();
-                    // fall through to slow-path
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
-        }
-
-        private void doStoreLocalMat$Long$Long(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            long local;
-            try {
-                local = FRAMES.expectLong(stackFrame, sp - 1);
-            } catch (UnexpectedResultException ex) {
-                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
-                return;
-            }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            if (tag == FrameTags.LONG) {
-                FRAMES.setLong(frame, slot, local);
-                FRAMES.clear(stackFrame, sp - 1);
-                if (CompilerDirectives.inCompiledCode()) {
-                    // Clear primitive for compiler liveness analysis
-                    FRAMES.clear(stackFrame, sp - 2);
-                }
-                return;
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
-        }
-
-        private void doStoreLocalMat$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local;
-            try {
-                local = FRAMES.expectObject(stackFrame, sp - 1);
-            } catch (UnexpectedResultException ex) {
-                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
-                return;
-            }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            if (tag == FrameTags.BOOLEAN) {
-                try {
-                    FRAMES.setBoolean(frame, slot, SLBytecodeRootNodeGen.expectBoolean(local));
-                    FRAMES.clear(stackFrame, sp - 1);
-                    if (CompilerDirectives.inCompiledCode()) {
-                        // Clear primitive for compiler liveness analysis
-                        FRAMES.clear(stackFrame, sp - 2);
-                    }
-                    return;
-                } catch (UnexpectedResultException ex) {
-                    local = ex.getResult();
-                    // fall through to slow-path
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
-        }
-
-        private void doStoreLocalMat$Boolean$Boolean(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            boolean local;
-            try {
-                local = FRAMES.expectBoolean(stackFrame, sp - 1);
-            } catch (UnexpectedResultException ex) {
-                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
-                return;
-            }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            byte tag = bytecodeNode.getCachedLocalTagInternal(bytecodeNode.getLocalTags(), localIndex);
-            if (tag == FrameTags.BOOLEAN) {
-                FRAMES.setBoolean(frame, slot, local);
-                FRAMES.clear(stackFrame, sp - 1);
-                if (CompilerDirectives.inCompiledCode()) {
-                    // Clear primitive for compiler liveness analysis
-                    FRAMES.clear(stackFrame, sp - 2);
-                }
-                return;
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            doStoreLocalMat(stackFrame, frame, bc, bci, sp, local);
-        }
-
-        private void doStoreLocalMat$generic(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local;
-            try {
-                local = FRAMES.expectObject(stackFrame, sp - 1);
-            } catch (UnexpectedResultException ex) {
-                doStoreLocalMat(stackFrame, frame, bc, bci, sp, ex.getResult());
-                return;
-            }
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            int localOffset = slot - USER_LOCALS_START_INDEX;
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            bytecodeNode.setLocalValueInternal(frame, localOffset, localIndex, local);
-            FRAMES.clear(stackFrame, sp - 1);
-            FRAMES.clear(stackFrame, sp - 2);
         }
 
         @InliningCutoff
@@ -6936,23 +6296,11 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 4;
                         continue loop;
                     }
-                    case Instructions.LOAD_LOCAL_MAT :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE3 :
                     {
                         bci += 8;
                         continue loop;
                     }
-                    case Instructions.STORE_LOCAL_MAT :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
                     case Instructions.INVALIDATE5 :
                     {
                         bci += 12;
@@ -7382,14 +6730,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         BYTES.putShort(copy, bci, Instructions.POP);
                         bci += 6;
                         break;
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                    case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$LONG :
-                    case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                    case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                        BYTES.putShort(copy, bci, Instructions.LOAD_LOCAL_MAT);
-                        bci += 8;
-                        break;
                     case Instructions.MERGE_CONDITIONAL$BOOLEAN :
                     case Instructions.MERGE_CONDITIONAL$BOOLEAN$UNBOXED :
                     case Instructions.MERGE_CONDITIONAL$LONG :
@@ -7413,14 +6753,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                     case Instructions.TAG_LEAVE$GENERIC :
                         BYTES.putShort(copy, bci, Instructions.TAG_LEAVE);
                         bci += 10;
-                        break;
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                    case Instructions.STORE_LOCAL_MAT$LONG :
-                    case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                    case Instructions.STORE_LOCAL_MAT$GENERIC :
-                        BYTES.putShort(copy, bci, Instructions.STORE_LOCAL_MAT);
-                        bci += 12;
                         break;
                     case Instructions.BRANCH_FALSE$BOOLEAN :
                     case Instructions.BRANCH_FALSE$GENERIC :
@@ -7530,7 +6862,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 6;
                         break;
                     case Instructions.INVALIDATE3 :
-                    case Instructions.LOAD_LOCAL_MAT :
                         bci += 8;
                         break;
                     case Instructions.BRANCH_BACKWARD :
@@ -7547,7 +6878,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                         bci += 10;
                         break;
                     case Instructions.INVALIDATE5 :
-                    case Instructions.STORE_LOCAL_MAT :
                         bci += 12;
                         break;
                     case Instructions.BRANCH_FALSE :
@@ -7727,29 +7057,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                                 FRAMES.clear(frame, sp - 1);
                                 sp -= 1;
                                 bci += 10;
-                                break;
-                            }
-                            case Instructions.LOAD_LOCAL_MAT :
-                            case Instructions.LOAD_LOCAL_MAT$LONG :
-                            case Instructions.LOAD_LOCAL_MAT$LONG$UNBOXED :
-                            case Instructions.LOAD_LOCAL_MAT$BOOLEAN :
-                            case Instructions.LOAD_LOCAL_MAT$BOOLEAN$UNBOXED :
-                            case Instructions.LOAD_LOCAL_MAT$GENERIC :
-                            {
-                                doLoadLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 1)), bc, bci, sp);
-                                bci += 8;
-                                break;
-                            }
-                            case Instructions.STORE_LOCAL_MAT :
-                            case Instructions.STORE_LOCAL_MAT$LONG :
-                            case Instructions.STORE_LOCAL_MAT$LONG$LONG :
-                            case Instructions.STORE_LOCAL_MAT$BOOLEAN :
-                            case Instructions.STORE_LOCAL_MAT$BOOLEAN$BOOLEAN :
-                            case Instructions.STORE_LOCAL_MAT$GENERIC :
-                            {
-                                doStoreLocalMat(frame, ((VirtualFrame) FRAMES.uncheckedGetObject(frame, sp - 2)), bc, bci, sp);
-                                sp -= 2;
-                                bci += 12;
                                 break;
                             }
                             case Instructions.TAG_ENTER :
@@ -8170,33 +7477,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             FRAMES.clear(frame, sp - 1);
         }
 
-        private void doLoadLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            FRAMES.setObject(stackFrame, sp - 1, FRAMES.requireObject(frame, slot));
-        }
-
-        private void doStoreLocalMat(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            Object local = FRAMES.requireObject(stackFrame, sp - 1);
-            int slot = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-            int localRootIndex = BYTES.getShort(bc, bci + 4 /* imm root_index */);
-            int localIndex = BYTES.getShort(bc, bci + 6 /* imm local_index */);
-            int localOffset = slot - USER_LOCALS_START_INDEX;
-            SLBytecodeRootNodeGen localRoot = this.getRoot().getBytecodeRootNodeImpl(localRootIndex);
-            if (localRoot.getFrameDescriptor() != frame.getFrameDescriptor()) {
-                throw new IllegalArgumentException("Materialized frame belongs to the wrong root node.");
-            }
-            AbstractBytecodeNode bytecodeNode = localRoot.getBytecodeNodeImpl();
-            bytecodeNode.setLocalValueInternal(frame, localOffset, localIndex, local);
-            FRAMES.clear(stackFrame, sp - 1);
-            FRAMES.clear(stackFrame, sp - 2);
-        }
-
         @InliningCutoff
         private void doTagEnter(VirtualFrame frame, byte[] bc, int bci, int sp) {
             TagNode tagNode = ACCESS.uncheckedCast(ACCESS.readObject(tagRoot.tagNodes, BYTES.getIntUnaligned(bc, bci + 2 /* imm tag */)), TagNode.class);
@@ -8572,7 +7852,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
     public static final class Builder extends BytecodeBuilder {
 
         private static final byte UNINITIALIZED = -1;
-        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "StoreLocal", "LoadLocalMaterialized", "StoreLocalMaterialized", "Return", "Source", "SourceSection", "Tag", "SLAlwaysHalt", "SLLoadArgument", "Builtin", "SLInvoke", "SLAdd", "SLDiv", "SLEqual", "SLLessOrEqual", "SLLessThan", "SLLogicalNot", "SLMul", "SLReadProperty", "SLSub", "SLWriteProperty", "SLUnbox", "SLFunctionLiteral", "SLToBoolean", "SLAnd", "SLOr"};
+        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "StoreLocal", "Return", "Source", "SourceSection", "Tag", "SLAlwaysHalt", "SLLoadArgument", "Builtin", "SLInvoke", "SLAdd", "SLDiv", "SLEqual", "SLLessOrEqual", "SLLessThan", "SLLogicalNot", "SLMul", "SLReadProperty", "SLSub", "SLWriteProperty", "SLUnbox", "SLFunctionLiteral", "SLToBoolean", "SLAnd", "SLOr"};
         private static final Class<?>[] TAGS_ROOT_TAG = new Class<?>[]{RootTag.class};
         private static final Class<?>[] TAGS_ALWAYS_HALT = new Class<?>[]{AlwaysHalt.class};
 
@@ -8830,8 +8110,8 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
          * The result of {@link Node#getSourceSection} on the generated root is undefined if there is no enclosing SourceSection operation.
          * <p>
          * This method can also be called inside of another root operation. Bytecode generation for the outer root node suspends until generation for the inner root node finishes.
-         * The inner root node is not lexically nested in the first (you can invoke the inner root node independently), but the inner root *can* manipulate the outer root's locals using
-         * materialized local accesses if the outer frame is provided to it.
+         * The inner root node is not lexically nested in the outer (you can invoke the inner root node independently), and it does not have access to the outer root's locals (if it needs
+         * access to outer locals, consider {@link com.oracle.truffle.api.bytecode.GenerateBytecode#enableMaterializedLocalAccesses enabling materialized local accesses}).
          * Multiple root nodes can be obtained from the {@link BytecodeNodes} object in the order of their {@link #beginRoot} calls.
          *
          */
@@ -9725,7 +9005,7 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             }
             RootData rootOperationData = getCurrentRootOperationData();
             if (rootOperationData.index != localImpl.rootIndex) {
-                throw failArgument("Local variable must belong to the current root node. Consider using materialized local accesses to access locals from an outer root node.");
+                throw failArgument("Local variable must belong to the current root node. Consider using materialized local accesses (i.e., LoadLocalMaterialized/StoreLocalMaterialized or MaterializedLocalAccessor) to access locals from an outer root node. Materialized local accesses are currently disabled and can be enabled using the enableMaterializedLocalAccesses field of @GenerateBytecode.");
             }
         }
 
@@ -9811,131 +9091,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             }
             doEmitInstructionSSI(Instructions.STORE_LOCAL, -1, operationData.local.frameIndex, operationData.local.localIndex, operationData.childBci);
             afterChild(false, bci - 10);
-        }
-
-        private void validateMaterializedLocalScope(BytecodeLocal local) {
-            BytecodeLocalImpl localImpl = (BytecodeLocalImpl) local;
-            if (!localImpl.scope.valid) {
-                throw failArgument("Local variable scope of this local is no longer valid.");
-            }
-        }
-
-        /**
-         * Begins a built-in LoadLocalMaterialized operation.
-         * <p>
-         * Signature: LoadLocalMaterialized(frame) -> Object
-         * <p>
-         * LoadLocalMaterialized reads {@code local} from the frame produced by {@code frame}.
-         * This operation can be used to read locals from materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-         * The given local must be in scope at the point that LoadLocalMaterialized executes, otherwise it may produce unexpected values.
-         * The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
-         * <p>
-         * A corresponding call to {@link #endLoadLocalMaterialized} is required to end the operation.
-         *
-         * @param local the local to load.
-         */
-        public void beginLoadLocalMaterialized(BytecodeLocal local) {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_LOAD_LOCAL_MATERIALIZED);
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).contextDepth));
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).localIndex));
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            validateRootOperationBegin();
-            validateMaterializedLocalScope(local);
-            beforeChild();
-            BytecodeLocalImpl operationData = (BytecodeLocalImpl)local;
-            beginOperation(Operations.LOADLOCALMATERIALIZED, operationData);
-        }
-
-        /**
-         * Ends a built-in LoadLocalMaterialized operation.
-         * <p>
-         * Signature: LoadLocalMaterialized(frame) -> Object
-         *
-         * @see #beginLoadLocalMaterialized
-         */
-        public void endLoadLocalMaterialized() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_LOAD_LOCAL_MATERIALIZED);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            OperationStackEntry operation = endOperation(Operations.LOADLOCALMATERIALIZED);
-            if (operation.childCount != 1) {
-                throw failState("Operation LoadLocalMaterialized expected exactly 1 child, but " + operation.childCount + " provided. This is probably a bug in the parser.");
-            }
-            if (!(operation.data instanceof BytecodeLocalImpl operationData)) {
-                throw assertionFailed("Data class BytecodeLocalImpl expected, but was " + operation.data);
-            }
-            doEmitInstructionSSS(Instructions.LOAD_LOCAL_MAT, 0, operationData.frameIndex, operationData.rootIndex, operationData.localIndex);
-            afterChild(true, bci - 8);
-        }
-
-        /**
-         * Begins a built-in StoreLocalMaterialized operation.
-         * <p>
-         * Signature: StoreLocalMaterialized(frame, value) -> void
-         * <p>
-         * StoreLocalMaterialized writes the value produced by {@code value} into the {@code local} in the frame produced by {@code frame}.
-         * This operation can be used to store locals into materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-         * The given local must be in scope at the point that StoreLocalMaterialized executes, otherwise it may produce unexpected values.
-         * The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
-         * <p>
-         * A corresponding call to {@link #endStoreLocalMaterialized} is required to end the operation.
-         *
-         * @param local the local to store to.
-         */
-        public void beginStoreLocalMaterialized(BytecodeLocal local) {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_STORE_LOCAL_MATERIALIZED);
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).contextDepth));
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).localIndex));
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            validateRootOperationBegin();
-            validateMaterializedLocalScope(local);
-            beforeChild();
-            StoreLocalData operationData = new StoreLocalData((BytecodeLocalImpl)local);
-            beginOperation(Operations.STORELOCALMATERIALIZED, operationData);
-        }
-
-        /**
-         * Ends a built-in StoreLocalMaterialized operation.
-         * <p>
-         * Signature: StoreLocalMaterialized(frame, value) -> void
-         *
-         * @see #beginStoreLocalMaterialized
-         */
-        public void endStoreLocalMaterialized() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_STORE_LOCAL_MATERIALIZED);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            OperationStackEntry operation = endOperation(Operations.STORELOCALMATERIALIZED);
-            if (operation.childCount != 2) {
-                throw failState("Operation StoreLocalMaterialized expected exactly 2 children, but " + operation.childCount + " provided. This is probably a bug in the parser.");
-            }
-            if (!(operation.data instanceof StoreLocalData operationData)) {
-                throw assertionFailed("Data class StoreLocalData expected, but was " + operation.data);
-            }
-            doEmitInstructionSSSI(Instructions.STORE_LOCAL_MAT, -2, operationData.local.frameIndex, operationData.local.rootIndex, operationData.local.localIndex, operationData.childBci);
-            afterChild(false, bci - 12);
         }
 
         /**
@@ -11585,8 +10740,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 case Operations.WHILE :
                 case Operations.FINALLYHANDLER :
                 case Operations.STORELOCAL :
-                case Operations.LOADLOCALMATERIALIZED :
-                case Operations.STORELOCALMATERIALIZED :
                 case Operations.RETURN :
                 case Operations.TAG :
                 case Operations.SLINVOKE :
@@ -11860,24 +11013,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                 {
                     if (!producedValue) {
                         throw failState("Operation StoreLocal expected a value-producing child at position " + childIndex + ", but a void one was provided.");
-                    }
-                    if (!(operationStack[operationSp - 1].data instanceof StoreLocalData operationData)) {
-                        throw assertionFailed("Data class StoreLocalData expected, but was " + operationStack[operationSp - 1].data);
-                    }
-                    operationData.childBci = childBci;
-                    break;
-                }
-                case Operations.LOADLOCALMATERIALIZED :
-                {
-                    if (!producedValue) {
-                        throw failState("Operation LoadLocalMaterialized expected a value-producing child at position " + childIndex + ", but a void one was provided.");
-                    }
-                    break;
-                }
-                case Operations.STORELOCALMATERIALIZED :
-                {
-                    if (!producedValue) {
-                        throw failState("Operation StoreLocalMaterialized expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     if (!(operationStack[operationSp - 1].data instanceof StoreLocalData operationData)) {
                         throw assertionFailed("Data class StoreLocalData expected, but was " + operationStack[operationSp - 1].data);
@@ -12925,28 +12060,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                             endStoreLocal();
                             break;
                         }
-                        case SerializationState.CODE_BEGIN_LOAD_LOCAL_MATERIALIZED :
-                        {
-                            BytecodeLocal local = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
-                            beginLoadLocalMaterialized(local);
-                            break;
-                        }
-                        case SerializationState.CODE_END_LOAD_LOCAL_MATERIALIZED :
-                        {
-                            endLoadLocalMaterialized();
-                            break;
-                        }
-                        case SerializationState.CODE_BEGIN_STORE_LOCAL_MATERIALIZED :
-                        {
-                            BytecodeLocal local = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
-                            beginStoreLocalMaterialized(local);
-                            break;
-                        }
-                        case SerializationState.CODE_END_STORE_LOCAL_MATERIALIZED :
-                        {
-                            endStoreLocalMaterialized();
-                            break;
-                        }
                         case SerializationState.CODE_BEGIN_RETURN :
                         {
                             beginReturn();
@@ -13362,29 +12475,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             return true;
         }
 
-        private boolean doEmitInstructionSSS(short instruction, int stackEffect, short data0, short data1, short data2) {
-            if (stackEffect != 0) {
-                currentStackHeight += stackEffect;
-                assert currentStackHeight >= 0;
-            }
-            if (stackEffect > 0) {
-                updateMaxStackHeight(currentStackHeight);
-            }
-            if (!reachable) {
-                return false;
-            }
-            int newBci = checkBci(bci + 8);
-            if (newBci > bc.length) {
-                ensureBytecodeCapacity(newBci);
-            }
-            BYTES.putShort(bc, bci + 0, instruction);
-            BYTES.putShort(bc, bci + 2 /* imm 0 */, data0);
-            BYTES.putShort(bc, bci + 4 /* imm 1 */, data1);
-            BYTES.putShort(bc, bci + 6 /* imm 2 */, data2);
-            bci = newBci;
-            return true;
-        }
-
         private boolean doEmitInstructionII(short instruction, int stackEffect, int data0, int data1) {
             if (stackEffect != 0) {
                 currentStackHeight += stackEffect;
@@ -13426,30 +12516,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             BYTES.putShort(bc, bci + 2 /* imm 0 */, data0);
             BYTES.putShort(bc, bci + 4 /* imm 1 */, data1);
             BYTES.putInt(bc, bci + 6 /* imm 2 */, data2);
-            bci = newBci;
-            return true;
-        }
-
-        private boolean doEmitInstructionSSSI(short instruction, int stackEffect, short data0, short data1, short data2, int data3) {
-            if (stackEffect != 0) {
-                currentStackHeight += stackEffect;
-                assert currentStackHeight >= 0;
-            }
-            if (stackEffect > 0) {
-                updateMaxStackHeight(currentStackHeight);
-            }
-            if (!reachable) {
-                return false;
-            }
-            int newBci = checkBci(bci + 12);
-            if (newBci > bc.length) {
-                ensureBytecodeCapacity(newBci);
-            }
-            BYTES.putShort(bc, bci + 0, instruction);
-            BYTES.putShort(bc, bci + 2 /* imm 0 */, data0);
-            BYTES.putShort(bc, bci + 4 /* imm 1 */, data1);
-            BYTES.putShort(bc, bci + 6 /* imm 2 */, data2);
-            BYTES.putInt(bc, bci + 8 /* imm 3 */, data3);
             bci = newBci;
             return true;
         }
@@ -13610,13 +12676,6 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
                     }
                     break;
                     case Operations.STORELOCAL :
-                    {
-                        b.append(" ");
-                        StoreLocalData operationData = (StoreLocalData) data;
-                        b.append(operationData.local.frameIndex);
-                    }
-                    break;
-                    case Operations.STORELOCALMATERIALIZED :
                     {
                         b.append(" ");
                         StoreLocalData operationData = (StoreLocalData) data;
@@ -14158,53 +13217,49 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
             private static final short CODE_EMIT_LOAD_LOCAL = 17 << 1;
             private static final short CODE_BEGIN_STORE_LOCAL = 18 << 1;
             private static final short CODE_END_STORE_LOCAL = (18 << 1) | 0b1;
-            private static final short CODE_BEGIN_LOAD_LOCAL_MATERIALIZED = 19 << 1;
-            private static final short CODE_END_LOAD_LOCAL_MATERIALIZED = (19 << 1) | 0b1;
-            private static final short CODE_BEGIN_STORE_LOCAL_MATERIALIZED = 20 << 1;
-            private static final short CODE_END_STORE_LOCAL_MATERIALIZED = (20 << 1) | 0b1;
-            private static final short CODE_BEGIN_RETURN = 21 << 1;
-            private static final short CODE_END_RETURN = (21 << 1) | 0b1;
-            private static final short CODE_BEGIN_SOURCE = 22 << 1;
-            private static final short CODE_END_SOURCE = (22 << 1) | 0b1;
-            private static final short CODE_BEGIN_SOURCE_SECTION = 23 << 1;
-            private static final short CODE_END_SOURCE_SECTION = (23 << 1) | 0b1;
-            private static final short CODE_BEGIN_TAG = 24 << 1;
-            private static final short CODE_END_TAG = (24 << 1) | 0b1;
-            private static final short CODE_EMIT_SL_ALWAYS_HALT = 25 << 1;
-            private static final short CODE_EMIT_SL_LOAD_ARGUMENT = 26 << 1;
-            private static final short CODE_EMIT_BUILTIN = 27 << 1;
-            private static final short CODE_BEGIN_SL_INVOKE = 28 << 1;
-            private static final short CODE_END_SL_INVOKE = (28 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_ADD = 29 << 1;
-            private static final short CODE_END_SL_ADD = (29 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_DIV = 30 << 1;
-            private static final short CODE_END_SL_DIV = (30 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_EQUAL = 31 << 1;
-            private static final short CODE_END_SL_EQUAL = (31 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_LESS_OR_EQUAL = 32 << 1;
-            private static final short CODE_END_SL_LESS_OR_EQUAL = (32 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_LESS_THAN = 33 << 1;
-            private static final short CODE_END_SL_LESS_THAN = (33 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_LOGICAL_NOT = 34 << 1;
-            private static final short CODE_END_SL_LOGICAL_NOT = (34 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_MUL = 35 << 1;
-            private static final short CODE_END_SL_MUL = (35 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_READ_PROPERTY = 36 << 1;
-            private static final short CODE_END_SL_READ_PROPERTY = (36 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_SUB = 37 << 1;
-            private static final short CODE_END_SL_SUB = (37 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_WRITE_PROPERTY = 38 << 1;
-            private static final short CODE_END_SL_WRITE_PROPERTY = (38 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_UNBOX = 39 << 1;
-            private static final short CODE_END_SL_UNBOX = (39 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_FUNCTION_LITERAL = 40 << 1;
-            private static final short CODE_END_SL_FUNCTION_LITERAL = (40 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_TO_BOOLEAN = 41 << 1;
-            private static final short CODE_END_SL_TO_BOOLEAN = (41 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_AND = 42 << 1;
-            private static final short CODE_END_SL_AND = (42 << 1) | 0b1;
-            private static final short CODE_BEGIN_SL_OR = 43 << 1;
-            private static final short CODE_END_SL_OR = (43 << 1) | 0b1;
+            private static final short CODE_BEGIN_RETURN = 19 << 1;
+            private static final short CODE_END_RETURN = (19 << 1) | 0b1;
+            private static final short CODE_BEGIN_SOURCE = 20 << 1;
+            private static final short CODE_END_SOURCE = (20 << 1) | 0b1;
+            private static final short CODE_BEGIN_SOURCE_SECTION = 21 << 1;
+            private static final short CODE_END_SOURCE_SECTION = (21 << 1) | 0b1;
+            private static final short CODE_BEGIN_TAG = 22 << 1;
+            private static final short CODE_END_TAG = (22 << 1) | 0b1;
+            private static final short CODE_EMIT_SL_ALWAYS_HALT = 23 << 1;
+            private static final short CODE_EMIT_SL_LOAD_ARGUMENT = 24 << 1;
+            private static final short CODE_EMIT_BUILTIN = 25 << 1;
+            private static final short CODE_BEGIN_SL_INVOKE = 26 << 1;
+            private static final short CODE_END_SL_INVOKE = (26 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_ADD = 27 << 1;
+            private static final short CODE_END_SL_ADD = (27 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_DIV = 28 << 1;
+            private static final short CODE_END_SL_DIV = (28 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_EQUAL = 29 << 1;
+            private static final short CODE_END_SL_EQUAL = (29 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_LESS_OR_EQUAL = 30 << 1;
+            private static final short CODE_END_SL_LESS_OR_EQUAL = (30 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_LESS_THAN = 31 << 1;
+            private static final short CODE_END_SL_LESS_THAN = (31 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_LOGICAL_NOT = 32 << 1;
+            private static final short CODE_END_SL_LOGICAL_NOT = (32 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_MUL = 33 << 1;
+            private static final short CODE_END_SL_MUL = (33 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_READ_PROPERTY = 34 << 1;
+            private static final short CODE_END_SL_READ_PROPERTY = (34 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_SUB = 35 << 1;
+            private static final short CODE_END_SL_SUB = (35 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_WRITE_PROPERTY = 36 << 1;
+            private static final short CODE_END_SL_WRITE_PROPERTY = (36 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_UNBOX = 37 << 1;
+            private static final short CODE_END_SL_UNBOX = (37 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_FUNCTION_LITERAL = 38 << 1;
+            private static final short CODE_END_SL_FUNCTION_LITERAL = (38 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_TO_BOOLEAN = 39 << 1;
+            private static final short CODE_END_SL_TO_BOOLEAN = (39 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_AND = 40 << 1;
+            private static final short CODE_END_SL_AND = (40 << 1) | 0b1;
+            private static final short CODE_BEGIN_SL_OR = 41 << 1;
+            private static final short CODE_END_SL_OR = (41 << 1) | 0b1;
 
             private final DataOutput buffer;
             private final BytecodeSerializer callback;
@@ -14737,718 +13792,634 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
          */
         private static final short STORE_LOCAL$GENERIC = 32;
         /*
-         * Instruction load.local.mat
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [33 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: Object (Object)
-         */
-        private static final short LOAD_LOCAL_MAT = 33;
-        /*
-         * Instruction load.local.mat$Long
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [34 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: Object (Object)
-         */
-        private static final short LOAD_LOCAL_MAT$LONG = 34;
-        /*
-         * Instruction load.local.mat$Long$unboxed
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [35 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: long (Object)
-         */
-        private static final short LOAD_LOCAL_MAT$LONG$UNBOXED = 35;
-        /*
-         * Instruction load.local.mat$Boolean
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [36 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: Object (Object)
-         */
-        private static final short LOAD_LOCAL_MAT$BOOLEAN = 36;
-        /*
-         * Instruction load.local.mat$Boolean$unboxed
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [37 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: boolean (Object)
-         */
-        private static final short LOAD_LOCAL_MAT$BOOLEAN$UNBOXED = 37;
-        /*
-         * Instruction load.local.mat$generic
-         * kind: LOAD_LOCAL_MATERIALIZED
-         * encoding: [38 : short, frame_index : short, root_index (local_root) : short, local_index : short]
-         * signature: Object (Object)
-         */
-        private static final short LOAD_LOCAL_MAT$GENERIC = 38;
-        /*
-         * Instruction store.local.mat
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [39 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (Object, Object)
-         */
-        private static final short STORE_LOCAL_MAT = 39;
-        /*
-         * Instruction store.local.mat$Long
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [40 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (Object, Object)
-         */
-        private static final short STORE_LOCAL_MAT$LONG = 40;
-        /*
-         * Instruction store.local.mat$Long$Long
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [41 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (long, Object)
-         */
-        private static final short STORE_LOCAL_MAT$LONG$LONG = 41;
-        /*
-         * Instruction store.local.mat$Boolean
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [42 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (Object, Object)
-         */
-        private static final short STORE_LOCAL_MAT$BOOLEAN = 42;
-        /*
-         * Instruction store.local.mat$Boolean$Boolean
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [43 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (boolean, Object)
-         */
-        private static final short STORE_LOCAL_MAT$BOOLEAN$BOOLEAN = 43;
-        /*
-         * Instruction store.local.mat$generic
-         * kind: STORE_LOCAL_MATERIALIZED
-         * encoding: [44 : short, frame_index : short, root_index (local_root) : short, local_index : short, child0 (bci) : int]
-         * signature: void (Object, Object)
-         */
-        private static final short STORE_LOCAL_MAT$GENERIC = 44;
-        /*
          * Instruction tag.enter
          * kind: TAG_ENTER
-         * encoding: [45 : short, tag : int]
+         * encoding: [33 : short, tag : int]
          * signature: void ()
          */
-        private static final short TAG_ENTER = 45;
+        private static final short TAG_ENTER = 33;
         /*
          * Instruction tag.leave
          * kind: TAG_LEAVE
-         * encoding: [46 : short, tag : int, child0 (bci) : int]
+         * encoding: [34 : short, tag : int, child0 (bci) : int]
          * signature: Object (Object)
          */
-        private static final short TAG_LEAVE = 46;
+        private static final short TAG_LEAVE = 34;
         /*
          * Instruction tag.leave$Long
          * kind: TAG_LEAVE
-         * encoding: [47 : short, tag : int, child0 (bci) : int]
+         * encoding: [35 : short, tag : int, child0 (bci) : int]
          * signature: Object (long)
          */
-        private static final short TAG_LEAVE$LONG = 47;
+        private static final short TAG_LEAVE$LONG = 35;
         /*
          * Instruction tag.leave$Long$unboxed
          * kind: TAG_LEAVE
-         * encoding: [48 : short, tag : int, child0 (bci) : int]
+         * encoding: [36 : short, tag : int, child0 (bci) : int]
          * signature: long (Object)
          */
-        private static final short TAG_LEAVE$LONG$UNBOXED = 48;
+        private static final short TAG_LEAVE$LONG$UNBOXED = 36;
         /*
          * Instruction tag.leave$Boolean
          * kind: TAG_LEAVE
-         * encoding: [49 : short, tag : int, child0 (bci) : int]
+         * encoding: [37 : short, tag : int, child0 (bci) : int]
          * signature: Object (boolean)
          */
-        private static final short TAG_LEAVE$BOOLEAN = 49;
+        private static final short TAG_LEAVE$BOOLEAN = 37;
         /*
          * Instruction tag.leave$Boolean$unboxed
          * kind: TAG_LEAVE
-         * encoding: [50 : short, tag : int, child0 (bci) : int]
+         * encoding: [38 : short, tag : int, child0 (bci) : int]
          * signature: boolean (Object)
          */
-        private static final short TAG_LEAVE$BOOLEAN$UNBOXED = 50;
+        private static final short TAG_LEAVE$BOOLEAN$UNBOXED = 38;
         /*
          * Instruction tag.leave$generic
          * kind: TAG_LEAVE
-         * encoding: [51 : short, tag : int, child0 (bci) : int]
+         * encoding: [39 : short, tag : int, child0 (bci) : int]
          * signature: Object (Object)
          */
-        private static final short TAG_LEAVE$GENERIC = 51;
+        private static final short TAG_LEAVE$GENERIC = 39;
         /*
          * Instruction tag.leaveVoid
          * kind: TAG_LEAVE_VOID
-         * encoding: [52 : short, tag : int]
+         * encoding: [40 : short, tag : int]
          * signature: Object ()
          */
-        private static final short TAG_LEAVE_VOID = 52;
+        private static final short TAG_LEAVE_VOID = 40;
         /*
          * Instruction load.variadic_0
          * kind: LOAD_VARIADIC
-         * encoding: [53 : short]
+         * encoding: [41 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_0 = 53;
+        private static final short LOAD_VARIADIC_0 = 41;
         /*
          * Instruction load.variadic_1
          * kind: LOAD_VARIADIC
-         * encoding: [54 : short]
+         * encoding: [42 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_1 = 54;
+        private static final short LOAD_VARIADIC_1 = 42;
         /*
          * Instruction load.variadic_2
          * kind: LOAD_VARIADIC
-         * encoding: [55 : short]
+         * encoding: [43 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_2 = 55;
+        private static final short LOAD_VARIADIC_2 = 43;
         /*
          * Instruction load.variadic_3
          * kind: LOAD_VARIADIC
-         * encoding: [56 : short]
+         * encoding: [44 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_3 = 56;
+        private static final short LOAD_VARIADIC_3 = 44;
         /*
          * Instruction load.variadic_4
          * kind: LOAD_VARIADIC
-         * encoding: [57 : short]
+         * encoding: [45 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_4 = 57;
+        private static final short LOAD_VARIADIC_4 = 45;
         /*
          * Instruction load.variadic_5
          * kind: LOAD_VARIADIC
-         * encoding: [58 : short]
+         * encoding: [46 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_5 = 58;
+        private static final short LOAD_VARIADIC_5 = 46;
         /*
          * Instruction load.variadic_6
          * kind: LOAD_VARIADIC
-         * encoding: [59 : short]
+         * encoding: [47 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_6 = 59;
+        private static final short LOAD_VARIADIC_6 = 47;
         /*
          * Instruction load.variadic_7
          * kind: LOAD_VARIADIC
-         * encoding: [60 : short]
+         * encoding: [48 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_7 = 60;
+        private static final short LOAD_VARIADIC_7 = 48;
         /*
          * Instruction load.variadic_8
          * kind: LOAD_VARIADIC
-         * encoding: [61 : short]
+         * encoding: [49 : short]
          * signature: void (Object)
          */
-        private static final short LOAD_VARIADIC_8 = 61;
+        private static final short LOAD_VARIADIC_8 = 49;
         /*
          * Instruction merge.variadic
          * kind: MERGE_VARIADIC
-         * encoding: [62 : short]
+         * encoding: [50 : short]
          * signature: Object (Object)
          */
-        private static final short MERGE_VARIADIC = 62;
+        private static final short MERGE_VARIADIC = 50;
         /*
          * Instruction constant_null
          * kind: STORE_NULL
-         * encoding: [63 : short]
+         * encoding: [51 : short]
          * signature: Object ()
          */
-        private static final short CONSTANT_NULL = 63;
+        private static final short CONSTANT_NULL = 51;
         /*
          * Instruction clear.local
          * kind: CLEAR_LOCAL
-         * encoding: [64 : short, frame_index : short]
+         * encoding: [52 : short, frame_index : short]
          * signature: void ()
          */
-        private static final short CLEAR_LOCAL = 64;
+        private static final short CLEAR_LOCAL = 52;
         /*
          * Instruction c.SLAlwaysHalt
          * kind: CUSTOM
-         * encoding: [65 : short, node : int]
+         * encoding: [53 : short, node : int]
          * nodeType: SLAlwaysHalt
          * signature: void ()
          */
-        private static final short SL_ALWAYS_HALT_ = 65;
+        private static final short SL_ALWAYS_HALT_ = 53;
         /*
          * Instruction c.SLLoadArgument
          * kind: CUSTOM
-         * encoding: [66 : short, index (const) : int, node : int]
+         * encoding: [54 : short, index (const) : int, node : int]
          * nodeType: SLLoadArgument
          * signature: Object (int)
          */
-        private static final short SL_LOAD_ARGUMENT_ = 66;
+        private static final short SL_LOAD_ARGUMENT_ = 54;
         /*
          * Instruction c.SLLoadArgument$LoadInBounds
          * kind: CUSTOM
-         * encoding: [67 : short, index (const) : int, node : int]
+         * encoding: [55 : short, index (const) : int, node : int]
          * nodeType: SLLoadArgument
          * signature: Object (int)
          */
-        private static final short SL_LOAD_ARGUMENT$LOAD_IN_BOUNDS_ = 67;
+        private static final short SL_LOAD_ARGUMENT$LOAD_IN_BOUNDS_ = 55;
         /*
          * Instruction c.Builtin
          * kind: CUSTOM
-         * encoding: [68 : short, factory (const) : int, argumentCount (const) : int, node : int]
+         * encoding: [56 : short, factory (const) : int, argumentCount (const) : int, node : int]
          * nodeType: Builtin
          * signature: Object (NodeFactory<?>, int)
          */
-        private static final short BUILTIN_ = 68;
+        private static final short BUILTIN_ = 56;
         /*
          * Instruction c.SLInvoke
          * kind: CUSTOM
-         * encoding: [69 : short, node : int]
+         * encoding: [57 : short, node : int]
          * nodeType: SLInvoke
          * signature: Object (Object, Object[]...)
          */
-        private static final short SL_INVOKE_ = 69;
+        private static final short SL_INVOKE_ = 57;
         /*
          * Instruction c.SLAdd
          * kind: CUSTOM
-         * encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [58 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLAddNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_ADD_ = 70;
+        private static final short SL_ADD_ = 58;
         /*
          * Instruction c.SLAdd$Long
          * kind: CUSTOM
-         * encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [59 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLAddNode
          * signature: long (long, long)
          */
-        private static final short SL_ADD$LONG_ = 71;
+        private static final short SL_ADD$LONG_ = 59;
         /*
          * Instruction c.SLAdd$Long$unboxed
          * kind: CUSTOM
-         * encoding: [72 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [60 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLAddNode
          * signature: long (long, long)
          */
-        private static final short SL_ADD$LONG$UNBOXED_ = 72;
+        private static final short SL_ADD$LONG$UNBOXED_ = 60;
         /*
          * Instruction c.SLDiv
          * kind: CUSTOM
-         * encoding: [73 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [61 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLDivNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_DIV_ = 73;
+        private static final short SL_DIV_ = 61;
         /*
          * Instruction c.SLDiv$Long
          * kind: CUSTOM
-         * encoding: [74 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [62 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLDivNode
          * signature: long (long, long)
          */
-        private static final short SL_DIV$LONG_ = 74;
+        private static final short SL_DIV$LONG_ = 62;
         /*
          * Instruction c.SLDiv$Long$unboxed
          * kind: CUSTOM
-         * encoding: [75 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [63 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLDivNode
          * signature: long (long, long)
          */
-        private static final short SL_DIV$LONG$UNBOXED_ = 75;
+        private static final short SL_DIV$LONG$UNBOXED_ = 63;
         /*
          * Instruction c.SLEqual
          * kind: CUSTOM
-         * encoding: [76 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [64 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_EQUAL_ = 76;
+        private static final short SL_EQUAL_ = 64;
         /*
          * Instruction c.SLEqual$Long
          * kind: CUSTOM
-         * encoding: [77 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [65 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (long, long)
          */
-        private static final short SL_EQUAL$LONG_ = 77;
+        private static final short SL_EQUAL$LONG_ = 65;
         /*
          * Instruction c.SLEqual$Long$unboxed
          * kind: CUSTOM
-         * encoding: [78 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [66 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (long, long)
          */
-        private static final short SL_EQUAL$LONG$UNBOXED_ = 78;
+        private static final short SL_EQUAL$LONG$UNBOXED_ = 66;
         /*
          * Instruction c.SLEqual$Boolean
          * kind: CUSTOM
-         * encoding: [79 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [67 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (boolean, boolean)
          */
-        private static final short SL_EQUAL$BOOLEAN_ = 79;
+        private static final short SL_EQUAL$BOOLEAN_ = 67;
         /*
          * Instruction c.SLEqual$Boolean$unboxed
          * kind: CUSTOM
-         * encoding: [80 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [68 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (boolean, boolean)
          */
-        private static final short SL_EQUAL$BOOLEAN$UNBOXED_ = 80;
+        private static final short SL_EQUAL$BOOLEAN$UNBOXED_ = 68;
         /*
          * Instruction c.SLEqual$unboxed
          * kind: CUSTOM
-         * encoding: [81 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [69 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLEqualNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_EQUAL$UNBOXED_ = 81;
+        private static final short SL_EQUAL$UNBOXED_ = 69;
         /*
          * Instruction c.SLLessOrEqual
          * kind: CUSTOM
-         * encoding: [82 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [70 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessOrEqualNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_LESS_OR_EQUAL_ = 82;
+        private static final short SL_LESS_OR_EQUAL_ = 70;
         /*
          * Instruction c.SLLessOrEqual$Long
          * kind: CUSTOM
-         * encoding: [83 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [71 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessOrEqualNode
          * signature: boolean (long, long)
          */
-        private static final short SL_LESS_OR_EQUAL$LONG_ = 83;
+        private static final short SL_LESS_OR_EQUAL$LONG_ = 71;
         /*
          * Instruction c.SLLessOrEqual$Long$unboxed
          * kind: CUSTOM
-         * encoding: [84 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [72 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessOrEqualNode
          * signature: boolean (long, long)
          */
-        private static final short SL_LESS_OR_EQUAL$LONG$UNBOXED_ = 84;
+        private static final short SL_LESS_OR_EQUAL$LONG$UNBOXED_ = 72;
         /*
          * Instruction c.SLLessOrEqual$SLBigInteger#InteropBigInteger0#InteropBigInteger1
          * kind: CUSTOM
-         * encoding: [85 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [73 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessOrEqualNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_LESS_OR_EQUAL$SL_BIG_INTEGER$INTEROP_BIG_INTEGER0$INTEROP_BIG_INTEGER1_ = 85;
+        private static final short SL_LESS_OR_EQUAL$SL_BIG_INTEGER$INTEROP_BIG_INTEGER0$INTEROP_BIG_INTEGER1_ = 73;
         /*
          * Instruction c.SLLessOrEqual$SLBigInteger#InteropBigInteger0#InteropBigInteger1$unboxed
          * kind: CUSTOM
-         * encoding: [86 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [74 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessOrEqualNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_LESS_OR_EQUAL$SL_BIG_INTEGER$INTEROP_BIG_INTEGER0$INTEROP_BIG_INTEGER1$UNBOXED_ = 86;
+        private static final short SL_LESS_OR_EQUAL$SL_BIG_INTEGER$INTEROP_BIG_INTEGER0$INTEROP_BIG_INTEGER1$UNBOXED_ = 74;
         /*
          * Instruction c.SLLessThan
          * kind: CUSTOM
-         * encoding: [87 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [75 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessThanNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_LESS_THAN_ = 87;
+        private static final short SL_LESS_THAN_ = 75;
         /*
          * Instruction c.SLLessThan$Long
          * kind: CUSTOM
-         * encoding: [88 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [76 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessThanNode
          * signature: boolean (long, long)
          */
-        private static final short SL_LESS_THAN$LONG_ = 88;
+        private static final short SL_LESS_THAN$LONG_ = 76;
         /*
          * Instruction c.SLLessThan$Long$unboxed
          * kind: CUSTOM
-         * encoding: [89 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [77 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessThanNode
          * signature: boolean (long, long)
          */
-        private static final short SL_LESS_THAN$LONG$UNBOXED_ = 89;
+        private static final short SL_LESS_THAN$LONG$UNBOXED_ = 77;
         /*
          * Instruction c.SLLessThan$unboxed
          * kind: CUSTOM
-         * encoding: [90 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [78 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLLessThanNode
          * signature: boolean (Object, Object)
          */
-        private static final short SL_LESS_THAN$UNBOXED_ = 90;
+        private static final short SL_LESS_THAN$UNBOXED_ = 78;
         /*
          * Instruction c.SLLogicalNot
          * kind: CUSTOM
-         * encoding: [91 : short, node : int, child0 (bci) : int]
+         * encoding: [79 : short, node : int, child0 (bci) : int]
          * nodeType: SLLogicalNotNode
          * signature: boolean (Object)
          */
-        private static final short SL_LOGICAL_NOT_ = 91;
+        private static final short SL_LOGICAL_NOT_ = 79;
         /*
          * Instruction c.SLLogicalNot$Boolean
          * kind: CUSTOM
-         * encoding: [92 : short, node : int, child0 (bci) : int]
+         * encoding: [80 : short, node : int, child0 (bci) : int]
          * nodeType: SLLogicalNotNode
          * signature: boolean (boolean)
          */
-        private static final short SL_LOGICAL_NOT$BOOLEAN_ = 92;
+        private static final short SL_LOGICAL_NOT$BOOLEAN_ = 80;
         /*
          * Instruction c.SLLogicalNot$Boolean$unboxed
          * kind: CUSTOM
-         * encoding: [93 : short, node : int, child0 (bci) : int]
+         * encoding: [81 : short, node : int, child0 (bci) : int]
          * nodeType: SLLogicalNotNode
          * signature: boolean (boolean)
          */
-        private static final short SL_LOGICAL_NOT$BOOLEAN$UNBOXED_ = 93;
+        private static final short SL_LOGICAL_NOT$BOOLEAN$UNBOXED_ = 81;
         /*
          * Instruction c.SLLogicalNot$unboxed
          * kind: CUSTOM
-         * encoding: [94 : short, node : int, child0 (bci) : int]
+         * encoding: [82 : short, node : int, child0 (bci) : int]
          * nodeType: SLLogicalNotNode
          * signature: boolean (Object)
          */
-        private static final short SL_LOGICAL_NOT$UNBOXED_ = 94;
+        private static final short SL_LOGICAL_NOT$UNBOXED_ = 82;
         /*
          * Instruction c.SLMul
          * kind: CUSTOM
-         * encoding: [95 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [83 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLMulNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_MUL_ = 95;
+        private static final short SL_MUL_ = 83;
         /*
          * Instruction c.SLMul$Long
          * kind: CUSTOM
-         * encoding: [96 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [84 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLMulNode
          * signature: long (long, long)
          */
-        private static final short SL_MUL$LONG_ = 96;
+        private static final short SL_MUL$LONG_ = 84;
         /*
          * Instruction c.SLMul$Long$unboxed
          * kind: CUSTOM
-         * encoding: [97 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [85 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLMulNode
          * signature: long (long, long)
          */
-        private static final short SL_MUL$LONG$UNBOXED_ = 97;
+        private static final short SL_MUL$LONG$UNBOXED_ = 85;
         /*
          * Instruction c.SLReadProperty
          * kind: CUSTOM
-         * encoding: [98 : short, node : int]
+         * encoding: [86 : short, node : int]
          * nodeType: SLReadPropertyNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_READ_PROPERTY_ = 98;
+        private static final short SL_READ_PROPERTY_ = 86;
         /*
          * Instruction c.SLSub
          * kind: CUSTOM
-         * encoding: [99 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [87 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLSubNode
          * signature: Object (Object, Object)
          */
-        private static final short SL_SUB_ = 99;
+        private static final short SL_SUB_ = 87;
         /*
          * Instruction c.SLSub$Long
          * kind: CUSTOM
-         * encoding: [100 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [88 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLSubNode
          * signature: long (long, long)
          */
-        private static final short SL_SUB$LONG_ = 100;
+        private static final short SL_SUB$LONG_ = 88;
         /*
          * Instruction c.SLSub$Long$unboxed
          * kind: CUSTOM
-         * encoding: [101 : short, node : int, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [89 : short, node : int, child0 (bci) : int, child1 (bci) : int]
          * nodeType: SLSubNode
          * signature: long (long, long)
          */
-        private static final short SL_SUB$LONG$UNBOXED_ = 101;
+        private static final short SL_SUB$LONG$UNBOXED_ = 89;
         /*
          * Instruction c.SLWriteProperty
          * kind: CUSTOM
-         * encoding: [102 : short, node : int]
+         * encoding: [90 : short, node : int]
          * nodeType: SLWritePropertyNode
          * signature: Object (Object, Object, Object)
          */
-        private static final short SL_WRITE_PROPERTY_ = 102;
+        private static final short SL_WRITE_PROPERTY_ = 90;
         /*
          * Instruction c.SLUnbox
          * kind: CUSTOM
-         * encoding: [103 : short, node : int, child0 (bci) : int]
+         * encoding: [91 : short, node : int, child0 (bci) : int]
          * nodeType: SLUnboxNode
          * signature: Object (Object)
          */
-        private static final short SL_UNBOX_ = 103;
+        private static final short SL_UNBOX_ = 91;
         /*
          * Instruction c.SLUnbox$FromBoolean
          * kind: CUSTOM
-         * encoding: [104 : short, node : int, child0 (bci) : int]
+         * encoding: [92 : short, node : int, child0 (bci) : int]
          * nodeType: SLUnboxNode
          * signature: boolean (boolean)
          */
-        private static final short SL_UNBOX$FROM_BOOLEAN_ = 104;
+        private static final short SL_UNBOX$FROM_BOOLEAN_ = 92;
         /*
          * Instruction c.SLUnbox$FromBoolean$unboxed
          * kind: CUSTOM
-         * encoding: [105 : short, node : int, child0 (bci) : int]
+         * encoding: [93 : short, node : int, child0 (bci) : int]
          * nodeType: SLUnboxNode
          * signature: boolean (boolean)
          */
-        private static final short SL_UNBOX$FROM_BOOLEAN$UNBOXED_ = 105;
+        private static final short SL_UNBOX$FROM_BOOLEAN$UNBOXED_ = 93;
         /*
          * Instruction c.SLUnbox$FromLong
          * kind: CUSTOM
-         * encoding: [106 : short, node : int, child0 (bci) : int]
+         * encoding: [94 : short, node : int, child0 (bci) : int]
          * nodeType: SLUnboxNode
          * signature: long (long)
          */
-        private static final short SL_UNBOX$FROM_LONG_ = 106;
+        private static final short SL_UNBOX$FROM_LONG_ = 94;
         /*
          * Instruction c.SLUnbox$FromLong$unboxed
          * kind: CUSTOM
-         * encoding: [107 : short, node : int, child0 (bci) : int]
+         * encoding: [95 : short, node : int, child0 (bci) : int]
          * nodeType: SLUnboxNode
          * signature: long (long)
          */
-        private static final short SL_UNBOX$FROM_LONG$UNBOXED_ = 107;
+        private static final short SL_UNBOX$FROM_LONG$UNBOXED_ = 95;
         /*
          * Instruction c.SLFunctionLiteral
          * kind: CUSTOM
-         * encoding: [108 : short, node : int]
+         * encoding: [96 : short, node : int]
          * nodeType: SLFunctionLiteralNode
          * signature: SLFunction (TruffleString)
          */
-        private static final short SL_FUNCTION_LITERAL_ = 108;
+        private static final short SL_FUNCTION_LITERAL_ = 96;
         /*
          * Instruction c.SLToBoolean
          * kind: CUSTOM
-         * encoding: [109 : short, node : int, child0 (bci) : int]
+         * encoding: [97 : short, node : int, child0 (bci) : int]
          * nodeType: SLToBooleanNode
          * signature: boolean (Object)
          */
-        private static final short SL_TO_BOOLEAN_ = 109;
+        private static final short SL_TO_BOOLEAN_ = 97;
         /*
          * Instruction c.SLToBoolean$Boolean
          * kind: CUSTOM
-         * encoding: [110 : short, node : int, child0 (bci) : int]
+         * encoding: [98 : short, node : int, child0 (bci) : int]
          * nodeType: SLToBooleanNode
          * signature: boolean (boolean)
          */
-        private static final short SL_TO_BOOLEAN$BOOLEAN_ = 110;
+        private static final short SL_TO_BOOLEAN$BOOLEAN_ = 98;
         /*
          * Instruction c.SLToBoolean$Boolean$unboxed
          * kind: CUSTOM
-         * encoding: [111 : short, node : int, child0 (bci) : int]
+         * encoding: [99 : short, node : int, child0 (bci) : int]
          * nodeType: SLToBooleanNode
          * signature: boolean (boolean)
          */
-        private static final short SL_TO_BOOLEAN$BOOLEAN$UNBOXED_ = 111;
+        private static final short SL_TO_BOOLEAN$BOOLEAN$UNBOXED_ = 99;
         /*
          * Instruction c.SLToBoolean$unboxed
          * kind: CUSTOM
-         * encoding: [112 : short, node : int, child0 (bci) : int]
+         * encoding: [100 : short, node : int, child0 (bci) : int]
          * nodeType: SLToBooleanNode
          * signature: boolean (Object)
          */
-        private static final short SL_TO_BOOLEAN$UNBOXED_ = 112;
+        private static final short SL_TO_BOOLEAN$UNBOXED_ = 100;
         /*
          * Instruction sc.SLAnd
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [113 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [101 : short, branch_target (bci) : int, branch_profile : int]
          * signature: boolean (boolean, boolean)
          */
-        private static final short SL_AND_ = 113;
+        private static final short SL_AND_ = 101;
         /*
          * Instruction sc.SLOr
          * kind: CUSTOM_SHORT_CIRCUIT
-         * encoding: [114 : short, branch_target (bci) : int, branch_profile : int]
+         * encoding: [102 : short, branch_target (bci) : int, branch_profile : int]
          * signature: boolean (boolean, boolean)
          */
-        private static final short SL_OR_ = 114;
+        private static final short SL_OR_ = 102;
         /*
          * Instruction merge.conditional
          * kind: MERGE_CONDITIONAL
-         * encoding: [115 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [103 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, Object)
          */
-        private static final short MERGE_CONDITIONAL = 115;
+        private static final short MERGE_CONDITIONAL = 103;
         /*
          * Instruction merge.conditional$Long
          * kind: MERGE_CONDITIONAL
-         * encoding: [116 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [104 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, long)
          */
-        private static final short MERGE_CONDITIONAL$LONG = 116;
+        private static final short MERGE_CONDITIONAL$LONG = 104;
         /*
          * Instruction merge.conditional$Long$unboxed
          * kind: MERGE_CONDITIONAL
-         * encoding: [117 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [105 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: long (boolean, long)
          */
-        private static final short MERGE_CONDITIONAL$LONG$UNBOXED = 117;
+        private static final short MERGE_CONDITIONAL$LONG$UNBOXED = 105;
         /*
          * Instruction merge.conditional$Boolean
          * kind: MERGE_CONDITIONAL
-         * encoding: [118 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [106 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, boolean)
          */
-        private static final short MERGE_CONDITIONAL$BOOLEAN = 118;
+        private static final short MERGE_CONDITIONAL$BOOLEAN = 106;
         /*
          * Instruction merge.conditional$Boolean$unboxed
          * kind: MERGE_CONDITIONAL
-         * encoding: [119 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [107 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: boolean (boolean, boolean)
          */
-        private static final short MERGE_CONDITIONAL$BOOLEAN$UNBOXED = 119;
+        private static final short MERGE_CONDITIONAL$BOOLEAN$UNBOXED = 107;
         /*
          * Instruction merge.conditional$generic
          * kind: MERGE_CONDITIONAL
-         * encoding: [120 : short, child0 (bci) : int, child1 (bci) : int]
+         * encoding: [108 : short, child0 (bci) : int, child1 (bci) : int]
          * signature: Object (boolean, Object)
          */
-        private static final short MERGE_CONDITIONAL$GENERIC = 120;
+        private static final short MERGE_CONDITIONAL$GENERIC = 108;
         /*
          * Instruction invalidate0
          * kind: INVALIDATE
-         * encoding: [121 : short]
+         * encoding: [109 : short]
          * signature: void ()
          */
-        private static final short INVALIDATE0 = 121;
+        private static final short INVALIDATE0 = 109;
         /*
          * Instruction invalidate1
          * kind: INVALIDATE
-         * encoding: [122 : short, invalidated0 (short) : short]
+         * encoding: [110 : short, invalidated0 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE1 = 122;
+        private static final short INVALIDATE1 = 110;
         /*
          * Instruction invalidate2
          * kind: INVALIDATE
-         * encoding: [123 : short, invalidated0 (short) : short, invalidated1 (short) : short]
+         * encoding: [111 : short, invalidated0 (short) : short, invalidated1 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE2 = 123;
+        private static final short INVALIDATE2 = 111;
         /*
          * Instruction invalidate3
          * kind: INVALIDATE
-         * encoding: [124 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
+         * encoding: [112 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE3 = 124;
+        private static final short INVALIDATE3 = 112;
         /*
          * Instruction invalidate4
          * kind: INVALIDATE
-         * encoding: [125 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
+         * encoding: [113 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE4 = 125;
+        private static final short INVALIDATE4 = 113;
         /*
          * Instruction invalidate5
          * kind: INVALIDATE
-         * encoding: [126 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
+         * encoding: [114 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE5 = 126;
+        private static final short INVALIDATE5 = 114;
         /*
          * Instruction invalidate6
          * kind: INVALIDATE
-         * encoding: [127 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
+         * encoding: [115 : short, invalidated0 (short) : short, invalidated1 (short) : short, invalidated2 (short) : short, invalidated3 (short) : short, invalidated4 (short) : short, invalidated5 (short) : short]
          * signature: void ()
          */
-        private static final short INVALIDATE6 = 127;
+        private static final short INVALIDATE6 = 115;
 
     }
     private static final class Operations {
@@ -15471,31 +14442,29 @@ public final class SLBytecodeRootNodeGen extends SLBytecodeRootNode {
         private static final int LOADEXCEPTION = 16;
         private static final int LOADLOCAL = 17;
         private static final int STORELOCAL = 18;
-        private static final int LOADLOCALMATERIALIZED = 19;
-        private static final int STORELOCALMATERIALIZED = 20;
-        private static final int RETURN = 21;
-        private static final int SOURCE = 22;
-        private static final int SOURCESECTION = 23;
-        private static final int TAG = 24;
-        private static final int SLALWAYSHALT = 25;
-        private static final int SLLOADARGUMENT = 26;
-        private static final int BUILTIN = 27;
-        private static final int SLINVOKE = 28;
-        private static final int SLADD = 29;
-        private static final int SLDIV = 30;
-        private static final int SLEQUAL = 31;
-        private static final int SLLESSOREQUAL = 32;
-        private static final int SLLESSTHAN = 33;
-        private static final int SLLOGICALNOT = 34;
-        private static final int SLMUL = 35;
-        private static final int SLREADPROPERTY = 36;
-        private static final int SLSUB = 37;
-        private static final int SLWRITEPROPERTY = 38;
-        private static final int SLUNBOX = 39;
-        private static final int SLFUNCTIONLITERAL = 40;
-        private static final int SLTOBOOLEAN = 41;
-        private static final int SLAND = 42;
-        private static final int SLOR = 43;
+        private static final int RETURN = 19;
+        private static final int SOURCE = 20;
+        private static final int SOURCESECTION = 21;
+        private static final int TAG = 22;
+        private static final int SLALWAYSHALT = 23;
+        private static final int SLLOADARGUMENT = 24;
+        private static final int BUILTIN = 25;
+        private static final int SLINVOKE = 26;
+        private static final int SLADD = 27;
+        private static final int SLDIV = 28;
+        private static final int SLEQUAL = 29;
+        private static final int SLLESSOREQUAL = 30;
+        private static final int SLLESSTHAN = 31;
+        private static final int SLLOGICALNOT = 32;
+        private static final int SLMUL = 33;
+        private static final int SLREADPROPERTY = 34;
+        private static final int SLSUB = 35;
+        private static final int SLWRITEPROPERTY = 36;
+        private static final int SLUNBOX = 37;
+        private static final int SLFUNCTIONLITERAL = 38;
+        private static final int SLTOBOOLEAN = 39;
+        private static final int SLAND = 40;
+        private static final int SLOR = 41;
 
     }
     private static final class FrameTags {

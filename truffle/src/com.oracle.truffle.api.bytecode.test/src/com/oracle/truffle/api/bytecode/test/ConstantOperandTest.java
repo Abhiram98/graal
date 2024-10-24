@@ -69,6 +69,7 @@ import com.oracle.truffle.api.bytecode.GenerateBytecodeTestVariants;
 import com.oracle.truffle.api.bytecode.GenerateBytecodeTestVariants.Variant;
 import com.oracle.truffle.api.bytecode.Instrumentation;
 import com.oracle.truffle.api.bytecode.LocalAccessor;
+import com.oracle.truffle.api.bytecode.MaterializedLocalAccessor;
 import com.oracle.truffle.api.bytecode.Operation;
 import com.oracle.truffle.api.bytecode.Prolog;
 import com.oracle.truffle.api.bytecode.test.ConstantOperandTestRootNode.ReplaceValue;
@@ -579,6 +580,15 @@ abstract class ConstantOperandErrorRootNode extends RootNode implements Bytecode
     public static final class UnsupportedDimensions {
         @Specialization
         public static void doOperation(VirtualFrame frame, int[] consts) {
+        }
+    }
+
+    @Operation
+    @ExpectError("MaterializedLocalAccessor cannot be used because materialized local accesses are disabled.%")
+    @ConstantOperand(type = MaterializedLocalAccessor.class)
+    public static final class UnsupportedMaterializedLocalAccessor {
+        @Specialization
+        public static void doOperation(VirtualFrame frame, MaterializedLocalAccessor accessor) {
         }
     }
 

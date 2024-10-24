@@ -59,6 +59,8 @@ import com.oracle.truffle.dsl.processor.java.model.CodeTypeMirror.ArrayCodeTypeM
  * The user guide should be updated when new builtin operations are added.
  */
 public class BytecodeDSLBuiltins {
+    private static final String GENERATE_BYTECODE = "com.oracle.truffle.api.bytecode.GenerateBytecode";
+
     public static void addBuiltins(BytecodeDSLModel m, TruffleTypes types, ProcessorContext context) {
         m.popInstruction = m.instruction(InstructionKind.POP, "pop", m.signature(void.class, Object.class));
         m.dupInstruction = m.instruction(InstructionKind.DUP, "dup", m.signature(void.class));
@@ -85,24 +87,7 @@ public class BytecodeDSLBuiltins {
                         .setTransparent(true) //
                         .setVariadic(true) //
                         .setDynamicOperands(transparentOperationChild());
-        m.rootOperation = m.operation(OperationKind.ROOT, "Root",
-                        String.format("""
-                                        Each Root operation defines one function (i.e., a {@link %s}).
-                                        It takes one or more children, which define the body of the function that executes when it is invoked.
-                                        If control falls through to the end of the body without returning, instructions are inserted to implicitly return {@code null}.
-                                        <p>
-                                        A root operation is typically the outermost one. That is, a {@link BytecodeParser} should invoke {@link #beginRoot} first before using other builder methods to generate bytecode.
-                                        The parser should invoke {@link #endRoot} to finish generating the {@link %s}.
-                                        <p>
-                                        A parser *can* nest this operation in Source and SourceSection operations in order to provide a {@link Node#getSourceSection source location} for the entire root node.
-                                        The result of {@link Node#getSourceSection} on the generated root is undefined if there is no enclosing SourceSection operation.
-                                        <p>
-                                        This method can also be called inside of another root operation. Bytecode generation for the outer root node suspends until generation for the inner root node finishes.
-                                        The inner root node is not lexically nested in the first (you can invoke the inner root node independently), but the inner root *can* manipulate the outer root's locals using
-                                        materialized local accesses if the outer frame is provided to it.
-                                        Multiple root nodes can be obtained from the {@link BytecodeNodes} object in the order of their {@link #beginRoot} calls.
-                                        """,
-                                        m.templateType.getSimpleName(), m.templateType.getSimpleName())) //
+        m.rootOperation = m.operation(OperationKind.ROOT, "Root", rootOperationJavadoc(m)) //
                         .setTransparent(true) //
                         .setVariadic(true) //
                         .setDynamicOperands(transparentOperationChild());
@@ -258,32 +243,34 @@ public class BytecodeDSLBuiltins {
                         .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to store to")) //
                         .setDynamicOperands(child("value")) //
                         .setInstruction(m.storeLocalInstruction);
-        m.loadLocalMaterializedOperation = m.operation(OperationKind.LOAD_LOCAL_MATERIALIZED, "LoadLocalMaterialized",
-                        """
-                                        LoadLocalMaterialized reads {@code local} from the frame produced by {@code frame}.
-                                        This operation can be used to read locals from materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-                                        The given local must be in scope at the point that LoadLocalMaterialized executes, otherwise it may produce unexpected values.
-                                        The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
-                                        """) //
-                        .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to load")) //
-                        .setDynamicOperands(child("frame")) //
-                        .setInstruction(m.instruction(InstructionKind.LOAD_LOCAL_MATERIALIZED, "load.local.mat", m.signature(Object.class, Object.class)) //
-                                        .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index") //
-                                        .addImmediate(ImmediateKind.LOCAL_ROOT, "root_index"));
-        m.storeLocalMaterializedOperation = m.operation(OperationKind.STORE_LOCAL_MATERIALIZED, "StoreLocalMaterialized",
-                        """
-                                        StoreLocalMaterialized writes the value produced by {@code value} into the {@code local} in the frame produced by {@code frame}.
-                                        This operation can be used to store locals into materialized frames. The materialized frame must belong to the same root node or an enclosing root node.
-                                        The given local must be in scope at the point that StoreLocalMaterialized executes, otherwise it may produce unexpected values.
-                                        The interpreter will validate the scope if the interpreter is configured to store the bytecode index in the frame (see {@code @GenerateBytecode}).
-                                        """) //
-                        .setVoid(true) //
-                        .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to store to")) //
-                        .setDynamicOperands(child("frame"), child("value")) //
-                        .setInstruction(m.instruction(InstructionKind.STORE_LOCAL_MATERIALIZED, "store.local.mat",
-                                        m.signature(void.class, Object.class, Object.class)) //
-                                        .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index") //
-                                        .addImmediate(ImmediateKind.LOCAL_ROOT, "root_index"));
+        if (m.enableMaterializedLocalAccesses) {
+            m.loadLocalMaterializedOperation = m.operation(OperationKind.LOAD_LOCAL_MATERIALIZED, "LoadLocalMaterialized",
+                            String.format("""
+                                            LoadLocalMaterialized reads {@code local} from the materialized frame produced by {@code frame}.
+                                            This operation can be used to read a local defined by the current root or an enclosing root.
+                                            The local must belong to the materialized frame. It should also be in scope, otherwise the operation may produce unexpected values.
+                                            The interpreter will validate the scope if the interpreter is configured to {@link %s#storeBytecodeIndexInFrame store the bytecode index in the frame}.
+                                            """, GENERATE_BYTECODE)) //
+                            .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to load")) //
+                            .setDynamicOperands(child("frame")) //
+                            .setInstruction(m.instruction(InstructionKind.LOAD_LOCAL_MATERIALIZED, "load.local.mat", m.signature(Object.class, Object.class)) //
+                                            .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index") //
+                                            .addImmediate(ImmediateKind.LOCAL_ROOT, "root_index"));
+            m.storeLocalMaterializedOperation = m.operation(OperationKind.STORE_LOCAL_MATERIALIZED, "StoreLocalMaterialized",
+                            String.format("""
+                                            StoreLocalMaterialized writes the value produced by {@code value} into {@code local} in the materialized frame produced by {@code frame}.
+                                            This operation can be used to store locals defined by the current root or an enclosing root.
+                                            The local must belong to the materialized frame. It should also be in scope, otherwise the operation may produce unexpected values.
+                                            The interpreter will validate the scope if the interpreter is configured to {@link %s#storeBytecodeIndexInFrame store the bytecode index in the frame}.
+                                            """, GENERATE_BYTECODE)) //
+                            .setVoid(true) //
+                            .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to store to")) //
+                            .setDynamicOperands(child("frame"), child("value")) //
+                            .setInstruction(m.instruction(InstructionKind.STORE_LOCAL_MATERIALIZED, "store.local.mat",
+                                            m.signature(void.class, Object.class, Object.class)) //
+                                            .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index") //
+                                            .addImmediate(ImmediateKind.LOCAL_ROOT, "root_index"));
+        }
         m.returnOperation = m.operation(OperationKind.RETURN, "Return", "Return returns the value produced by {@code result}.") //
                         .setVoid(true) //
                         .setDynamicOperands(child("result")) //
@@ -360,6 +347,35 @@ public class BytecodeDSLBuiltins {
 
         m.clearLocalInstruction = m.instruction(InstructionKind.CLEAR_LOCAL, "clear.local", m.signature(void.class));
         m.clearLocalInstruction.addImmediate(ImmediateKind.FRAME_INDEX, "frame_index");
+    }
+
+    private static String rootOperationJavadoc(BytecodeDSLModel m) {
+        String rootClass = m.templateType.getSimpleName().toString();
+        String innerRootBehaviour;
+        if (m.enableMaterializedLocalAccesses) {
+            innerRootBehaviour = "but the inner root <i>can</i> manipulate the outer root's locals\n" +
+                            "using materialized local accesses if the outer frame is provided to it";
+        } else {
+            innerRootBehaviour = String.format("and it does not have access to the outer root's locals (if it needs\n" +
+                            "access to outer locals, consider {@link %s#enableMaterializedLocalAccesses enabling materialized local accesses})", GENERATE_BYTECODE);
+        }
+        return String.format(
+                        """
+                                        Each Root operation defines one function (i.e., a {@link %s}).
+                                        It takes one or more children, which define the body of the function that executes when it is invoked.
+                                        If control falls through to the end of the body without returning, instructions are inserted to implicitly return {@code null}.
+                                        <p>
+                                        A root operation is typically the outermost one. That is, a {@link BytecodeParser} should invoke {@link #beginRoot} first before using other builder methods to generate bytecode.
+                                        The parser should invoke {@link #endRoot} to finish generating the {@link %s}.
+                                        <p>
+                                        A parser *can* nest this operation in Source and SourceSection operations in order to provide a {@link Node#getSourceSection source location} for the entire root node.
+                                        The result of {@link Node#getSourceSection} on the generated root is undefined if there is no enclosing SourceSection operation.
+                                        <p>
+                                        This method can also be called inside of another root operation. Bytecode generation for the outer root node suspends until generation for the inner root node finishes.
+                                        The inner root node is not lexically nested in the outer (you can invoke the inner root node independently), %s.
+                                        Multiple root nodes can be obtained from the {@link BytecodeNodes} object in the order of their {@link #beginRoot} calls.
+                                        """,
+                        rootClass, rootClass, innerRootBehaviour);
     }
 
     private static String loadLocalUndefinedBehaviour(BytecodeDSLModel m) {

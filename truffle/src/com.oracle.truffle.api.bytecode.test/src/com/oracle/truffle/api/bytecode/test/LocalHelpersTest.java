@@ -1509,32 +1509,39 @@ public class LocalHelpersTest {
 
 @GenerateBytecodeTestVariants({
                 @Variant(suffix = "Base", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
-                                enableYield = true)),
-                @Variant(suffix = "BaseDefault", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableYield = true, //
-                                defaultLocalValue = "DEFAULT")),
+                                enableMaterializedLocalAccesses = true)),
+                @Variant(suffix = "BaseDefault", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
+                                defaultLocalValue = "DEFAULT", //
+                                enableYield = true, //
+                                enableMaterializedLocalAccesses = true)),
                 @Variant(suffix = "WithBEIllegal", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableQuickening = true, //
                                 enableUncachedInterpreter = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
-                                enableYield = true)),
+                                enableYield = true, //
+                                enableMaterializedLocalAccesses = true)),
                 @Variant(suffix = "WithBEIllegalRootScoped", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableQuickening = true, //
                                 enableUncachedInterpreter = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
-                                enableBlockScoping = false, enableYield = true)),
+                                enableBlockScoping = false, //
+                                enableYield = true, //
+                                enableMaterializedLocalAccesses = true)),
                 @Variant(suffix = "WithBEObjectDefault", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableQuickening = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
                                 enableUncachedInterpreter = true, //
                                 defaultLocalValue = "resolveDefault()", //
-                                enableYield = true)),
+                                enableYield = true, //
+                                enableMaterializedLocalAccesses = true)),
                 @Variant(suffix = "WithBENullDefault", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableQuickening = true, //
                                 boxingEliminationTypes = {boolean.class, long.class}, //
                                 enableUncachedInterpreter = true, //
                                 defaultLocalValue = "null", //
-                                enableYield = true))
+                                enableYield = true, //
+                                enableMaterializedLocalAccesses = true))
 })
 abstract class BytecodeNodeWithLocalIntrospection extends DebugBytecodeRootNode implements BytecodeRootNode {
     public int reservedLocalIndex = -1;

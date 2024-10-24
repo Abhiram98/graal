@@ -4024,14 +4024,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     });
                     b.startThrow().startCall("failArgument").doubleQuote(
                                     "Local variables used in materialized accesses must belong to the current root node or an outer root node.").end().end();
-
                 }
             } else {
                 // Local must belong to the current root node.
                 b.declaration(dataClasses.get(model.rootOperation).asType(), "rootOperationData", "getCurrentRootOperationData()");
                 b.startIf().string("rootOperationData.index != localImpl.rootIndex").end().startBlock();
-                b.startThrow().startCall("failArgument").doubleQuote(
-                                "Local variable must belong to the current root node. Consider using materialized local accesses to access locals from an outer root node.").end().end();
+
+                String materializedAccessAdvice = "Consider using materialized local accesses (i.e., LoadLocalMaterialized/StoreLocalMaterialized or MaterializedLocalAccessor) to access locals from an outer root node.";
+                if (!model.enableMaterializedLocalAccesses) {
+                    materializedAccessAdvice += " Materialized local accesses are currently disabled and can be enabled using the enableMaterializedLocalAccesses field of @GenerateBytecode.";
+                }
+
+                b.startThrow().startCall("failArgument").doubleQuote("Local variable must belong to the current root node. " + materializedAccessAdvice).end().end();
                 b.end();
             }
 
