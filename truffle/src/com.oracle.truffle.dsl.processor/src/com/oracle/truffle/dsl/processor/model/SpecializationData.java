@@ -951,6 +951,11 @@ public final class SpecializationData extends TemplateMethod {
         Iterator<GuardExpression> currentGuards = getGuards().iterator();
         while (prevGuards.hasNext()) {
             GuardExpression prevGuard = prevGuards.next();
+            if (prev.isGuardBoundWithCache(prevGuard)) {
+                // if a guard with cache is bound the next specialization is always reachable
+                return true;
+            }
+
             GuardExpression currentGuard = currentGuards.hasNext() ? currentGuards.next() : null;
             if (currentGuard == null || !currentGuard.implies(prevGuard)) {
                 return true;
