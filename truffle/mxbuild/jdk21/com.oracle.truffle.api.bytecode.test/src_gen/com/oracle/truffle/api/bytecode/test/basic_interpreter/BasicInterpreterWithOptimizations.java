@@ -2514,14 +2514,14 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
         protected final void clearLocalValueInternal(Frame frame, int localOffset, int localIndex) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            FRAMES.clear(frame, frameIndex);
+            frame.clear(frameIndex);
         }
 
         @Override
         protected final boolean isLocalClearedInternal(Frame frame, int localOffset, int localIndex) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            return FRAMES.getTag(frame, frameIndex) == FrameSlotKind.Illegal.tag;
+            return frame.getTag(frameIndex) == FrameSlotKind.Illegal.tag;
         }
 
         @Override
@@ -2530,7 +2530,9 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            if (getRoot().getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Invalid frame with invalid descriptor passed.");
+            }
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
             if (frame.isObject(frameIndex)) {
                 return frame.getObject(frameIndex);
@@ -2544,7 +2546,9 @@ public final class BasicInterpreterWithOptimizations extends BasicInterpreter {
             CompilerAsserts.partialEvaluationConstant(bci);
             CompilerAsserts.partialEvaluationConstant(localOffset);
             assert localOffset >= 0 && localOffset < getLocalCount(bci) : "Invalid out-of-bounds local offset provided.";
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
+            if (getRoot().getFrameDescriptor() != frame.getFrameDescriptor()) {
+                throw new IllegalArgumentException("Invalid frame with invalid descriptor passed.");
+            }
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
             frame.setObject(frameIndex, value);
         }

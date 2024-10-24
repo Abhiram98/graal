@@ -3888,14 +3888,14 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         protected final void clearLocalValueInternal(Frame frame, int localOffset, int localIndex) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            FRAMES.clear(frame, frameIndex);
+            frame.clear(frameIndex);
         }
 
         @Override
         protected final boolean isLocalClearedInternal(Frame frame, int localOffset, int localIndex) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            return FRAMES.getTag(frame, frameIndex) == FrameSlotKind.Illegal.tag;
+            return frame.getTag(frameIndex) == FrameSlotKind.Illegal.tag;
         }
 
         @Override
@@ -7503,7 +7503,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
             try {
-                byte tag = getCachedLocalTagInternal(this.localTags_, localIndex);
+                byte tag = getCachedLocalTag(localIndex);
                 switch (tag) {
                     case FrameTags.BOOLEAN :
                         return frame.expectBoolean(frameIndex);
@@ -7525,7 +7525,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         protected void setLocalValueInternal(Frame frame, int localOffset, int localIndex, Object value) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte oldTag = getCachedLocalTag(localIndex);
             byte newTag;
             switch (oldTag) {
                 case FrameTags.BOOLEAN :
@@ -7566,7 +7566,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         protected void setLocalValueInternalBoolean(Frame frame, int localOffset, int localIndex, boolean value) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte oldTag = getCachedLocalTag(localIndex);
             byte newTag;
             switch (oldTag) {
                 case FrameTags.BOOLEAN :
@@ -7594,7 +7594,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         protected void setLocalValueInternalLong(Frame frame, int localOffset, int localIndex, long value) {
             assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = USER_LOCALS_START_INDEX + localOffset;
-            byte oldTag = getCachedLocalTagInternal(this.localTags_, localIndex);
+            byte oldTag = getCachedLocalTag(localIndex);
             byte newTag;
             switch (oldTag) {
                 case FrameTags.LONG :
@@ -7613,7 +7613,6 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
         }
 
         private void setLocalValueImpl(Frame frame, int localOffset, Object value) {
-            assert getRoot().getFrameDescriptor() == frame.getFrameDescriptor() : "Invalid frame with invalid descriptor passed.";
             int frameIndex = localOffset + USER_LOCALS_START_INDEX;
             byte oldTag = getCachedLocalTag(localOffset);
             byte newTag;
@@ -7642,7 +7641,7 @@ public final class BasicInterpreterProductionRootScoping extends BasicInterprete
                     break;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            setCachedLocalTag(localOffset, newTag);
+            setCachedLocalTagInternal(this.localTags_, localOffset, newTag);
             setLocalValueImpl(frame, localOffset, value);
         }
 
