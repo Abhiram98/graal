@@ -323,10 +323,10 @@ The setting is controlled by the `enableBlockScoping` flag in [`@GenerateBytecod
 The plain `LoadLocal` and `StoreLocal` operations access locals from the current frame.
 In some cases, you may need to access locals from a different frame; for example, if root nodes are nested, an inner root may need to access locals of the outer root.
 
-The `LoadLocalMaterialized` and `StoreLocalMaterialized` operations are intended for such cases.
-They take an extra operand for the frame to read from/write to; this frame must be materialized.
+Materialized local accesses are intended for such use cases (see the `enableMaterializedLocalAccesses` flag in [`@GenerateBytecode`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/GenerateBytecode.java)).
+When materialized local accesses are enabled, the interpreter defines `LoadLocalMaterialized` and `StoreLocalMaterialized` operations that behave analogously to `LoadLocal` and `StoreLocal`.
 They can only access locals of the current root or an enclosing root.
-You can also use [`MaterializedLocalAccessor`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/MaterializedLocalAccessor.java) to access locals of a materialized frame from a custom operation.
+When materialized accesses are enabled, you can also use [`MaterializedLocalAccessor`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/MaterializedLocalAccessor.java) to access locals of a materialized frame from a custom operation.
 
 Below is a simple example where the inner root reads the outer local from the outer root's frame.
 ```java
@@ -343,8 +343,8 @@ b.beginRoot(); // outer root
 b.endRoot();
 ```
 
-If an inner root accesses an outer local using materialized loads/stores, you should be careful to only call the inner root when the outer local is live; otherwise, a local load could produce unexpected values.
-The bytecode builder statically checks that the local is in scope when emitting a materialized load/store, but the interpreter cannot easily check that the access occurs at that same point in execution.
+When using materialized accesses with outer locals, you should be careful to only call the inner root when the outer local is live; otherwise, the access could produce unexpected values.
+The bytecode builder statically checks that the local is in scope when emitting a materialized access, but the interpreter cannot easily check that the access occurs at that same point in execution.
 The interpreter _will_ validate the access when it is configured to store the bytecode index in the frame (see the `storeBytecodeIndexInFrame` flag in [`@GenerateBytecode`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/GenerateBytecode.java)), but for performance reasons this flag is `false` by default.
 Consider enabling the flag temporarily if you encounter unexpected behaviour with materialized local values.
 
