@@ -111,6 +111,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
 
     public DeclaredType languageClass;
     public boolean enableUncachedInterpreter;
+    public Integer defaultUncachedThreshold;
     public boolean enableSerialization;
     public boolean enableQuickening;
     public boolean allowUnsafe;

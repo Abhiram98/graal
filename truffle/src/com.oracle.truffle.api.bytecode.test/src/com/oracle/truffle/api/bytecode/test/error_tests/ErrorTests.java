@@ -137,6 +137,52 @@ public class ErrorTests {
         }
     }
 
+    @ExpectError("An uncached interpreter is not enabled, so the uncached threshold has no effect.")
+    @GenerateBytecode(languageClass = ErrorLanguage.class, defaultUncachedThreshold = 32)
+    public abstract static class UnusedUncachedThreshold extends RootNode implements BytecodeRootNode {
+        protected UnusedUncachedThreshold(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+    }
+
+    @ExpectError("Uncached threshold cannot be a negative value (other than Integer.MIN_VALUE).")
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true, defaultUncachedThreshold = -1)
+    public abstract static class BadUncachedThreshold extends RootNode implements BytecodeRootNode {
+        protected BadUncachedThreshold(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true, defaultUncachedThreshold = 0)
+    public abstract static class AcceptableUncachedThreshold extends RootNode implements BytecodeRootNode {
+        protected AcceptableUncachedThreshold(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+
+        @Operation
+        public static final class Add {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true, defaultUncachedThreshold = Integer.MIN_VALUE)
+    public abstract static class AcceptableUncachedThreshold2 extends RootNode implements BytecodeRootNode {
+        protected AcceptableUncachedThreshold2(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+
+        @Operation
+        public static final class Add {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+    }
+
     @ExpectError({
                     "Bytecode DSL always generates a cached interpreter.",
                     "Set GenerateBytecode#enableUncachedInterpreter to generate an uncached interpreter.",

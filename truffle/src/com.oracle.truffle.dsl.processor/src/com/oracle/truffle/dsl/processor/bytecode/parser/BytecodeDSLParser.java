@@ -228,6 +228,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
     private void parseBytecodeDSLModel(TypeElement typeElement, BytecodeDSLModel model, AnnotationMirror generateBytecodeMirror) {
         model.languageClass = (DeclaredType) ElementUtils.getAnnotationValue(generateBytecodeMirror, "languageClass").getValue();
         model.enableUncachedInterpreter = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableUncachedInterpreter");
+        model.defaultUncachedThreshold = parseDefaultUncachedThreshold(model, generateBytecodeMirror);
         model.enableSerialization = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableSerialization");
         model.enableSpecializationIntrospection = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "enableSpecializationIntrospection");
         model.allowUnsafe = ElementUtils.getAnnotationValue(Boolean.class, generateBytecodeMirror, "allowUnsafe");
@@ -952,6 +953,26 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         model.finalizeInstructions();
 
         return;
+    }
+
+    private static Integer parseDefaultUncachedThreshold(BytecodeDSLModel model, AnnotationMirror generateBytecodeMirror) {
+        AnnotationValue explicitValue = ElementUtils.getAnnotationValue(generateBytecodeMirror, "defaultUncachedThreshold", false);
+        Integer threshold;
+        if (explicitValue != null) {
+            if (!model.enableUncachedInterpreter) {
+                model.addError(generateBytecodeMirror, explicitValue, "An uncached interpreter is not enabled, so the uncached threshold has no effect.");
+                return null;
+            }
+            threshold = ElementUtils.resolveAnnotationValue(Integer.class, explicitValue);
+        } else {
+            // Extract default value.
+            threshold = ElementUtils.getAnnotationValue(Integer.class, generateBytecodeMirror, "defaultUncachedThreshold");
+        }
+
+        if (threshold < 0 && threshold != Integer.MIN_VALUE) {
+            model.addError(generateBytecodeMirror, explicitValue, "Uncached threshold cannot be a negative value (other than Integer.MIN_VALUE).");
+        }
+        return threshold;
     }
 
     private List<List<TypeMirror>> expandBoxingEliminatedImplicitCasts(BytecodeDSLModel model, TypeSystemData typeSystem, List<TypeMirror> signatureTypes) {

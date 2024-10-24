@@ -117,6 +117,7 @@ import com.oracle.truffle.api.source.SourceSection;
                                 enableSerialization = true, //
                                 enableTagInstrumentation = true, //
                                 enableUncachedInterpreter = true, //
+                                defaultUncachedThreshold = 20, //
                                 enableSpecializationIntrospection = true)),
                 @Variant(suffix = "WithBE", configuration = @GenerateBytecode(languageClass = BytecodeDSLTestLanguage.class, //
                                 enableYield = true, //

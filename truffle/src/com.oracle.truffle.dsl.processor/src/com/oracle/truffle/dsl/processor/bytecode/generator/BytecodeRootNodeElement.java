@@ -11597,7 +11597,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             if (tier.isUncached()) {
                 this.add(GeneratorUtils.createConstructorUsingFields(Set.of(), this));
-                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "uncachedExecuteCount_")).createInitBuilder().string("16");
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "uncachedExecuteCount_")).createInitBuilder().string(model.defaultUncachedThreshold.toString());
             } else if (tier.isCached()) {
                 this.add(createCachedConstructor());
                 this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE), arrayOf(types.Node), "cachedNodes_")));

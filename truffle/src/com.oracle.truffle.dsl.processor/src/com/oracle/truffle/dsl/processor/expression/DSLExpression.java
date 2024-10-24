@@ -208,7 +208,7 @@ public abstract class DSLExpression {
                                             BytecodeDSLParser.SYMBOL_ROOT_NODE, //
                                             BytecodeDSLParser.SYMBOL_BYTECODE_NODE, //
                                             BytecodeDSLParser.SYMBOL_BYTECODE_INDEX //
-                                            -> false;
+                                -> false;
                             default -> true;
 
                         };

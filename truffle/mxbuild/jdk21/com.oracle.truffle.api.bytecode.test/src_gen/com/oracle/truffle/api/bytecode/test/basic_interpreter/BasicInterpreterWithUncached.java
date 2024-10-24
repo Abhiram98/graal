@@ -4738,7 +4738,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     @DenyReplace
     private static final class UncachedBytecodeNode extends AbstractBytecodeNode {
 
-        private int uncachedExecuteCount_ = 16;
+        private int uncachedExecuteCount_ = 20;
 
         UncachedBytecodeNode(byte[] bytecodes, Object[] constants, int[] handlers, int[] locals, int[] sourceInfo, List<Source> sources, int numNodes, TagRootNode tagRoot) {
             super(bytecodes, constants, handlers, locals, sourceInfo, sources, numNodes, tagRoot);

@@ -115,12 +115,30 @@ public @interface GenerateBytecode {
      * executing cached (specializing) nodes.
      * <p>
      * The node will transition to a specializing interpreter after enough invocations/back-edges
-     * (as determined by the {@link BytecodeNode#setUncachedThreshold uncached interpreter
-     * threshold}).
+     * (as determined by {@link #defaultUncachedThreshold}).
      *
      * @since 24.2
      */
     boolean enableUncachedInterpreter() default false;
+
+    /**
+     * Sets the default number of times an uncached interpreter must return, branch backwards, or
+     * yield before transitioning to cached.
+     * <p>
+     * The threshold should be a positive value, {@code 0}, or {@code Integer.MIN_VALUE}. A
+     * threshold of {@code 0} will cause each bytecode node to immediately transition to cached on
+     * first invocation. A threshold of {@code Integer.MIN_VALUE} forces a bytecode node to stay
+     * uncached (i.e., it will not transition to cached).
+     * <p>
+     * The default threshold can be overridden for a given bytecode node using
+     * {@link BytecodeNode#setUncachedThreshold}.
+     * <p>
+     * This field has no effect unless the uncached interpreter is
+     * {@link #enableUncachedInterpreter() enabled}.
+     *
+     * @since 24.2
+     */
+    int defaultUncachedThreshold() default 16;
 
     /**
      * Whether the generated interpreter should support serialization and deserialization.

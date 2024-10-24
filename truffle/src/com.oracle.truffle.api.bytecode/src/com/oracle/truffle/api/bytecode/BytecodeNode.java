@@ -942,12 +942,10 @@ public abstract class BytecodeNode extends Node {
     public abstract List<LocalVariable> getLocals();
 
     /**
-     * Sets the number of times an uncached interpreter must return, branch backwards, or yield
-     * before transitioning to cached. The default threshold is {@code 16}. The {@code threshold}
-     * should be a positive value, {@code 0}, or {@code Integer.MIN_VALUE}. A threshold of {@code 0}
-     * forces the uncached interpreter to transition to cached on the next invocation. A threshold
-     * of {@code Integer.MIN_VALUE} forces the uncached interpreter to stay uncached (i.e., it will
-     * not transition to cached).
+     * Sets the number of times the uncached interpreter must return, branch backwards, or yield
+     * before transitioning to cached. See {@link GenerateBytecode#defaultUncachedThreshold} for
+     * information about the default threshold and the meaning of different {@code threshold}
+     * values.
      * <p>
      * This method should be called before executing the root node. It will not have any effect on
      * an uncached interpreter that is currently executing, an interpreter that is already cached,
