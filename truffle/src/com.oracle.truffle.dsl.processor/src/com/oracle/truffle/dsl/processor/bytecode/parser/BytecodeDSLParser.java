@@ -720,6 +720,26 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
                                 instruction.addImmediate(ImmediateKind.BYTECODE_INDEX, createChildBciName(i));
                             }
                         }
+                        // handle boxing overloads
+                        SpecializationData singleSpecialization = null;
+                        if (instruction.filteredSpecializations != null) {
+                            if (instruction.filteredSpecializations.size() == 1) {
+                                singleSpecialization = instruction.filteredSpecializations.get(0);
+                            }
+                        } else if (instruction.nodeData != null && instruction.nodeData.getReachableSpecializations().size() == 1) {
+                            singleSpecialization = instruction.nodeData.getReachableSpecializations().get(0);
+                        }
+                        if (singleSpecialization != null) {
+                            for (SpecializationData boxingOverload : singleSpecialization.getBoxingOverloads()) {
+                                TypeMirror overloadedReturnType = boxingOverload.getReturnType().getType();
+                                if (model.isBoxingEliminated(overloadedReturnType) && !ElementUtils.typeEquals(instruction.signature.returnType, overloadedReturnType)) {
+                                    InstructionModel returnTypeQuickening = model.quickenInstruction(instruction,
+                                                    instruction.signature.specializeReturnType(overloadedReturnType),
+                                                    ElementUtils.getSimpleName(overloadedReturnType));
+                                    returnTypeQuickening.returnTypeQuickening = true;
+                                }
+                            }
+                        }
                         if (model.isBoxingEliminated(instruction.signature.returnType)) {
                             InstructionModel returnTypeQuickening = model.quickenInstruction(instruction,
                                             instruction.signature, "unboxed");

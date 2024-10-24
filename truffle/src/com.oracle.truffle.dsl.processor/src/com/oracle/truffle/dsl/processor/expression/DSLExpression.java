@@ -208,7 +208,7 @@ public abstract class DSLExpression {
                                             BytecodeDSLParser.SYMBOL_ROOT_NODE, //
                                             BytecodeDSLParser.SYMBOL_BYTECODE_NODE, //
                                             BytecodeDSLParser.SYMBOL_BYTECODE_INDEX //
-                                -> false;
+                                            -> false;
                             default -> true;
 
                         };
@@ -862,7 +862,12 @@ public abstract class DSLExpression {
         public boolean equals(Object obj) {
             if (obj instanceof Variable) {
                 Variable other = (Variable) obj;
-                return ElementUtils.variableEquals(resolvedVariable, other.resolvedVariable) && Objects.equals(receiver, other.receiver);
+                if (receiver == null && other.receiver == null) {
+                    // parameter access
+                    return Objects.equals(resolvedVariable.getSimpleName(), other.resolvedVariable.getSimpleName());
+                } else {
+                    return ElementUtils.variableEquals(resolvedVariable, other.resolvedVariable) && Objects.equals(receiver, other.receiver);
+                }
             }
             return false;
         }

@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.lang.model.element.Element;
@@ -97,6 +98,8 @@ public final class SpecializationData extends TemplateMethod {
     private Double localActivationProbability;
 
     private boolean aotReachable;
+
+    private final List<SpecializationData> boxingOverloads = new ArrayList<>();
 
     public SpecializationData(NodeData node, TemplateMethod template, SpecializationKind kind, List<SpecializationThrowsData> exceptions, boolean hasUnexpectedResultRewrite,
                     boolean reportPolymorphism, boolean reportMegamorphism) {
@@ -1026,6 +1029,113 @@ public final class SpecializationData extends TemplateMethod {
                 }
             }
         }
+    }
+
+    public boolean isBoxingOverloadable(SpecializationData other) {
+        if (!ElementUtils.isPrimitive(other.getReturnType().getType())) {
+            return false;
+        }
+
+        List<Parameter> signature = getSignatureParameters();
+        List<Parameter> otherSignature = other.getSignatureParameters();
+        if (signature.size() != otherSignature.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < signature.size(); i++) {
+            Parameter parameter = signature.get(i);
+            Parameter otherParameter = otherSignature.get(i);
+            if (!ElementUtils.typeEquals(parameter.getType(), otherParameter.getType())) {
+                return false;
+            }
+        }
+        if (!Objects.equals(getLimitExpression(), other.getLimitExpression())) {
+            return false;
+        }
+        if (!hasSameGuards(other)) {
+            return false;
+        }
+        if (!hasSameCaches(other)) {
+            return false;
+        }
+        if (!hasSameAssumptions(other)) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean hasSameGuards(SpecializationData other) {
+        if (this.guards.size() != other.guards.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < guards.size(); i++) {
+            GuardExpression guard = guards.get(i);
+            GuardExpression otherGuard = other.guards.get(i);
+            if (!guard.getExpression().equals(otherGuard.getExpression())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean hasSameCaches(SpecializationData other) {
+        if (this.caches.size() != other.caches.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < caches.size(); i++) {
+            CacheExpression cache = caches.get(i);
+            CacheExpression otherCache = other.caches.get(i);
+            if (!cache.isSameCache(otherCache)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean hasSameAssumptions(SpecializationData other) {
+        if (this.assumptionExpressions.size() != other.assumptionExpressions.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < assumptionExpressions.size(); i++) {
+            AssumptionExpression assumption = assumptionExpressions.get(i);
+            AssumptionExpression otherAssumptions = other.assumptionExpressions.get(i);
+            if (!assumption.getExpression().equals(otherAssumptions.getExpression())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public List<SpecializationData> getBoxingOverloads() {
+        return boxingOverloads;
+    }
+
+    public SpecializationData lookupBoxingOverload(ExecutableTypeData type) {
+        if (!type.hasUnexpectedValue()) {
+            return null;
+        }
+        for (SpecializationData specialization : getBoxingOverloads()) {
+            if (ElementUtils.typeEquals(specialization.getReturnType().getType(), type.getReturnType())) {
+                return specialization;
+            }
+        }
+        return null;
+    }
+
+    public TypeMirror lookupBoxingOverloadReturnType(ExecutableTypeData type) {
+        SpecializationData specializationData = lookupBoxingOverload(type);
+        if (specializationData == null) {
+            return getReturnType().getType();
+        } else {
+            return specializationData.getReturnType().getType();
+        }
+
     }
 
 }

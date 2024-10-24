@@ -1160,6 +1160,17 @@ public class FlatNodeGenFactory {
                 generateAOT(inlined, true);
             }
 
+            if (!node.isGenerateCached()) {
+                // if no cached node is generated we need to generate the expect methods
+                // in the inlined node.
+                for (TypeMirror type : uniqueSortedTypes(expectedTypes, false)) {
+                    if (!typeSystem.hasType(type)) {
+                        clazz.addOptional(TypeSystemCodeGenerator.createExpectMethod(PRIVATE, typeSystem,
+                                        context.getType(Object.class), type));
+                    }
+                }
+            }
+
             generateStatisticsFields(inlined);
 
             clazz.add(inlined);
@@ -2671,8 +2682,10 @@ public class FlatNodeGenFactory {
             }
 
             TypeMirror returnType = forType.getReturnType();
-            if (!isVoid(returnType) && !isSubtypeBoxed(context, specialization.getReturnType().getType(), returnType) &&
-                            !isSubtypeBoxed(context, returnType, specialization.getReturnType().getType())) {
+
+            TypeMirror type = specialization.lookupBoxingOverloadReturnType(forType);
+            if (!isVoid(returnType) && !isSubtypeBoxed(context, type, returnType) &&
+                            !isSubtypeBoxed(context, returnType, type)) {
                 continue outer;
             }
             filteredSpecializations.add(specialization);
@@ -2681,12 +2694,12 @@ public class FlatNodeGenFactory {
         return filteredSpecializations;
     }
 
-    private List<SpecializationData> filterImplementedSpecializations(List<SpecializationData> specializations, TypeMirror expectedReturnType) {
+    private List<SpecializationData> filterImplementedSpecializations(List<SpecializationData> specializations, ExecutableTypeData forType) {
         List<SpecializationData> filteredSpecializations = new ArrayList<>();
-        TypeMirror returnType = boxType(context, expectedReturnType);
+        TypeMirror returnType = boxType(context, forType.getReturnType());
 
         for (SpecializationData specialization : specializations) {
-            TypeMirror specializationReturnType = boxType(context, specialization.getReturnType().getType());
+            TypeMirror specializationReturnType = boxType(context, specialization.lookupBoxingOverloadReturnType(forType));
             if (typeEquals(specializationReturnType, returnType)) {
                 filteredSpecializations.add(specialization);
             }
@@ -2747,7 +2760,7 @@ public class FlatNodeGenFactory {
         if (delegateableTypes.isEmpty()) {
             implementedSpecializations = compatibleSpecializations;
         } else {
-            implementedSpecializations = filterImplementedSpecializations(compatibleSpecializations, type.getReturnType());
+            implementedSpecializations = filterImplementedSpecializations(compatibleSpecializations, type);
         }
 
         CodeExecutableElement method = createExecuteMethod(type);
@@ -2891,7 +2904,7 @@ public class FlatNodeGenFactory {
 
                 if (delegateType != null) {
                     List<SpecializationData> delegateSpecializations = filterImplementedSpecializations(
-                                    filterCompatibleSpecializations(node.getReachableSpecializations(), delegateType), delegateType.getReturnType());
+                                    filterCompatibleSpecializations(node.getReachableSpecializations(), delegateType), delegateType);
                     coversAllSpecializations = delegateSpecializations.size() == node.getReachableSpecializations().size();
                     if (!coversAllSpecializations) {
                         builder.tree(multiState.createLoadFastPath(frameState, delegateSpecializations));
@@ -3853,6 +3866,9 @@ public class FlatNodeGenFactory {
     private List<ExecutableTypeData> filterExecutableTypes(List<ExecutableTypeData> executableTypes, List<SpecializationData> specializations) {
         Set<TypeMirror> specializedReturnTypes = new HashSet<>();
         for (SpecializationData specialization : specializations) {
+            for (SpecializationData boxingOverload : specialization.getBoxingOverloads()) {
+                specializedReturnTypes.add(boxingOverload.getReturnType().getType());
+            }
             specializedReturnTypes.add(specialization.getReturnType().getType());
         }
 
@@ -4187,10 +4203,19 @@ public class FlatNodeGenFactory {
 
     private boolean needsUnexpectedResultException(ExecutableTypeData executedType) {
         if (!executedType.hasUnexpectedValue()) {
+            // unexpected result is not compatible
             return false;
         }
 
         if (isSubtypeBoxed(context, executeAndSpecializeType.getReturnType(), executedType.getReturnType())) {
+            for (SpecializationData specialization : node.getReachableSpecializations()) {
+                SpecializationData overload = specialization.lookupBoxingOverload(executedType);
+                if (overload != null && overload.hasUnexpectedResultRewrite()) {
+                    return true;
+                }
+            }
+
+            // generic does not support boxed
             return false;
         } else {
             return true;
@@ -4243,6 +4268,7 @@ public class FlatNodeGenFactory {
             suppressed.retainAll(Arrays.asList("deprecated", "all"));
             GeneratorUtils.mergeSuppressWarnings(frameState.method, suppressed.toArray(new String[suppressed.size()]));
         }
+
         ExecutableElement targetMethod = specialization.getMethod();
         if (targetMethod == null) {
             builder.tree(createThrowUnsupported(builder, frameState));
@@ -4339,9 +4365,14 @@ public class FlatNodeGenFactory {
                 }
 
             }
+            SpecializationData boxingOverload = specialization.lookupBoxingOverload(forType);
+            if (boxingOverload != null) {
+                targetMethod = boxingOverload.getMethod();
+            }
+            CodeTree specializationCall = callMethod(frameState, null, targetMethod, bindings);
+            TypeMirror specializationReturnType = specialization.lookupBoxingOverloadReturnType(forType);
 
-            CodeTree specializationCall = callMethod(frameState, null, specialization.getMethod(), bindings);
-            if (isVoid(specialization.getMethod().getReturnType())) {
+            if (isVoid(specializationReturnType)) {
                 builder.statement(specializationCall);
                 if (isVoid(forType.getReturnType())) {
                     builder.returnStatement();
@@ -4350,7 +4381,7 @@ public class FlatNodeGenFactory {
                 }
             } else {
                 builder.startReturn();
-                builder.tree(expectOrCast(specialization.getReturnType().getType(), forType, specializationCall));
+                builder.tree(expectOrCast(specializationReturnType, forType, specializationCall));
                 builder.end();
             }
         }

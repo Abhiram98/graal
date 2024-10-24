@@ -75,11 +75,11 @@ public final class Signature {
         this.constantOperandsAfterCount = constantOperandsAfterCount;
     }
 
-    private Signature(Signature copy, List<TypeMirror> operandTypes) {
+    private Signature(Signature copy, List<TypeMirror> operandTypes, TypeMirror returnType) {
         if (operandTypes.size() != copy.operandTypes.size()) {
             throw new IllegalArgumentException();
         }
-        this.returnType = copy.returnType;
+        this.returnType = returnType;
         this.operandTypes = operandTypes;
         this.isVariadic = copy.isVariadic;
         this.isVoid = copy.isVoid;
@@ -90,6 +90,10 @@ public final class Signature {
 
     public List<TypeMirror> getDynamicOperandTypes() {
         return operandTypes.subList(constantOperandsBeforeCount, constantOperandsBeforeCount + dynamicOperandCount);
+    }
+
+    public Signature specializeReturnType(TypeMirror newReturnType) {
+        return new Signature(this, operandTypes, newReturnType);
     }
 
     public Signature specializeOperandType(int dynamicOperandIndex, TypeMirror newType) {
@@ -104,7 +108,7 @@ public final class Signature {
 
         List<TypeMirror> newOperandTypes = new ArrayList<>(operandTypes);
         newOperandTypes.set(dynamicOperandIndex, newType);
-        return new Signature(this, newOperandTypes);
+        return new Signature(this, newOperandTypes, this.returnType);
     }
 
     public TypeMirror getGenericType(int dynamicOperandIndex) {

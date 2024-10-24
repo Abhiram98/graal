@@ -2590,15 +2590,77 @@ public final class NodeParser extends AbstractParser<NodeData> {
         if (node.hasErrors()) {
             return;
         }
-        initializeUnroll(node);
 
+        initializeUnroll(node);
         initializeOrder(node);
         initializeReachability(node);
+        initializeBoxingOverloads(node);
         initializeProbability(node);
         initializeFallbackReachability(node);
 
         initializeCheckedExceptions(node);
         initializeSpecializationIdsWithMethodNames(node.getSpecializations());
+
+    }
+
+    private void initializeBoxingOverloads(NodeData node) {
+        List<SpecializationData> toRemove = new ArrayList<>();
+        for (SpecializationData specialization : node.getSpecializations()) {
+            if (specialization.hasUnexpectedResultRewrite()) {
+                if (specialization.isReplaced()) {
+                    boolean allOverloaded = true;
+                    for (SpecializationData replacingSpecialization : specialization.getReplacedBy()) {
+                        if (replacingSpecialization.isBoxingOverloadable(specialization)) {
+                            replacingSpecialization.getBoxingOverloads().add(specialization);
+                            replacingSpecialization.getReplacesNames().remove(specialization.getId());
+                        } else {
+                            replacingSpecialization.addSuppressableWarning(TruffleSuppressedWarnings.UNEXPECTED_RESULT_REWRITE,
+                                            "The specialization '%s' throws an %s and is replaced by this specialization but their signature, guards or cached state are not compatible with each other so it cannot be used for boxing elimination. " +
+                                                            "It is recommended to align the specializations to resolve this.",
+                                            specialization.createReferenceName(),
+                                            getSimpleName(types.UnexpectedResultException));
+                            specialization.addSuppressableWarning(TruffleSuppressedWarnings.UNEXPECTED_RESULT_REWRITE,
+                                            "This specialization throws an %s and is replaced by the '%s' specialization but their signature, guards or cached state are not compatible with each other so it cannot be used for boxing elimination. " +
+                                                            "It is recommended to align the specializations to resolve this.",
+                                            getSimpleName(types.UnexpectedResultException),
+                                            replacingSpecialization.createReferenceName());
+                            allOverloaded = false;
+                        }
+                    }
+                    if (allOverloaded) {
+                        toRemove.add(specialization);
+                    }
+                } else {
+                    for (SpecializationData replaceSpecialization : node.getSpecializations()) {
+                        if (replaceSpecialization.hasUnexpectedResultRewrite()) {
+                            continue;
+                        } else if (!replaceSpecialization.isReachableAfter(specialization)) {
+                            continue;
+                        }
+                        if (replaceSpecialization.isBoxingOverloadable(specialization)) {
+                            replaceSpecialization.addSuppressableWarning(TruffleSuppressedWarnings.UNEXPECTED_RESULT_REWRITE,
+                                            "The specialization '%s' throws an %s and is compatible for boxing elimination but the specialization does not replace it. " +
+                                                            "It is recommmended to specify a @%s(..., replaces=\"%s\") attribute to resolve this.",
+                                            specialization.createReferenceName(),
+                                            getSimpleName(types.UnexpectedResultException),
+                                            getSimpleName(types.Specialization),
+                                            specialization.getMethodName());
+                            specialization.addSuppressableWarning(TruffleSuppressedWarnings.UNEXPECTED_RESULT_REWRITE,
+                                            "This specialization throws an %s and is replaced by the '%s' specialization but their signature, guards or cached state are not compatible with each other so it cannot be used for boxing elimination. " +
+                                                            "It is recommended to align the specializations to resolve this.",
+                                            getSimpleName(types.UnexpectedResultException),
+                                            replaceSpecialization.createReferenceName());
+
+                        }
+                    }
+                }
+            }
+        }
+        if (!toRemove.isEmpty()) {
+            node.getSpecializations().removeAll(toRemove);
+            node.getReachableSpecializations().removeAll(toRemove);
+            resolveReplaces(node);
+        }
     }
 
     private static void initializeProbability(NodeData node) {

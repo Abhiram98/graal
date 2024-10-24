@@ -1397,13 +1397,15 @@ public class BoxingEliminationTest extends AbstractInstructionTest {
     }
 
     @Test
-    public void testRewriteCast() {
+    public void testRewriteCastInt() {
         BoxingEliminationTestRootNode node = parse(b -> {
             b.beginRoot();
             b.beginReturn();
+            b.beginAbs();
             b.beginRewriteCast();
             b.emitLoadArgument(0);
             b.endRewriteCast();
+            b.endAbs();
             b.endReturn();
             b.endRoot();
         });
@@ -1412,41 +1414,87 @@ public class BoxingEliminationTest extends AbstractInstructionTest {
         assertInstructions(node,
                         "load.argument",
                         "c.RewriteCast",
+                        "c.Abs",
                         "return");
-        assertEquals(42, node.getCallTarget().call(42));
+        assertEquals(42, node.getCallTarget().call(-42));
         assertInstructions(node,
                         "load.argument",
-                        "c.RewriteCast$Int",
+                        "c.RewriteCast$int",
+                        "c.Abs$Int",
                         "return");
 
-        assertEquals(42d, node.getCallTarget().call(42d));
+        assertEquals(42, node.getCallTarget().call(-42));
 
         assertInstructions(node,
                         "load.argument",
-                        "c.RewriteCast",
+                        "c.RewriteCast$int",
+                        "c.Abs$Int",
                         "return");
 
-        assertEquals(42d, node.getCallTarget().call(42d));
-        assertInstructions(node,
-                        "load.argument",
-                        "c.RewriteCast$Double",
-                        "return");
-
-        assertEquals(42, node.getCallTarget().call(42));
+        assertEquals(42L, node.getCallTarget().call(-42L));
         assertInstructions(node,
                         "load.argument",
                         "c.RewriteCast",
+                        "c.Abs",
                         "return");
 
-        assertEquals(42, node.getCallTarget().call(42));
-        assertInstructions(node,
-                        "load.argument",
-                        "c.RewriteCast",
-                        "return");
-
-        var quickenings = assertQuickenings(node, 5, 5);
+        var quickenings = assertQuickenings(node, 4, 2);
         assertStable(quickenings, node, 42);
-        assertStable(quickenings, node, 42d);
+        assertStable(quickenings, node, -42L);
+    }
+
+    @Test
+    public void testRewriteCastLong() {
+        BoxingEliminationTestRootNode node = parse(b -> {
+            b.beginRoot();
+            b.beginReturn();
+            b.beginAbs();
+            b.beginRewriteCast();
+            b.emitLoadArgument(0);
+            b.endRewriteCast();
+            b.endAbs();
+            b.endReturn();
+            b.endRoot();
+        });
+
+        assertQuickenings(node, 0, 0);
+        assertInstructions(node,
+                        "load.argument",
+                        "c.RewriteCast",
+                        "c.Abs",
+                        "return");
+        assertEquals(42L, node.getCallTarget().call(-42L));
+        assertInstructions(node,
+                        "load.argument",
+                        "c.RewriteCast$long",
+                        "c.Abs$LessThanZero",
+                        "return");
+
+        assertEquals(42L, node.getCallTarget().call(42L));
+
+        assertInstructions(node,
+                        "load.argument",
+                        "c.RewriteCast$long",
+                        "c.Abs$GreaterZero#LessThanZero",
+                        "return");
+
+        assertEquals(42, node.getCallTarget().call(-42));
+        assertInstructions(node,
+                        "load.argument",
+                        "c.RewriteCast",
+                        "c.Abs",
+                        "return");
+
+        assertEquals("", node.getCallTarget().call(""));
+        assertInstructions(node,
+                        "load.argument",
+                        "c.RewriteCast",
+                        "c.Abs",
+                        "return");
+
+        var quickenings = assertQuickenings(node, 8, 4);
+        assertStable(quickenings, node, 42);
+        assertStable(quickenings, node, 42L);
         assertStable(quickenings, node, "");
     }
 
@@ -1559,7 +1607,7 @@ public class BoxingEliminationTest extends AbstractInstructionTest {
 
             @Specialization
             public static int doInt(int v) {
-                return -v;
+                return Math.abs(v);
             }
 
             @Specialization
@@ -1571,7 +1619,6 @@ public class BoxingEliminationTest extends AbstractInstructionTest {
         @Operation
         public static final class RewriteCast {
 
-            @ForceQuickening
             @Specialization(rewriteOn = UnexpectedResultException.class)
             public static int doInt(Object obj) throws UnexpectedResultException {
                 if (obj instanceof Integer i) {
@@ -1580,18 +1627,16 @@ public class BoxingEliminationTest extends AbstractInstructionTest {
                 throw new UnexpectedResultException(obj);
             }
 
-            @ForceQuickening
             @Specialization(rewriteOn = UnexpectedResultException.class)
-            public static double doDouble(Object obj) throws UnexpectedResultException {
-                if (obj instanceof Double i) {
+            public static long doLong(Object obj) throws UnexpectedResultException {
+                if (obj instanceof Long i) {
                     return i;
                 }
                 throw new UnexpectedResultException(obj);
             }
 
-            @Specialization(replaces = {"doInt", "doDouble"})
-            public static Object doObject(
-                            Object obj) {
+            @Specialization(replaces = {"doInt", "doLong"})
+            public static Object doObject(Object obj) {
                 return obj;
             }
         }
