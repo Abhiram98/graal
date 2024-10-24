@@ -82,13 +82,13 @@ public abstract class BasicInterpreterBuilder extends BytecodeBuilder {
 
     public abstract void emitLoadLocal(BytecodeLocal local);
 
-    public abstract void beginLoadLocalMaterialized(BytecodeLocal local);
-
-    public abstract void endLoadLocalMaterialized();
-
     public abstract void beginStoreLocal(BytecodeLocal local);
 
     public abstract void endStoreLocal();
+
+    public abstract void beginLoadLocalMaterialized(BytecodeLocal local);
+
+    public abstract void endLoadLocalMaterialized();
 
     public abstract void beginStoreLocalMaterialized(BytecodeLocal local);
 

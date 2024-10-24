@@ -71,8 +71,6 @@ public class BytecodeDSLBuiltins {
         m.branchFalseInstruction = m.instruction(InstructionKind.BRANCH_FALSE, "branch.false", m.signature(void.class, Object.class)) //
                         .addImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target") //
                         .addImmediate(ImmediateKind.BRANCH_PROFILE, "branch_profile");
-        m.storeLocalInstruction = m.instruction(InstructionKind.STORE_LOCAL, "store.local", m.signature(void.class, Object.class)) //
-                        .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index");
         m.throwInstruction = m.instruction(InstructionKind.THROW, "throw", m.signature(void.class, Object.class));
         m.loadConstantInstruction = m.instruction(InstructionKind.LOAD_CONSTANT, "load.constant", m.signature(Object.class)) //
                         .addImmediate(ImmediateKind.CONSTANT, "constant");
@@ -251,6 +249,15 @@ public class BytecodeDSLBuiltins {
                         .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to load")) //
                         .setInstruction(m.instruction(InstructionKind.LOAD_LOCAL, "load.local", m.signature(Object.class)) //
                                         .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index"));
+        m.storeLocalInstruction = m.instruction(InstructionKind.STORE_LOCAL, "store.local", m.signature(void.class, Object.class)) //
+                        .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index");
+        m.storeLocalOperation = m.operation(OperationKind.STORE_LOCAL, "StoreLocal", """
+                        StoreLocal writes the value produced by {@code value} into the {@code local} in the current frame.
+                        """) //
+                        .setVoid(true) //
+                        .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to store to")) //
+                        .setDynamicOperands(child("value")) //
+                        .setInstruction(m.storeLocalInstruction);
         m.loadLocalMaterializedOperation = m.operation(OperationKind.LOAD_LOCAL_MATERIALIZED, "LoadLocalMaterialized",
                         """
                                         LoadLocalMaterialized reads {@code local} from the frame produced by {@code frame}.
@@ -263,13 +270,6 @@ public class BytecodeDSLBuiltins {
                         .setInstruction(m.instruction(InstructionKind.LOAD_LOCAL_MATERIALIZED, "load.local.mat", m.signature(Object.class, Object.class)) //
                                         .addImmediate(ImmediateKind.FRAME_INDEX, "frame_index") //
                                         .addImmediate(ImmediateKind.LOCAL_ROOT, "root_index"));
-        m.storeLocalOperation = m.operation(OperationKind.STORE_LOCAL, "StoreLocal", """
-                        StoreLocal writes the value produced by {@code value} into the {@code local} in the current frame.
-                        """) //
-                        .setVoid(true) //
-                        .setOperationBeginArguments(new OperationArgument(types.BytecodeLocal, Encoding.LOCAL, "local", "the local to store to")) //
-                        .setDynamicOperands(child("value")) //
-                        .setInstruction(m.storeLocalInstruction);
         m.storeLocalMaterializedOperation = m.operation(OperationKind.STORE_LOCAL_MATERIALIZED, "StoreLocalMaterialized",
                         """
                                         StoreLocalMaterialized writes the value produced by {@code value} into the {@code local} in the frame produced by {@code frame}.

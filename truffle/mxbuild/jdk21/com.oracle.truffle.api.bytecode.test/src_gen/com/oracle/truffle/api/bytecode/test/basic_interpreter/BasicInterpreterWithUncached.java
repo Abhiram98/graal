@@ -138,10 +138,10 @@ import java.util.function.Supplier;
  *     kind: LOAD_EXCEPTION
  *   - Operation LoadLocal
  *     kind: LOAD_LOCAL
- *   - Operation LoadLocalMaterialized
- *     kind: LOAD_LOCAL_MATERIALIZED
  *   - Operation StoreLocal
  *     kind: STORE_LOCAL
+ *   - Operation LoadLocalMaterialized
+ *     kind: LOAD_LOCAL_MATERIALIZED
  *   - Operation StoreLocalMaterialized
  *     kind: STORE_LOCAL_MATERIALIZED
  *   - Operation Return
@@ -259,34 +259,34 @@ import java.util.function.Supplier;
  *     kind: BRANCH_FALSE
  *     encoding: [6 : short, branch_target (bci) : int, branch_profile : int]
  *     signature: void (Object)
- *   - Instruction store.local
- *     kind: STORE_LOCAL
- *     encoding: [7 : short, frame_index : short]
- *     signature: void (Object)
  *   - Instruction throw
  *     kind: THROW
- *     encoding: [8 : short]
+ *     encoding: [7 : short]
  *     signature: void (Object)
  *   - Instruction load.constant
  *     kind: LOAD_CONSTANT
- *     encoding: [9 : short, constant (const) : int]
+ *     encoding: [8 : short, constant (const) : int]
  *     signature: Object ()
  *   - Instruction load.null
  *     kind: LOAD_NULL
- *     encoding: [10 : short]
+ *     encoding: [9 : short]
  *     signature: Object ()
  *   - Instruction load.argument
  *     kind: LOAD_ARGUMENT
- *     encoding: [11 : short, index (short) : short]
+ *     encoding: [10 : short, index (short) : short]
  *     signature: Object ()
  *   - Instruction load.exception
  *     kind: LOAD_EXCEPTION
- *     encoding: [12 : short, exception_sp (sp) : short]
+ *     encoding: [11 : short, exception_sp (sp) : short]
  *     signature: Object ()
  *   - Instruction load.local
  *     kind: LOAD_LOCAL
- *     encoding: [13 : short, frame_index : short]
+ *     encoding: [12 : short, frame_index : short]
  *     signature: Object ()
+ *   - Instruction store.local
+ *     kind: STORE_LOCAL
+ *     encoding: [13 : short, frame_index : short]
+ *     signature: void (Object)
  *   - Instruction load.local.mat
  *     kind: LOAD_LOCAL_MATERIALIZED
  *     encoding: [14 : short, frame_index : short, root_index (local_root) : short]
@@ -1044,10 +1044,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.CONSTANT_NULL :
                 case Instructions.INVALIDATE0 :
                     return 2;
-                case Instructions.STORE_LOCAL :
                 case Instructions.LOAD_ARGUMENT :
                 case Instructions.LOAD_EXCEPTION :
                 case Instructions.LOAD_LOCAL :
+                case Instructions.STORE_LOCAL :
                 case Instructions.CLEAR_LOCAL :
                 case Instructions.INVALIDATE1 :
                     return 4;
@@ -1147,11 +1147,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return List.of(
                         new BytecodeIndexArgument(bytecode, "branch_target", bci + 2),
                         new BranchProfileArgument(bytecode, "branch_profile", bci + 6));
-                case Instructions.STORE_LOCAL :
-                case Instructions.LOAD_LOCAL :
-                case Instructions.CLEAR_LOCAL :
-                    return List.of(
-                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.LOAD_CONSTANT :
                     return List.of(
                         new ConstantArgument(bytecode, "constant", bci + 2));
@@ -1161,6 +1156,11 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.LOAD_EXCEPTION :
                     return List.of(
                         new IntegerArgument(bytecode, "exception_sp", bci + 2, 2));
+                case Instructions.LOAD_LOCAL :
+                case Instructions.STORE_LOCAL :
+                case Instructions.CLEAR_LOCAL :
+                    return List.of(
+                        new LocalOffsetArgument(bytecode, "local_offset", bci + 2));
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.STORE_LOCAL_MAT :
                     return List.of(
@@ -1268,8 +1268,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "branch.backward";
                 case Instructions.BRANCH_FALSE :
                     return "branch.false";
-                case Instructions.STORE_LOCAL :
-                    return "store.local";
                 case Instructions.THROW :
                     return "throw";
                 case Instructions.LOAD_CONSTANT :
@@ -1282,6 +1280,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     return "load.exception";
                 case Instructions.LOAD_LOCAL :
                     return "load.local";
+                case Instructions.STORE_LOCAL :
+                    return "store.local";
                 case Instructions.LOAD_LOCAL_MAT :
                     return "load.local.mat";
                 case Instructions.STORE_LOCAL_MAT :
@@ -1425,13 +1425,13 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 case Instructions.BRANCH :
                 case Instructions.BRANCH_BACKWARD :
                 case Instructions.BRANCH_FALSE :
-                case Instructions.STORE_LOCAL :
                 case Instructions.THROW :
                 case Instructions.LOAD_CONSTANT :
                 case Instructions.LOAD_NULL :
                 case Instructions.LOAD_ARGUMENT :
                 case Instructions.LOAD_EXCEPTION :
                 case Instructions.LOAD_LOCAL :
+                case Instructions.STORE_LOCAL :
                 case Instructions.LOAD_LOCAL_MAT :
                 case Instructions.STORE_LOCAL_MAT :
                 case Instructions.YIELD :
@@ -1937,10 +1937,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         this.getRoot().onInvalidateInstruction(new InstructionImpl(this, bci, op), new InstructionImpl(this, bci, Instructions.INVALIDATE0));
                         bci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.STORE_LOCAL :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         BYTES.putShort(bc, bci, Instructions.INVALIDATE1);
@@ -2115,18 +2115,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             bci = bci + 10;
                             break;
                         }
-                        case Instructions.STORE_LOCAL :
-                        case Instructions.LOAD_LOCAL :
-                        case Instructions.CLEAR_LOCAL :
-                        {
-                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
-                            root = this.getRoot();
-                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
-                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
-                            }
-                            bci = bci + 4;
-                            break;
-                        }
                         case Instructions.LOAD_CONSTANT :
                         {
                             int constant = BYTES.getIntUnaligned(bc, bci + 2 /* imm constant */);
@@ -2148,6 +2136,18 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             int maxStackHeight = root.getFrameDescriptor().getNumberOfSlots() - root.maxLocals;
                             if (exception_sp < 0 || exception_sp > maxStackHeight) {
                                 throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. stack pointer is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
+                            }
+                            bci = bci + 4;
+                            break;
+                        }
+                        case Instructions.LOAD_LOCAL :
+                        case Instructions.STORE_LOCAL :
+                        case Instructions.CLEAR_LOCAL :
+                        {
+                            short frame_index = BYTES.getShort(bc, bci + 2 /* imm frame_index */);
+                            root = this.getRoot();
+                            if (frame_index < USER_LOCALS_START_INDEX || frame_index >= root.maxLocals) {
+                                throw CompilerDirectives.shouldNotReachHere(String.format("Bytecode validation error at index: %s. local offset is out of bounds%n%s", bci, dumpInvalid(findLocation(bci))));
                             }
                             bci = bci + 4;
                             break;
@@ -2715,10 +2715,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 2;
                         stableBci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.STORE_LOCAL :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
@@ -2825,10 +2825,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 2;
                         stableBci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.STORE_LOCAL :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
@@ -3059,10 +3059,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     case Instructions.INVALIDATE0 :
                         bci += 2;
                         break;
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.STORE_LOCAL :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                         bci += 4;
@@ -3337,14 +3337,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                 break;
                             }
                         }
-                        case Instructions.STORE_LOCAL :
-                        {
-                            doStoreLocal(frame, localFrame, bc, bci, sp);
-                            FRAMES.clear(frame, sp - 1);
-                            sp -= 1;
-                            bci += 4;
-                            break;
-                        }
                         case Instructions.THROW :
                         {
                             throw sneakyThrow((Throwable) FRAMES.uncheckedGetObject(frame, sp - 1));
@@ -3385,6 +3377,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         {
                             doLoadLocal(this, frame, localFrame, bc, bci, sp);
                             sp += 1;
+                            bci += 4;
+                            break;
+                        }
+                        case Instructions.STORE_LOCAL :
+                        {
+                            doStoreLocal(frame, localFrame, bc, bci, sp);
+                            FRAMES.clear(frame, sp - 1);
+                            sp -= 1;
                             bci += 4;
                             break;
                         }
@@ -3916,14 +3916,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             return -1;
         }
 
+        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+        }
+
         private void doStoreLocal(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
             FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(stackFrame, sp - 1);
-        }
-
-        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
@@ -4471,10 +4471,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         bci += 10;
                         continue loop;
                     }
-                    case Instructions.STORE_LOCAL :
                     case Instructions.LOAD_ARGUMENT :
                     case Instructions.LOAD_EXCEPTION :
                     case Instructions.LOAD_LOCAL :
+                    case Instructions.STORE_LOCAL :
                     case Instructions.CLEAR_LOCAL :
                     case Instructions.INVALIDATE1 :
                     {
@@ -4832,14 +4832,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                                     break;
                                 }
                             }
-                            case Instructions.STORE_LOCAL :
-                            {
-                                doStoreLocal(frame, localFrame, bc, bci, sp);
-                                FRAMES.clear(frame, sp - 1);
-                                sp -= 1;
-                                bci += 4;
-                                break;
-                            }
                             case Instructions.THROW :
                             {
                                 throw sneakyThrow((Throwable) FRAMES.uncheckedGetObject(frame, sp - 1));
@@ -4876,6 +4868,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             {
                                 doLoadLocal(this, frame, localFrame, bc, bci, sp);
                                 sp += 1;
+                                bci += 4;
+                                break;
+                            }
+                            case Instructions.STORE_LOCAL :
+                            {
+                                doStoreLocal(frame, localFrame, bc, bci, sp);
+                                FRAMES.clear(frame, sp - 1);
+                                sp -= 1;
                                 bci += 4;
                                 break;
                             }
@@ -5413,14 +5413,14 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
         }
 
+        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
+            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
+        }
+
         private void doStoreLocal(Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
             Object local = FRAMES.requireObject(stackFrame, sp - 1);
             FRAMES.setObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */), local);
             FRAMES.clear(stackFrame, sp - 1);
-        }
-
-        private void doLoadLocal(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
-            FRAMES.setObject(stackFrame, sp, FRAMES.requireObject(frame, BYTES.getShort(bc, bci + 2 /* imm frame_index */)));
         }
 
         private void doLoadLocalMat(AbstractBytecodeNode $this, Frame stackFrame, Frame frame, byte[] bc, int bci, int sp) {
@@ -5855,7 +5855,7 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
     public static final class Builder extends BasicInterpreterBuilder {
 
         private static final byte UNINITIALIZED = -1;
-        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "LoadLocalMaterialized", "StoreLocal", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "TeeMaterializedLocal", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
+        private static final String[] OPERATION_NAMES = new String[] {null, "Block", "Root", "IfThen", "IfThenElse", "Conditional", "While", "TryCatch", "TryFinally", "TryCatchOtherwise", "FinallyHandler", "Label", "Branch", "LoadConstant", "LoadNull", "LoadArgument", "LoadException", "LoadLocal", "StoreLocal", "LoadLocalMaterialized", "StoreLocalMaterialized", "Return", "Yield", "Source", "SourceSection", "Tag", "EarlyReturn", "Add", "ToString", "Call", "AddConstantOperation", "AddConstantOperationAtEnd", "VeryComplexOperation", "ThrowOperation", "ReadExceptionOperation", "AlwaysBoxOperation", "AppenderOperation", "TeeLocal", "TeeLocalRange", "TeeMaterializedLocal", "Invoke", "MaterializeFrame", "CreateClosure", "VoidOperation", "ToBoolean", "GetSourcePosition", "EnsureAndGetSourcePosition", "GetSourcePositions", "CopyLocalsToFrame", "GetBytecodeLocation", "CollectBytecodeLocations", "CollectSourceLocations", "CollectAllSourceLocations", "Continue", "CurrentLocation", "PrintHere", "IncrementValue", "DoubleValue", "EnableIncrementValueInstrumentation", "Mod", "Less", "EnableDoubleValueInstrumentation", "ExplicitBindingsTest", "ImplicitBindingsTest", "ScAnd", "ScOr"};
         private static final Class<?>[] TAGS_ROOT_TAG_ROOT_BODY_TAG = new Class<?>[]{RootTag.class, RootBodyTag.class};
 
         private int operationSequenceNumber;
@@ -7088,6 +7088,64 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             afterChild(true, bci - 4);
         }
 
+        /**
+         * Begins a built-in StoreLocal operation.
+         * <p>
+         * Signature: StoreLocal(value) -> void
+         * <p>
+         * StoreLocal writes the value produced by {@code value} into the {@code local} in the current frame.
+         * <p>
+         * A corresponding call to {@link #endStoreLocal} is required to end the operation.
+         *
+         * @param local the local to store to.
+         */
+        @Override
+        public void beginStoreLocal(BytecodeLocal local) {
+            if (serialization != null) {
+                try {
+                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_STORE_LOCAL);
+                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).contextDepth));
+                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).localIndex));
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+                return;
+            }
+            validateRootOperationBegin();
+            validateLocalScope(local);
+            beforeChild();
+            BytecodeLocalImpl operationData = (BytecodeLocalImpl)local;
+            beginOperation(Operations.STORELOCAL, operationData);
+        }
+
+        /**
+         * Ends a built-in StoreLocal operation.
+         * <p>
+         * Signature: StoreLocal(value) -> void
+         *
+         * @see #beginStoreLocal
+         */
+        @Override
+        public void endStoreLocal() {
+            if (serialization != null) {
+                try {
+                    serialization.buffer.writeShort(SerializationState.CODE_END_STORE_LOCAL);
+                } catch (IOException ex) {
+                    throw new IOError(ex);
+                }
+                return;
+            }
+            OperationStackEntry operation = endOperation(Operations.STORELOCAL);
+            if (operation.childCount != 1) {
+                throw failState("Operation StoreLocal expected exactly 1 child, but " + operation.childCount + " provided. This is probably a bug in the parser.");
+            }
+            if (!(operation.data instanceof BytecodeLocalImpl operationData)) {
+                throw assertionFailed("Data class BytecodeLocalImpl expected, but was " + operation.data);
+            }
+            doEmitInstructionS(Instructions.STORE_LOCAL, -1, operationData.frameIndex);
+            afterChild(false, bci - 4);
+        }
+
         private void validateMaterializedLocalScope(BytecodeLocal local) {
             BytecodeLocalImpl localImpl = (BytecodeLocalImpl) local;
             if (!localImpl.scope.valid) {
@@ -7154,64 +7212,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             }
             doEmitInstructionSS(Instructions.LOAD_LOCAL_MAT, 0, operationData.frameIndex, operationData.rootIndex);
             afterChild(true, bci - 6);
-        }
-
-        /**
-         * Begins a built-in StoreLocal operation.
-         * <p>
-         * Signature: StoreLocal(value) -> void
-         * <p>
-         * StoreLocal writes the value produced by {@code value} into the {@code local} in the current frame.
-         * <p>
-         * A corresponding call to {@link #endStoreLocal} is required to end the operation.
-         *
-         * @param local the local to store to.
-         */
-        @Override
-        public void beginStoreLocal(BytecodeLocal local) {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_BEGIN_STORE_LOCAL);
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).contextDepth));
-                    serialization.buffer.writeShort(safeCastShort(((SerializationLocal) local).localIndex));
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            validateRootOperationBegin();
-            validateLocalScope(local);
-            beforeChild();
-            BytecodeLocalImpl operationData = (BytecodeLocalImpl)local;
-            beginOperation(Operations.STORELOCAL, operationData);
-        }
-
-        /**
-         * Ends a built-in StoreLocal operation.
-         * <p>
-         * Signature: StoreLocal(value) -> void
-         *
-         * @see #beginStoreLocal
-         */
-        @Override
-        public void endStoreLocal() {
-            if (serialization != null) {
-                try {
-                    serialization.buffer.writeShort(SerializationState.CODE_END_STORE_LOCAL);
-                } catch (IOException ex) {
-                    throw new IOError(ex);
-                }
-                return;
-            }
-            OperationStackEntry operation = endOperation(Operations.STORELOCAL);
-            if (operation.childCount != 1) {
-                throw failState("Operation StoreLocal expected exactly 1 child, but " + operation.childCount + " provided. This is probably a bug in the parser.");
-            }
-            if (!(operation.data instanceof BytecodeLocalImpl operationData)) {
-                throw assertionFailed("Data class BytecodeLocalImpl expected, but was " + operation.data);
-            }
-            doEmitInstructionS(Instructions.STORE_LOCAL, -1, operationData.frameIndex);
-            afterChild(false, bci - 4);
         }
 
         /**
@@ -9799,8 +9799,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                 }
                 case Operations.WHILE :
                 case Operations.FINALLYHANDLER :
-                case Operations.LOADLOCALMATERIALIZED :
                 case Operations.STORELOCAL :
+                case Operations.LOADLOCALMATERIALIZED :
                 case Operations.STORELOCALMATERIALIZED :
                 case Operations.RETURN :
                 case Operations.YIELD :
@@ -10079,17 +10079,17 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                     }
                     break;
                 }
-                case Operations.LOADLOCALMATERIALIZED :
-                {
-                    if (!producedValue) {
-                        throw failState("Operation LoadLocalMaterialized expected a value-producing child at position " + childIndex + ", but a void one was provided.");
-                    }
-                    break;
-                }
                 case Operations.STORELOCAL :
                 {
                     if (!producedValue) {
                         throw failState("Operation StoreLocal expected a value-producing child at position " + childIndex + ", but a void one was provided.");
+                    }
+                    break;
+                }
+                case Operations.LOADLOCALMATERIALIZED :
+                {
+                    if (!producedValue) {
+                        throw failState("Operation LoadLocalMaterialized expected a value-producing child at position " + childIndex + ", but a void one was provided.");
                     }
                     break;
                 }
@@ -11180,17 +11180,6 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                             emitLoadLocal(local);
                             break;
                         }
-                        case SerializationState.CODE_BEGIN_LOAD_LOCAL_MATERIALIZED :
-                        {
-                            BytecodeLocal local = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
-                            beginLoadLocalMaterialized(local);
-                            break;
-                        }
-                        case SerializationState.CODE_END_LOAD_LOCAL_MATERIALIZED :
-                        {
-                            endLoadLocalMaterialized();
-                            break;
-                        }
                         case SerializationState.CODE_BEGIN_STORE_LOCAL :
                         {
                             BytecodeLocal local = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
@@ -11200,6 +11189,17 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
                         case SerializationState.CODE_END_STORE_LOCAL :
                         {
                             endStoreLocal();
+                            break;
+                        }
+                        case SerializationState.CODE_BEGIN_LOAD_LOCAL_MATERIALIZED :
+                        {
+                            BytecodeLocal local = context.getContext(buffer.readShort()).locals.get(buffer.readShort());
+                            beginLoadLocalMaterialized(local);
+                            break;
+                        }
+                        case SerializationState.CODE_END_LOAD_LOCAL_MATERIALIZED :
+                        {
+                            endLoadLocalMaterialized();
                             break;
                         }
                         case SerializationState.CODE_BEGIN_STORE_LOCAL_MATERIALIZED :
@@ -12493,10 +12493,10 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
             private static final short CODE_EMIT_LOAD_ARGUMENT = 15 << 1;
             private static final short CODE_EMIT_LOAD_EXCEPTION = 16 << 1;
             private static final short CODE_EMIT_LOAD_LOCAL = 17 << 1;
-            private static final short CODE_BEGIN_LOAD_LOCAL_MATERIALIZED = 18 << 1;
-            private static final short CODE_END_LOAD_LOCAL_MATERIALIZED = (18 << 1) | 0b1;
-            private static final short CODE_BEGIN_STORE_LOCAL = 19 << 1;
-            private static final short CODE_END_STORE_LOCAL = (19 << 1) | 0b1;
+            private static final short CODE_BEGIN_STORE_LOCAL = 18 << 1;
+            private static final short CODE_END_STORE_LOCAL = (18 << 1) | 0b1;
+            private static final short CODE_BEGIN_LOAD_LOCAL_MATERIALIZED = 19 << 1;
+            private static final short CODE_END_LOAD_LOCAL_MATERIALIZED = (19 << 1) | 0b1;
             private static final short CODE_BEGIN_STORE_LOCAL_MATERIALIZED = 20 << 1;
             private static final short CODE_END_STORE_LOCAL_MATERIALIZED = (20 << 1) | 0b1;
             private static final short CODE_BEGIN_RETURN = 21 << 1;
@@ -12932,54 +12932,54 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
          */
         private static final short BRANCH_FALSE = 6;
         /*
-         * Instruction store.local
-         * kind: STORE_LOCAL
-         * encoding: [7 : short, frame_index : short]
-         * signature: void (Object)
-         */
-        private static final short STORE_LOCAL = 7;
-        /*
          * Instruction throw
          * kind: THROW
-         * encoding: [8 : short]
+         * encoding: [7 : short]
          * signature: void (Object)
          */
-        private static final short THROW = 8;
+        private static final short THROW = 7;
         /*
          * Instruction load.constant
          * kind: LOAD_CONSTANT
-         * encoding: [9 : short, constant (const) : int]
+         * encoding: [8 : short, constant (const) : int]
          * signature: Object ()
          */
-        private static final short LOAD_CONSTANT = 9;
+        private static final short LOAD_CONSTANT = 8;
         /*
          * Instruction load.null
          * kind: LOAD_NULL
-         * encoding: [10 : short]
+         * encoding: [9 : short]
          * signature: Object ()
          */
-        private static final short LOAD_NULL = 10;
+        private static final short LOAD_NULL = 9;
         /*
          * Instruction load.argument
          * kind: LOAD_ARGUMENT
-         * encoding: [11 : short, index (short) : short]
+         * encoding: [10 : short, index (short) : short]
          * signature: Object ()
          */
-        private static final short LOAD_ARGUMENT = 11;
+        private static final short LOAD_ARGUMENT = 10;
         /*
          * Instruction load.exception
          * kind: LOAD_EXCEPTION
-         * encoding: [12 : short, exception_sp (sp) : short]
+         * encoding: [11 : short, exception_sp (sp) : short]
          * signature: Object ()
          */
-        private static final short LOAD_EXCEPTION = 12;
+        private static final short LOAD_EXCEPTION = 11;
         /*
          * Instruction load.local
          * kind: LOAD_LOCAL
-         * encoding: [13 : short, frame_index : short]
+         * encoding: [12 : short, frame_index : short]
          * signature: Object ()
          */
-        private static final short LOAD_LOCAL = 13;
+        private static final short LOAD_LOCAL = 12;
+        /*
+         * Instruction store.local
+         * kind: STORE_LOCAL
+         * encoding: [13 : short, frame_index : short]
+         * signature: void (Object)
+         */
+        private static final short STORE_LOCAL = 13;
         /*
          * Instruction load.local.mat
          * kind: LOAD_LOCAL_MATERIALIZED
@@ -13494,8 +13494,8 @@ public final class BasicInterpreterWithUncached extends BasicInterpreter {
         private static final int LOADARGUMENT = 15;
         private static final int LOADEXCEPTION = 16;
         private static final int LOADLOCAL = 17;
-        private static final int LOADLOCALMATERIALIZED = 18;
-        private static final int STORELOCAL = 19;
+        private static final int STORELOCAL = 18;
+        private static final int LOADLOCALMATERIALIZED = 19;
         private static final int STORELOCALMATERIALIZED = 20;
         private static final int RETURN = 21;
         private static final int YIELD = 22;
