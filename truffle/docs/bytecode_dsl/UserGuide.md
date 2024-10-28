@@ -518,8 +518,10 @@ After a certain number of calls or loop iterations, an uncached interpreter will
 
 It is strongly recommended to enable uncached execution, because it can reduce the footprint of your language and improve start-up times.
 
-To support uncached execution, interpreters must make all operations compatible with uncached execution.
-The Bytecode DSL processor will inform you of any changes that need to be made.
+To support uncached execution, all operations must support [uncached execution](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/dsl/GenerateUncached.html).
+When `enableUncachedInterpreter` is set to `true`, the Bytecode DSL processor will verify that each operation supports uncached, and it will emit descriptive error messages if there are changes that need to be made.
+If an operation cannot easily support uncached execution, it can instead force the interpreter to transition to cached before it executes (see the `forceCached` field of [`@Operation`](https://github.com/oracle/graal/blob/master/truffle/src/com.oracle.truffle.api.bytecode/src/com/oracle/truffle/api/bytecode/Operation.java) and the other operation annotations).
+Bear in mind that declaring an operation with `forceCached` may limit the usefulness of the uncached interpreter, depending on how common the operation is.
 
 
 ### Source information

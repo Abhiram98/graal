@@ -88,6 +88,15 @@ public @interface OperationProxy {
     String name() default "";
 
     /**
+     * Whether executing this operation should force the uncached interpreter (if enabled) to
+     * transition to cached.
+     *
+     * @since 24.2
+     * @see Operation#forceCached()
+     */
+    boolean forceCached() default false;
+
+    /**
      * Optional documentation for the operation proxy. This documentation is included in the javadoc
      * for the generated interpreter.
      *

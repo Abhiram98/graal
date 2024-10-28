@@ -95,6 +95,27 @@ import com.oracle.truffle.api.instrumentation.Tag;
 public @interface Operation {
 
     /**
+     * Whether executing this operation should force the uncached interpreter (if enabled) to
+     * transition to cached. This field allows you to generate an uncached interpreter with
+     * operations that cannot be easily rewritten to support uncached execution. It should only be
+     * set if the uncached interpreter is {@link GenerateBytecode#enableUncachedInterpreter()
+     * enabled}.
+     * <p>
+     * By default, to generate an uncached interpreter the Bytecode DSL requires every operation to
+     * support {@link com.oracle.truffle.api.dsl.GenerateUncached uncached} execution. Setting this
+     * field to {@code true} overrides this requirement: instead, if the uncached interpreter tries
+     * to execute this operation, it will transition to cached and execute the cached operation.
+     * <p>
+     * Bear in mind that the usefulness of such an interpreter depends on the frequency of the
+     * operation. For example, if a very common operation forces cached execution, it will cause
+     * most bytecode nodes to transition to cached, negating the intended benefits of an uncached
+     * interpreter.
+     *
+     * @since 24.2
+     */
+    boolean forceCached() default false;
+
+    /**
      * The instrumentation tags that should be implicitly associated with this operation.
      *
      * @since 24.2

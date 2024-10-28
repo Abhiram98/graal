@@ -64,6 +64,7 @@ public class CustomOperationModel extends Template {
     public final BytecodeDSLModel bytecode;
     public final OperationModel operation;
     public final List<TypeMirror> implicitTags = new ArrayList<>();
+    public Boolean forceCached;
 
     public CustomOperationModel(ProcessorContext context, BytecodeDSLModel bytecode, TypeElement templateType, AnnotationMirror mirror, OperationModel operation) {
         super(context, templateType, mirror);
@@ -78,6 +79,24 @@ public class CustomOperationModel extends Template {
 
     public boolean isEpilogExceptional() {
         return ElementUtils.typeEquals(getTemplateTypeAnnotation().getAnnotationType(), types.EpilogExceptional);
+    }
+
+    public MessageContainer getModelForMessages() {
+        if (ElementUtils.typeEquals(getTemplateTypeAnnotation().getAnnotationType(), types.OperationProxy)) {
+            // Messages should appear on the @OperationProxy annotation, which is defined on the
+            // root node, not the proxied node.
+            return bytecode;
+        } else {
+            return this;
+        }
+    }
+
+    public void setForceCached() {
+        this.forceCached = true;
+    }
+
+    public boolean forcesCached() {
+        return forceCached != null && forceCached;
     }
 
     @Override

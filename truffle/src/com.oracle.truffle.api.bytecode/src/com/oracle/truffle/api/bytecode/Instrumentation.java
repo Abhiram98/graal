@@ -74,6 +74,16 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.TYPE})
 public @interface Instrumentation {
+
+    /**
+     * Whether executing this operation should force the uncached interpreter (if enabled) to
+     * transition to cached.
+     *
+     * @since 24.2
+     * @see Operation#forceCached()
+     */
+    boolean forceCached() default false;
+
     /**
      * Optional documentation for the instrumentation. This documentation is included in the javadoc
      * for the generated interpreter.

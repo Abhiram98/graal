@@ -68,6 +68,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 
+import com.oracle.truffle.dsl.processor.ProcessorContext;
 import com.oracle.truffle.dsl.processor.TruffleTypes;
 import com.oracle.truffle.dsl.processor.bytecode.generator.BytecodeDSLCodeGenerator;
 import com.oracle.truffle.dsl.processor.bytecode.model.BytecodeDSLBuiltins;
@@ -440,7 +441,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         List<AnnotationValue> boxingEliminatedTypes = (List<AnnotationValue>) ElementUtils.getAnnotationValue(generateBytecodeMirror, "boxingEliminationTypes").getValue();
         for (AnnotationValue value : boxingEliminatedTypes) {
 
-            TypeMirror mir = getTypeMirror(value);
+            TypeMirror mir = getTypeMirror(context, value);
 
             if (BOXABLE_TYPE_KINDS.contains(mir.getKind())) {
                 beTypes.add(mir);
@@ -493,7 +494,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         for (AnnotationMirror mir : ElementUtils.getRepeatedAnnotation(typeElement.getAnnotationMirrors(), types.OperationProxy)) {
             customOperationDeclared = true;
             AnnotationValue mirrorValue = ElementUtils.getAnnotationValue(mir, "value");
-            TypeMirror proxiedType = getTypeMirror(mirrorValue);
+            TypeMirror proxiedType = getTypeMirror(context, mirrorValue);
 
             String name = ElementUtils.getAnnotationValue(String.class, mir, "name");
 
@@ -508,11 +509,17 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
                 model.addError(mir, mirrorValue, "Could not use %s as an operation proxy: the class must be annotated with @%s.%s.", te.getQualifiedName(),
                                 getSimpleName(types.OperationProxy),
                                 getSimpleName(types.OperationProxy_Proxyable));
-            } else if (model.enableUncachedInterpreter && !ElementUtils.getAnnotationValue(Boolean.class, proxyable, "allowUncached", true)) {
-                model.addError(mir, mirrorValue, "Could not use %s as an operation proxy: the class must be annotated with @%s.%s(allowUncached=true) when an uncached interpreter is requested.",
-                                te.getQualifiedName(),
-                                getSimpleName(types.OperationProxy),
-                                getSimpleName(types.OperationProxy_Proxyable));
+            } else if (model.enableUncachedInterpreter) {
+                boolean allowUncached = ElementUtils.getAnnotationValue(Boolean.class, proxyable, "allowUncached", true);
+                boolean forceCached = ElementUtils.getAnnotationValue(Boolean.class, mir, "forceCached", true);
+                if (!allowUncached && !forceCached) {
+                    model.addError(mir, mirrorValue,
+                                    "Could not use %s as an operation proxy: the class must be annotated with @%s.%s(allowUncached=true) when an uncached interpreter is requested (or the proxy declaration should use @%s(..., forceCached=true)).",
+                                    te.getQualifiedName(),
+                                    getSimpleName(types.OperationProxy),
+                                    getSimpleName(types.OperationProxy_Proxyable),
+                                    getSimpleName(types.OperationProxy));
+                }
             }
 
             CustomOperationModel customOperation = CustomOperationParser.forCodeGeneration(model, types.OperationProxy_Proxyable).parseCustomRegularOperation(mir, te, name);
@@ -530,7 +537,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
             Operator operator = Operator.parse(((VariableElement) operatorValue.getValue()).getSimpleName().toString());
 
             AnnotationValue booleanConverterValue = ElementUtils.getAnnotationValue(mir, "booleanConverter");
-            TypeMirror booleanConverter = getTypeMirror(booleanConverterValue);
+            TypeMirror booleanConverter = getTypeMirror(context, booleanConverterValue);
 
             TypeElement booleanConverterTypeElement;
             if (booleanConverter.getKind() == TypeKind.DECLARED) {
@@ -1216,7 +1223,7 @@ public class BytecodeDSLParser extends AbstractParser<BytecodeDSLModels> {
         return String.format("Failed to generate code for @%s: ", getSimpleName(types.GenerateBytecode));
     }
 
-    private TypeMirror getTypeMirror(AnnotationValue value) throws AssertionError {
+    public static TypeMirror getTypeMirror(ProcessorContext context, AnnotationValue value) throws AssertionError {
         if (value.getValue() instanceof Class<?>) {
             return context.getType((Class<?>) value.getValue());
         } else if (value.getValue() instanceof TypeMirror) {

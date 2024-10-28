@@ -79,7 +79,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
-@SuppressWarnings({"unused", "static-method", "truffle"})
+@SuppressWarnings({"unused", "static-method", "truffle-inlining", "truffle-guard"})
 public class ErrorTests {
     @ExpectError("Bytecode DSL class must be declared abstract.")
     @GenerateBytecode(languageClass = ErrorLanguage.class)
@@ -88,6 +88,7 @@ public class ErrorTests {
             super(language, frameDescriptor);
         }
 
+        @SuppressWarnings("truffle")
         @Override
         public Object execute(VirtualFrame frame) {
             return null;
@@ -180,6 +181,124 @@ public class ErrorTests {
             static int add(int x, int y) {
                 return x + y;
             }
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true)
+    @ExpectError("Setting forceCached to false has no effect.")
+    @OperationProxy(value = AddProxy.class, forceCached = false)
+    public abstract static class ForceCachedFalse extends RootNode implements BytecodeRootNode {
+        protected ForceCachedFalse(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+
+        @ExpectError("Setting forceCached to false has no effect.")
+        @Operation(forceCached = false)
+        public static final class Add {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+
+        @ExpectError("Setting forceCached to false has no effect.")
+        @Instrumentation(forceCached = false)
+        public static final class Instrument {
+            @Specialization
+            static void perform() {
+            }
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class)
+    @ExpectError("The uncached interpreter is not enabled, so forceCached has no effect.")
+    @OperationProxy(value = AddProxy.class, forceCached = true)
+    public abstract static class ForceCachedNotUncached extends RootNode implements BytecodeRootNode {
+        protected ForceCachedNotUncached(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+
+        @ExpectError("The uncached interpreter is not enabled, so forceCached has no effect.")
+        @Operation(forceCached = true)
+        public static final class Add {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+
+        @ExpectError("The uncached interpreter is not enabled, so forceCached has no effect.")
+        @Instrumentation(forceCached = true)
+        public static final class Instrument {
+            @Specialization
+            static void perform() {
+
+            }
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true)
+    @ExpectWarning("This operation supports uncached execution, so forcing cached is not necessary.%")
+    @OperationProxy(value = AddProxy.class, forceCached = true)
+    public abstract static class ForceCachedUnnecessary extends RootNode implements BytecodeRootNode {
+        protected ForceCachedUnnecessary(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+
+        @ExpectWarning("This operation supports uncached execution, so forcing cached is not necessary.%")
+        @Operation(forceCached = true)
+        public static final class Add {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+
+        @SuppressWarnings("truffle-force-cached")
+        @Operation(forceCached = true)
+        public static final class SuppressedAdd {
+            @Specialization
+            static int add(int x, int y) {
+                return x + y;
+            }
+        }
+
+        @ExpectWarning("This operation supports uncached execution, so forcing cached is not necessary.%")
+        @Instrumentation(forceCached = true)
+        public static final class Instrument {
+            @Specialization
+            static void perform() {
+            }
+        }
+    }
+
+    @OperationProxy.Proxyable(allowUncached = true)
+    public abstract static class AddProxy extends Node {
+        abstract int execute(int x, int y);
+
+        @Specialization
+        static int add(int x, int y) {
+            return x + y;
+        }
+    }
+
+    @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true)
+    // The forceCached is necessary here, even though the node is uncachable, because the Proxyable
+    // annotation disallows uncached. There should be no warnings.
+    @OperationProxy(value = NonUncachableAddProxy.class, forceCached = true)
+    public abstract static class ForceCachedWithAllowUncachedFalseProxy extends RootNode implements BytecodeRootNode {
+        protected ForceCachedWithAllowUncachedFalseProxy(ErrorLanguage language, FrameDescriptor frameDescriptor) {
+            super(language, frameDescriptor);
+        }
+    }
+
+    @OperationProxy.Proxyable(allowUncached = false)
+    public abstract static class NonUncachableAddProxy extends Node {
+        abstract int execute(int x, int y);
+
+        @Specialization
+        static int add(int x, int y) {
+            return x + y;
         }
     }
 
@@ -698,7 +817,8 @@ public class ErrorTests {
     @GenerateBytecode(languageClass = ErrorLanguage.class, enableUncachedInterpreter = true)
     @OperationProxy(UncachedOperationProxy.class)
     @ExpectError("Could not use com.oracle.truffle.api.bytecode.test.error_tests.ErrorTests.NoUncachedOperationProxy as an operation proxy: " +
-                    "the class must be annotated with @OperationProxy.Proxyable(allowUncached=true) when an uncached interpreter is requested.")
+                    "the class must be annotated with @OperationProxy.Proxyable(allowUncached=true) when an uncached interpreter is requested " +
+                    "(or the proxy declaration should use @OperationProxy(..., forceCached=true)).")
     @OperationProxy(NoUncachedOperationProxy.class)
     public abstract static class OperationErrorUncachedTests extends RootNode implements BytecodeRootNode {
         protected OperationErrorUncachedTests(ErrorLanguage language, FrameDescriptor builder) {

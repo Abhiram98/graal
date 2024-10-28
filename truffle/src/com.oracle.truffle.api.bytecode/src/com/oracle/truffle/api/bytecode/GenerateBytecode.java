@@ -112,10 +112,13 @@ public @interface GenerateBytecode {
      * <p>
      * The uncached interpreter improves start-up performance by executing
      * {@link com.oracle.truffle.api.dsl.GenerateUncached uncached} nodes instead of allocating and
-     * executing cached (specializing) nodes.
+     * executing cached (specializing) nodes. The node will transition to a specializing interpreter
+     * after enough invocations/back-edges (as determined by {@link #defaultUncachedThreshold}).
      * <p>
-     * The node will transition to a specializing interpreter after enough invocations/back-edges
-     * (as determined by {@link #defaultUncachedThreshold}).
+     * To generate an uncached interpreter, all operations need to support uncached execution. If an
+     * operation cannot easily support uncached execution, it can instead
+     * {@link Operation#forceCached force a transition to cached} before the operation is executed
+     * (this may limit the utility of the uncached interpreter).
      *
      * @since 24.2
      */

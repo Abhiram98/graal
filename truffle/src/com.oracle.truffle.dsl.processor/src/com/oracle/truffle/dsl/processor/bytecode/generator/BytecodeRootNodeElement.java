@@ -13035,6 +13035,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 buildInstructionCaseBlock(b, instruction);
             }
 
+            if (!instructionPartitions.forceCachedInstructions().isEmpty()) {
+                if (!tier.isUncached()) {
+                    throw new AssertionError();
+                }
+                for (InstructionModel forceCachedInstruction : instructionPartitions.forceCachedInstructions()) {
+                    buildInstructionCases(b, forceCachedInstruction);
+                }
+                b.startBlock();
+                b.statement("$root.transitionToCached(frame, bci)");
+                b.statement("return ", encodeState("bci", "sp"));
+                b.end();
+            }
+
             for (var entry : instructionPartitions.otherInstructions.entrySet()) {
                 InstructionPartition partition = entry.getKey();
                 List<List<InstructionModel>> instructionGroups = entry.getValue();
@@ -13789,7 +13802,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement("throw sneakyThrow((Throwable) " + uncheckedGetFrameObject("frame", "sp - 1") + ")");
                     break;
                 case YIELD:
-
                     storeBciInFrameIfNecessary(b);
                     emitBeforeReturnProfiling(b);
 
@@ -13849,6 +13861,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement(setFrameObject("sp - 1", "mergeVariadic((Object[]) " + uncheckedGetFrameObject("sp - 1") + ")"));
                     break;
                 case CUSTOM:
+                    if (tier.isUncached() && instr.operation.customModel.forcesCached()) {
+                        throw new AssertionError("forceCached instructions should be emitted separately");
+                    }
                     buildCustomInstructionExecute(b, instr);
                     emitCustomStackEffect(b, getStackEffect(instr));
                     break;
@@ -13878,10 +13893,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (estimatedSize > JAVA_JIT_BYTECODE_LIMIT) {
                 Map<Boolean, List<InstructionModel>> instructionsByCustom = originalInstructions.stream() //
                                 .collect(deterministicGroupingBy(instr -> instr.kind == InstructionKind.CUSTOM));
-                int instructionsPerPartion = JAVA_JIT_BYTECODE_LIMIT / ESTIMATED_CUSTOM_INSTRUCTION_SIZE;
+                int instructionsPerPartition = JAVA_JIT_BYTECODE_LIMIT / ESTIMATED_CUSTOM_INSTRUCTION_SIZE;
 
                 List<InstructionModel> builtinInstructions = new ArrayList<>(instructionsByCustom.get(false));
-                if (builtinInstructions.size() >= instructionsPerPartion) {
+                if (builtinInstructions.size() >= instructionsPerPartition) {
                     throw new AssertionError("Too many builtin operations produced to fit in a single method.");
                 }
 
@@ -13890,23 +13905,35 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 // dispatching needs some space in the main partition. each entry accounts to size
                 int spaceUsedForDispatching = (originalInstructions.size() - builtinInstructions.size()) * INSTRUCTION_DISPATCH_SIZE;
                 int spaceLeftForCustom = Math.max(0, JAVA_JIT_BYTECODE_LIMIT - spaceUsedForBuiltins - spaceUsedForDispatching);
-                int customInstructionsInFirstPartition = spaceLeftForCustom / ESTIMATED_CUSTOM_INSTRUCTION_SIZE;
+                int customInstructionsInTopLevelPartition = spaceLeftForCustom / ESTIMATED_CUSTOM_INSTRUCTION_SIZE;
 
-                List<InstructionModel> customInstructions = instructionsByCustom.get(true);
-                builtinInstructions.addAll(customInstructions.subList(0, Math.min(customInstructions.size(), customInstructionsInFirstPartition)));
-                List<InstructionModel> instructionsToPartition = customInstructions.subList(customInstructionsInFirstPartition, customInstructions.size());
+                Map<Boolean, List<InstructionModel>> customInstructionsByForceCached = instructionsByCustom.get(true).stream() //
+                                .collect(deterministicGroupingBy(i -> isForceCached(i)));
+                // force cached instructions must go in the top-level partition. these shouldn't
+                // affect the space estimate very much because they are grouped (i.e., their space
+                // contribution is roughly the dispatch space)
+                List<InstructionModel> forceCachedInstructions = customInstructionsByForceCached.getOrDefault(true, List.of());
+                List<InstructionModel> remainingInstructions = customInstructionsByForceCached.get(false);
+                builtinInstructions.addAll(remainingInstructions.subList(0, Math.min(remainingInstructions.size(), customInstructionsInTopLevelPartition)));
+                List<InstructionModel> instructionsToPartition = remainingInstructions.subList(customInstructionsInTopLevelPartition, remainingInstructions.size());
 
                 Map<InstructionPartition, List<InstructionModel>> partitioned = instructionsToPartition.stream()//
                                 .collect(deterministicGroupingBy(InstructionPartition::new));
 
                 Map<InstructionPartition, List<List<InstructionModel>>> finalPartitioned = new LinkedHashMap<>();
                 for (var entry : partitioned.entrySet()) {
-                    finalPartitioned.put(entry.getKey(), splitList(entry.getValue(), instructionsPerPartion));
+                    finalPartitioned.put(entry.getKey(), splitList(entry.getValue(), instructionsPerPartition));
                 }
-                return new InstructionPartitionResult(builtinInstructions, finalPartitioned);
+                return new InstructionPartitionResult(builtinInstructions, forceCachedInstructions, finalPartitioned);
             } else {
-                return new InstructionPartitionResult(originalInstructions, new LinkedHashMap<>());
+                Map<Boolean, List<InstructionModel>> customInstructionsByForceCached = originalInstructions.stream() //
+                                .collect(deterministicGroupingBy(i -> isForceCached(i)));
+                return new InstructionPartitionResult(customInstructionsByForceCached.get(false), customInstructionsByForceCached.getOrDefault(true, List.of()), new LinkedHashMap<>());
             }
+        }
+
+        private boolean isForceCached(InstructionModel instruction) {
+            return tier.isUncached() && instruction.isCustomInstruction() && instruction.operation.customModel.forcesCached();
         }
 
         private static <T> List<List<T>> splitList(List<T> originalList, int chunkSize) {
@@ -16028,7 +16055,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
         }
 
-        record InstructionPartitionResult(List<InstructionModel> topLevelInstructions, Map<InstructionPartition, List<List<InstructionModel>>> otherInstructions) {
+        record InstructionPartitionResult(List<InstructionModel> topLevelInstructions, List<InstructionModel> forceCachedInstructions,
+                        Map<InstructionPartition, List<List<InstructionModel>>> otherInstructions) {
         }
     }
 
