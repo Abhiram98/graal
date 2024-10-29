@@ -1198,10 +1198,14 @@ public abstract class Node implements Cloneable, Formattable {
         if (graph != null) {
             assert !graph.isFrozen();
             NodeEventListener listener = graph.nodeEventListener;
-            if (listener != null) {
-                listener.event(Graph.NodeEvent.INPUT_CHANGED, node);
-            }
+            fireNodeEvent(node, listener);
             graph.edgeModificationCount++;
+        }
+    }
+
+    private void fireNodeEvent(Node node, NodeEventListener listener) {
+        if (listener != null) {
+            listener.event(Graph.NodeEvent.INPUT_CHANGED, node);
         }
     }
 
