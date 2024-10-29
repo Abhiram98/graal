@@ -591,11 +591,15 @@ public class GraphDecoder {
                 }
             }
 
-            if (encodedGraph.hasUnsafeAccess()) {
-                graph.markUnsafeAccess();
-            }
+            maybeMarkUnsafeAccess(encodedGraph);
         } catch (Throwable ex) {
             debug.handle(ex);
+        }
+    }
+
+    private void maybeMarkUnsafeAccess(EncodedGraph encodedGraph) {
+        if (encodedGraph.hasUnsafeAccess()) {
+            graph.markUnsafeAccess();
         }
     }
 
