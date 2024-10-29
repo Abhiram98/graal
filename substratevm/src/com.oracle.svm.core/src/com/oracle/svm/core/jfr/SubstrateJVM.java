@@ -351,6 +351,10 @@ public class SubstrateJVM {
         }
 
         JfrEndRecordingOperation vmOp = new JfrEndRecordingOperation();
+        endRecording(vmOp);
+    }
+
+    private void endRecording(com.oracle.svm.core.jfr.SubstrateJVM.JfrEndRecordingOperation vmOp) {
         vmOp.enqueue();
     }
 
