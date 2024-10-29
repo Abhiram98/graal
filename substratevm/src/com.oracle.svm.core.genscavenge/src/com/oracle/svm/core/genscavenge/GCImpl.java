@@ -440,6 +440,10 @@ public final class GCImpl implements GC {
     private static void postcondition() {
         HeapImpl heap = HeapImpl.getHeapImpl();
         YoungGeneration youngGen = heap.getYoungGeneration();
+        checkSanityAfterCollection(youngGen);
+    }
+
+    private static void checkSanityAfterCollection(YoungGeneration youngGen) {
         assert youngGen.getEden().isEmpty() : "youngGen.getEden() should be empty after a collection.";
     }
 
