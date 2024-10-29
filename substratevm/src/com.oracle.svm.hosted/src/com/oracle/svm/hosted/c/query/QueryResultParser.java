@@ -186,7 +186,7 @@ public final class QueryResultParser extends NativeInfoTreeVisitor {
 
     private void parseIntegerConstantValue(PropertyInfo<Object> info) {
         boolean isUnsigned = ((SizableInfo) info.getParent()).isUnsigned();
-        int size = ((SizableInfo) info.getParent()).getSizeInfo().getProperty();
+        int size = getSizeInBytes(info);
         String hex = idToResult.get(info.getUniqueID());
         int hexSize = hex.length() / 2;
 
@@ -199,6 +199,11 @@ public final class QueryResultParser extends NativeInfoTreeVisitor {
         } else {
             parseSigned(info, hex);
         }
+    }
+
+    private int getSizeInBytes(PropertyInfo<Object> info) {
+        int size = ((SizableInfo) info.getParent()).getSizeInfo().getProperty();
+        return size;
     }
 
     private void parseFloatValue(PropertyInfo<Object> info) {
