@@ -15806,33 +15806,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement(writeIntArray("branchProfiles", index, count));
         }
 
-        private void emitOldBranchProfile(CodeExecutableElement allocateBranchProfiles) {
-            CodeTreeBuilder b = allocateBranchProfiles.createBuilder();
-
-            String maxCount = "Integer.MAX_VALUE";
-
-            b.declaration(type(int.class), "t", readIntArray("branchProfiles", "profileIndex * 2"));
-            b.declaration(type(int.class), "f", readIntArray("branchProfiles", "profileIndex * 2 + 1"));
-            b.declaration(type(boolean.class), "val", "condition");
-
-            b.startIf().string("val").end().startBlock();
-            emitProfileBranchCase(b, maxCount, true, "t", "f", "profileIndex * 2");
-            b.end().startElseBlock();
-            emitProfileBranchCase(b, maxCount, false, "f", "t", "profileIndex * 2 + 1");
-            b.end();
-
-            b.startIf().startStaticCall(types.CompilerDirectives, "inInterpreter").end().end().startBlock();
-            b.lineComment("no branch probability calculation in the interpreter");
-            b.startReturn().string("val").end();
-            b.end().startElseBlock();
-            b.declaration(type(int.class), "sum", "t + f");
-            b.startReturn().startStaticCall(types.CompilerDirectives, "injectBranchProbability");
-            b.string("(double) t / (double) sum");
-            b.string("val");
-            b.end(2);
-            b.end();
-        }
-
         private CodeExecutableElement createEnsureFalseProfile(TypeMirror branchProfilesType) {
             CodeExecutableElement ensureFalseProfile = new CodeExecutableElement(Set.of(PRIVATE, STATIC, FINAL), type(void.class), "ensureFalseProfile",
                             new CodeVariableElement(branchProfilesType, "branchProfiles"),
@@ -15844,23 +15817,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             return ensureFalseProfile;
-        }
-
-        private void emitProfileBranchCase(CodeTreeBuilder b, String maxCount, boolean value, String count, String otherCount, String index) {
-            b.startIf().string(count).string(" == 0").end().startBlock();
-            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
-            b.end();
-
-            b.startIf().string(otherCount).string(" == 0").end().startBlock();
-            b.lineComment("Make this branch fold during PE");
-            b.statement("val = ", Boolean.toString(value));
-            b.end();
-
-            b.startIf().startStaticCall(types.CompilerDirectives, "inInterpreter").end().end().startBlock();
-            b.startIf().string(count, " < ", maxCount).end().startBlock();
-            b.startStatement().tree(writeIntArray("branchProfiles", index, count + " + 1")).end();
-            b.end();
-            b.end();
         }
 
         private void emitReportLoopCount(CodeTreeBuilder b, CodeTree condition, boolean clear) {
