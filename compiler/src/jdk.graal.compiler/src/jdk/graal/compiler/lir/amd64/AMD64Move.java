@@ -703,7 +703,7 @@ public class AMD64Move {
                 // flags and interfere with the Jcc.
                 if (input.asLong() == (int) input.asLong()) {
                     // Sign extended to long
-                    masm.movslq(result, (int) input.asLong());
+                    moveIntSignExtend(masm, result, input);
                 } else if ((input.asLong() & 0xFFFFFFFFL) == input.asLong()) {
                     // Zero extended to long
                     masm.movl(result, (int) input.asLong());
@@ -761,6 +761,10 @@ public class AMD64Move {
             default:
                 throw GraalError.shouldNotReachHereUnexpectedValue(input.getJavaKind().getStackKind()); // ExcludeFromJacocoGeneratedReport
         }
+    }
+
+    private static void moveIntSignExtend(AMD64MacroAssembler masm, Register result, JavaConstant input) {
+        masm.movslq(result, (int) input.asLong());
     }
 
     public static boolean canMoveConst2Stack(JavaConstant input) {
