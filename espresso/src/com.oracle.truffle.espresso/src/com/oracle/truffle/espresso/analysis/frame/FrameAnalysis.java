@@ -288,11 +288,15 @@ public final class FrameAnalysis {
         for (int i = 0; i < Signatures.parameterCount(sig); i++) {
             JavaKind k = Signatures.parameterKind(sig, i);
             frame.pop();
-            if (k.needsTwoSlots()) {
-                frame.pop();
-            }
+            pop(frame, k);
         }
         if (!isStatic) {
+            frame.pop();
+        }
+    }
+
+    private static void pop(Builder frame, JavaKind k) {
+        if (k.needsTwoSlots()) {
             frame.pop();
         }
     }
