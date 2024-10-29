@@ -1230,6 +1230,11 @@ final class FileSystems {
 
         static ResourcesFileSystem createForEngine(PolyglotEngineImpl engine, FileSystem resourcesFileSystem, FileSystem delegateFileSystem) {
             Set<Path> languageHomes = new HashSet<>();
+            languageHomes(engine, languageHomes);
+            return new ResourcesFileSystem(resourcesFileSystem, delegateFileSystem, engine.internalResourceRoots, languageHomes);
+        }
+
+        private static void languageHomes(PolyglotEngineImpl engine, Set<Path> languageHomes) {
             for (PolyglotLanguage language : engine.languages) {
                 if (language != null) {
                     final String languageHome = language.cache.getLanguageHome();
@@ -1238,7 +1243,6 @@ final class FileSystems {
                     }
                 }
             }
-            return new ResourcesFileSystem(resourcesFileSystem, delegateFileSystem, engine.internalResourceRoots, languageHomes);
         }
 
         static ResourcesFileSystem createForEmbedder(FileSystem resourcesFileSystem, FileSystem delegateFileSystem) {
