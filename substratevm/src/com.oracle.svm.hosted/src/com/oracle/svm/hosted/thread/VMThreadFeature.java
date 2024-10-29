@@ -222,6 +222,20 @@ public class VMThreadFeature implements InternalFeature {
         List<VMThreadLocalInfo> sortedThreadLocalInfos = threadLocalCollector.sortThreadLocals();
         SubstrateReferenceMap referenceMap = new SubstrateReferenceMap();
         int nextOffset = 0;
+        nextOffset = sortAndAssignOffsets(sortedThreadLocalInfos, nextOffset, referenceMap);
+
+        InstanceReferenceMapEncoder encoder = new InstanceReferenceMapEncoder();
+        encoder.add(referenceMap);
+        NonmovableArray<Byte> referenceMapEncoding = encoder.encodeAll();
+        threadLocalSupport.vmThreadReferenceMapEncoding = NonmovableArrays.getHostedArray(referenceMapEncoding);
+        threadLocalSupport.vmThreadReferenceMapIndex = encoder.lookupEncoding(referenceMap);
+        threadLocalSupport.vmThreadSize = nextOffset;
+
+        /* Remember the final sorted list. */
+        VMThreadLocalInfos.setInfos(sortedThreadLocalInfos);
+    }
+
+    private int sortAndAssignOffsets(List<VMThreadLocalInfo> sortedThreadLocalInfos, int nextOffset, SubstrateReferenceMap referenceMap) {
         for (VMThreadLocalInfo info : sortedThreadLocalInfos) {
             int alignment = Math.min(8, info.sizeInBytes);
             nextOffset = NumUtil.roundUp(nextOffset, alignment);
@@ -236,16 +250,7 @@ public class VMThreadFeature implements InternalFeature {
                 VMError.shouldNotReachHere("Too many thread local variables with maximum offset " + info.maxOffset + " defined");
             }
         }
-
-        InstanceReferenceMapEncoder encoder = new InstanceReferenceMapEncoder();
-        encoder.add(referenceMap);
-        NonmovableArray<Byte> referenceMapEncoding = encoder.encodeAll();
-        threadLocalSupport.vmThreadReferenceMapEncoding = NonmovableArrays.getHostedArray(referenceMapEncoding);
-        threadLocalSupport.vmThreadReferenceMapIndex = encoder.lookupEncoding(referenceMap);
-        threadLocalSupport.vmThreadSize = nextOffset;
-
-        /* Remember the final sorted list. */
-        VMThreadLocalInfos.setInfos(sortedThreadLocalInfos);
+        return nextOffset;
     }
 
     public int offsetOf(FastThreadLocal threadLocal) {
