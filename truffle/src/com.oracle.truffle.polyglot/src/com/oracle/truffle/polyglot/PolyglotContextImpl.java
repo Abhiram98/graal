@@ -3611,19 +3611,23 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
             context.sourcesToInvalidate = null;
             context.threadLocalActions.prepareContextStore();
             Map<String, Path> languageHomes = new HashMap<>();
-            for (PolyglotLanguage language : engine.languages) {
-                if (language != null) {
-                    LanguageCache cache = language.cache;
-                    String languageHome = cache.getLanguageHome();
-                    if (languageHome != null) {
-                        languageHomes.put(cache.getId(), Path.of(languageHome));
-                    }
-                }
-            }
+            languageHomes(engine, languageHomes);
 
             ((PreInitializeContextFileSystem) fileSystemConfig.fileSystem).onPreInitializeContextEnd(engine.internalResourceRoots, languageHomes);
             ((PreInitializeContextFileSystem) fileSystemConfig.internalFileSystem).onPreInitializeContextEnd(engine.internalResourceRoots, languageHomes);
             EngineAccessor.LANGUAGE.configureLoggers(context, null, context.getAllLoggers());
+        }
+    }
+
+    private static void languageHomes(PolyglotEngineImpl engine, Map<String, Path> languageHomes) {
+        for (PolyglotLanguage language : engine.languages) {
+            if (language != null) {
+                LanguageCache cache = language.cache;
+                String languageHome = cache.getLanguageHome();
+                if (languageHome != null) {
+                    languageHomes.put(cache.getId(), Path.of(languageHome));
+                }
+            }
         }
     }
 
