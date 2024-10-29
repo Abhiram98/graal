@@ -1214,9 +1214,13 @@ public abstract class Node implements Cloneable, Formattable {
         if (graph != null && node.isAlive()) {
             assert !graph.isFrozen();
             NodeEventListener listener = graph.nodeEventListener;
-            if (listener != null) {
-                listener.event(Graph.NodeEvent.ZERO_USAGES, node);
-            }
+            fireNodeEvent(node, listener);
+        }
+    }
+
+    private void fireNodeEvent(Node node, NodeEventListener listener) {
+        if (listener != null) {
+            listener.event(Graph.NodeEvent.ZERO_USAGES, node);
         }
     }
 
