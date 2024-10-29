@@ -179,7 +179,7 @@ public final class ControlFlowGraph implements AbstractControlFlowGraph<HIRBlock
             if (computeLoops && !loopInfoComputed && !cfg.buildConfig.computeLoops) {
                 cfg.computeLoopInformation();
             }
-            if (computeDominators && !loopInfoComputed && !cfg.buildConfig.computeDominators) {
+            if (notWeakerThan(computeDominators, loopInfoComputed, cfg)) {
                 cfg.computeDominators();
                 assert cfg.verifyRPOInnerLoopsFirst();
             }
@@ -193,6 +193,10 @@ public final class ControlFlowGraph implements AbstractControlFlowGraph<HIRBlock
             graph.setLastCFG(cfg);
             return cfg;
         }
+    }
+
+    private static boolean notWeakerThan(boolean computeDominators, boolean loopInfoComputed, ControlFlowGraph cfg) {
+        return computeDominators && !loopInfoComputed && !cfg.buildConfig.computeDominators;
     }
 
     private static class BuildConfig {
