@@ -4,6 +4,7 @@ package com.oracle.truffle.api.bytecode.test.basic_interpreter;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -8373,42 +8374,60 @@ public final class BasicInterpreterWithBE extends BasicInterpreter {
         }
 
         private static boolean profileBranch(int[] branchProfiles, int profileIndex, boolean condition) {
-            int t = ACCESS.readInt(branchProfiles, profileIndex * 2);
-            int f = ACCESS.readInt(branchProfiles, profileIndex * 2 + 1);
-            boolean val = condition;
-            if (val) {
-                if (t == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
+            int t;
+            int f;
+            if (HostCompilerDirectives.inInterpreterFastPath()) {
+                if (condition) {
+                    t = ACCESS.readInt(branchProfiles, profileIndex * 2);
+                    if (t == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                    }
+                    try {
+                        t = Math.addExact(t, 1);
+                    } catch (ArithmeticException e) {
+                        f = ACCESS.readInt(branchProfiles, profileIndex * 2 + 1);
+                        // shift count but never make it go to 0
+                        f = (f & 0x1) + (f >> 1);
+                        ACCESS.writeInt(branchProfiles, profileIndex * 2 + 1, f);
+                        t = Integer.MAX_VALUE >> 1;
+                    }
+                    ACCESS.writeInt(branchProfiles, profileIndex * 2, t);
+                } else {
+                    f = ACCESS.readInt(branchProfiles, profileIndex * 2 + 1);
+                    if (f == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                    }
+                    try {
+                        f = Math.addExact(f, 1);
+                    } catch (ArithmeticException e) {
+                        t = ACCESS.readInt(branchProfiles, profileIndex * 2);
+                        // shift count but never make it go to 0
+                        t = (t & 0x1) + (t >> 1);
+                        ACCESS.writeInt(branchProfiles, profileIndex * 2, t);
+                        f = Integer.MAX_VALUE >> 1;
+                    }
+                    ACCESS.writeInt(branchProfiles, profileIndex * 2 + 1, f);
                 }
-                if (f == 0) {
-                    // Make this branch fold during PE
-                    val = true;
-                }
-                if (CompilerDirectives.inInterpreter()) {
-                    if (t < Integer.MAX_VALUE) {
-                        ACCESS.writeInt(branchProfiles, profileIndex * 2, t + 1);
+                return condition;
+            } else {
+                t = ACCESS.readInt(branchProfiles, profileIndex * 2);
+                f = ACCESS.readInt(branchProfiles, profileIndex * 2 + 1);
+                if (condition) {
+                    if (t == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                    }
+                    if (f == 0) {
+                        return true;
+                    }
+                } else {
+                    if (f == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                    }
+                    if (t == 0) {
+                        return false;
                     }
                 }
-            } else {
-                if (f == 0) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                }
-                if (t == 0) {
-                    // Make this branch fold during PE
-                    val = false;
-                }
-                if (CompilerDirectives.inInterpreter()) {
-                    if (f < Integer.MAX_VALUE) {
-                        ACCESS.writeInt(branchProfiles, profileIndex * 2 + 1, f + 1);
-                    }
-                }
-            }
-            if (CompilerDirectives.inInterpreter()) {
-                // no branch probability calculation in the interpreter
-                return val;
-            } else {
-                int sum = t + f;
-                return CompilerDirectives.injectBranchProbability((double) t / (double) sum, val);
+                return CompilerDirectives.injectBranchProbability((double) t / (double) (t + f), condition);
             }
         }
 

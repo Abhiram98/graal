@@ -15732,6 +15732,81 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             new CodeVariableElement(type(int.class), "profileIndex"),
                             new CodeVariableElement(type(boolean.class), "condition"));
 
+            emitNewBranchProfile(allocateBranchProfiles);
+
+            return allocateBranchProfiles;
+        }
+
+        private void emitNewBranchProfile(CodeExecutableElement allocateBranchProfiles) {
+            CodeTreeBuilder b = allocateBranchProfiles.createBuilder();
+            b.declaration("int", "t", (CodeTree) null);
+            b.declaration("int", "f", (CodeTree) null);
+
+            b.startIf().startStaticCall(types.HostCompilerDirectives, "inInterpreterFastPath").end().end().startBlock();
+
+            b.startIf().string("condition").end().startBlock();
+            emitNewProfileBranchCase(b, "t", "f", "profileIndex * 2", "profileIndex * 2 + 1");
+            b.end().startElseBlock();
+            emitNewProfileBranchCase(b, "f", "t", "profileIndex * 2 + 1", "profileIndex * 2");
+            b.end();
+
+            b.statement("return condition");
+
+            b.end().startElseBlock(); // inInterpreterFasthPath
+
+            b.startAssign("t").tree(readIntArray("branchProfiles", "profileIndex * 2")).end();
+            b.startAssign("f").tree(readIntArray("branchProfiles", "profileIndex * 2 + 1")).end();
+
+            b.startIf().string("condition").end().startBlock();
+
+            b.startIf().string("t == 0").end().startBlock();
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+            b.end();
+
+            b.startIf().string("f == 0").end().startBlock();
+            b.returnTrue();
+            b.end();
+
+            b.end().startElseBlock(); // condition
+            b.startIf().string("f == 0").end().startBlock();
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+            b.end();
+
+            b.startIf().string("t == 0").end().startBlock();
+            b.returnFalse();
+            b.end();
+            b.end(); // condition
+
+            b.startReturn().startStaticCall(types.CompilerDirectives, "injectBranchProbability");
+            b.string("(double) t / (double) (t + f)");
+            b.string("condition");
+            b.end(2);
+
+            b.end();
+
+        }
+
+        private void emitNewProfileBranchCase(CodeTreeBuilder b, String count, String otherCount, String index, String otherIndex) {
+            b.startAssign(count).tree(readIntArray("branchProfiles", index)).end();
+
+            b.startIf().string(count).string(" == 0").end().startBlock();
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+            b.end();
+
+            b.startTryBlock();
+            b.startAssign(count).startStaticCall(type(Math.class), "addExact").string(count).string("1").end().end();
+            b.end().startCatchBlock(type(ArithmeticException.class), "e");
+            b.startAssign(otherCount).tree(readIntArray("branchProfiles", otherIndex)).end();
+            b.lineComment("shift count but never make it go to 0");
+            b.startAssign(otherCount).string("(" + otherCount + " & 0x1) + (" + otherCount + " >> 1)").end();
+            b.statement(writeIntArray("branchProfiles", otherIndex, otherCount));
+            b.startAssign(count).staticReference(type(Integer.class), "MAX_VALUE").string(" >> 1").end();
+            b.end(); // catch block
+
+            b.statement(writeIntArray("branchProfiles", index, count));
+        }
+
+        private void emitOldBranchProfile(CodeExecutableElement allocateBranchProfiles) {
             CodeTreeBuilder b = allocateBranchProfiles.createBuilder();
 
             String maxCount = "Integer.MAX_VALUE";
@@ -15756,8 +15831,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.string("val");
             b.end(2);
             b.end();
-
-            return allocateBranchProfiles;
         }
 
         private CodeExecutableElement createEnsureFalseProfile(TypeMirror branchProfilesType) {

@@ -49,7 +49,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 /**
  * Helper class to expose the internal token required to access BytecodeDSLAccess instances.
  */
-abstract class AccessToken<T extends RootNode & BytecodeRootNode> extends BytecodeRootNodes<T> {
+public abstract class AccessToken<T extends RootNode & BytecodeRootNode> extends BytecodeRootNodes<T> {
 
     protected AccessToken(BytecodeParser<? extends BytecodeBuilder> parse) {
         super(PUBLIC_TOKEN, parse);
