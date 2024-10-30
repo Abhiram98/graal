@@ -101,6 +101,9 @@ public class SubstrateJVM {
      * in).
      */
     private volatile boolean recording;
+    public boolean getRecording(){
+        return recording;
+    }
     private String dumpPath;
 
     @Platforms(Platform.HOSTED_ONLY.class)
@@ -346,15 +349,11 @@ public class SubstrateJVM {
      * See {@link JVM#endRecording}.
      */
     public void endRecording() {
-        if (!recording) {
+        if (!getRecording()) {
             return;
         }
 
         JfrEndRecordingOperation vmOp = new JfrEndRecordingOperation();
-        endRecording(vmOp);
-    }
-
-    private void endRecording(com.oracle.svm.core.jfr.SubstrateJVM.JfrEndRecordingOperation vmOp) {
         vmOp.enqueue();
     }
 
@@ -753,7 +752,7 @@ public class SubstrateJVM {
         }
     }
 
-    private static class JfrEndRecordingOperation extends JavaVMOperation {
+    public static class JfrEndRecordingOperation extends JavaVMOperation {
         JfrEndRecordingOperation() {
             super(VMOperationInfos.get(JfrEndRecordingOperation.class, "JFR end recording", SystemEffect.SAFEPOINT));
         }
