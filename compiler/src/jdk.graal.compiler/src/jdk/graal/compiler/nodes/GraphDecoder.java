@@ -619,9 +619,7 @@ public class GraphDecoder {
         } else {
             assert inlinedAssumptions == null : String.format("cannot inline graph (%s) which makes assumptions into a graph (%s) that doesn't", encodedGraph, graph);
         }
-        if (encodedGraph.hasUnsafeAccess()) {
-            graph.markUnsafeAccess();
-        }
+        maybeMarkUnsafeAccess(encodedGraph);
     }
 
     protected final LoopScope createInitialLoopScope(MethodScope methodScope, FixedWithNextNode startNode) {
