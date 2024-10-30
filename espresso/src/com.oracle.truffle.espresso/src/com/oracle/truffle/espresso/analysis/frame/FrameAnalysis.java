@@ -287,18 +287,23 @@ public final class FrameAnalysis {
     private static void popSignature(Symbol<Type>[] sig, boolean isStatic, Builder frame) {
         for (int i = 0; i < Signatures.parameterCount(sig); i++) {
             JavaKind k = Signatures.parameterKind(sig, i);
+
             frame.pop();
-            pop(frame, k);
+            if (k.needsTwoSlots()) {
+                assert frame.pop() == JavaKind.Illegal;
+            }
         }
         if (!isStatic) {
             frame.pop();
         }
     }
 
-    private static void pop(Builder frame, JavaKind k) {
+    private int pop(Builder frame, JavaKind k) {
+        frame.pop();
         if (k.needsTwoSlots()) {
-            frame.pop();
+            assert frame.pop() == JavaKind.Illegal;
         }
+        return frame.getTop();
     }
 
     private EspressoFrameDescriptor apply() {

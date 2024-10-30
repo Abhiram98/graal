@@ -270,6 +270,11 @@ public class EspressoFrameDescriptor {
 
         final JavaKind[] kinds;
         final int maxLocals;
+
+        public int getTop() {
+            return top;
+        }
+
         int top = 0;
 
         public Builder(int maxLocals, int maxStack) {
