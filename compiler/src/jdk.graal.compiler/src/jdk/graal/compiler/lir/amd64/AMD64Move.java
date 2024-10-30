@@ -703,7 +703,18 @@ public class AMD64Move {
                 // flags and interfere with the Jcc.
                 if (input.asLong() == (int) input.asLong()) {
                     // Sign extended to long
-                    moveIntSignExtend(masm, result, input);
+                    boolean finished = false;
+                    int imm = (int) input.asLong();
+                    if (imm == 0) {
+                        Register zeroValueRegister = masm.getZeroValueRegister();
+                        if (!Register.None.equals(zeroValueRegister)) {
+                            masm.movl(result, zeroValueRegister);
+                            finished = true;
+                        }
+                    }
+                    if (!finished) {
+                        masm.movslq(result, imm);
+                    }
                 } else if ((input.asLong() & 0xFFFFFFFFL) == input.asLong()) {
                     // Zero extended to long
                     masm.movl(result, (int) input.asLong());
@@ -737,7 +748,17 @@ public class AMD64Move {
                         masm.movq(result, crb.uncompressedNullRegister);
                     } else {
                         // Upper bits will be zeroed so this also works for narrow oops
-                        masm.movslq(result, 0);
+                        boolean finished = false;
+                        if (0 == 0) {
+                            Register zeroValueRegister = masm.getZeroValueRegister();
+                            if (!Register.None.equals(zeroValueRegister)) {
+                                masm.movl(result, zeroValueRegister);
+                                finished = true;
+                            }
+                        }
+                        if (!finished) {
+                            masm.movslq(result, 0);
+                        }
                     }
                 } else {
                     if (crb.target.inlineObjects) {
@@ -763,8 +784,15 @@ public class AMD64Move {
         }
     }
 
-    private static void moveIntSignExtend(AMD64MacroAssembler masm, Register result, JavaConstant input) {
-        masm.movslq(result, (int) input.asLong());
+    private void moveIntSignExtend(AMD64MacroAssembler masm, Register result, int imm) {
+        if (imm == 0) {
+            Register zeroValueRegister = masm.getZeroValueRegister();
+            if (!Register.None.equals(zeroValueRegister)) {
+                masm.movl(result, zeroValueRegister);
+                return;
+            }
+        }
+        masm.movslq(result, imm);
     }
 
     public static boolean canMoveConst2Stack(JavaConstant input) {

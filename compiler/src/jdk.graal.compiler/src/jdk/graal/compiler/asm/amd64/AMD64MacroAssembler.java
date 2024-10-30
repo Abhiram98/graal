@@ -55,6 +55,9 @@ public class AMD64MacroAssembler extends AMD64Assembler {
         super(target, optionValues, hasIntelJccErratum);
     }
 
+    public Register getZeroValueRegister(){
+        return Register.None;
+    }
     public final void decrementq(Register reg) {
         decrementq(reg, 1);
     }
