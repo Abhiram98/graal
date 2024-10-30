@@ -99,7 +99,7 @@ public final class QueryResultParser extends NativeInfoTreeVisitor {
                     returnKind = nativeLibs.getTarget().wordJavaKind;
                 }
                 int declaredSize = getSizeInBytes(returnKind);
-                int actualSize = constantInfo.getSizeInfo().getProperty();
+                int actualSize = getSizeInBytes(constantInfo);
                 if (declaredSize != actualSize) {
                     long value = (long) constantInfo.getValueInfo().getProperty();
                     if (value >= returnKind.getMinValue() && value <= returnKind.getMaxValue()) {
@@ -186,7 +186,7 @@ public final class QueryResultParser extends NativeInfoTreeVisitor {
 
     private void parseIntegerConstantValue(PropertyInfo<Object> info) {
         boolean isUnsigned = ((SizableInfo) info.getParent()).isUnsigned();
-        int size = getSizeInBytes(info);
+        int size = getSizeInBytes((SizableInfo) info.getParent());
         String hex = idToResult.get(info.getUniqueID());
         int hexSize = hex.length() / 2;
 
@@ -201,8 +201,8 @@ public final class QueryResultParser extends NativeInfoTreeVisitor {
         }
     }
 
-    private int getSizeInBytes(PropertyInfo<Object> info) {
-        int size = ((SizableInfo) info.getParent()).getSizeInfo().getProperty();
+    private int getSizeInBytes(SizableInfo parent) {
+        int size = parent.getSizeInfo().getProperty();
         return size;
     }
 
