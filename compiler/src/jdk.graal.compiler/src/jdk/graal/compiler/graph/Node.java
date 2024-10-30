@@ -1198,9 +1198,7 @@ public abstract class Node implements Cloneable, Formattable {
         if (graph != null) {
             assert !graph.isFrozen();
             NodeEventListener listener = graph.nodeEventListener;
-            if (listener != null) {
-                listener.event(Graph.NodeEvent.INPUT_CHANGED, node);
-            }
+            fireNodeEvent(node, listener, Graph.NodeEvent.INPUT_CHANGED);
             graph.edgeModificationCount++;
         }
     }
@@ -1214,13 +1212,13 @@ public abstract class Node implements Cloneable, Formattable {
         if (graph != null && node.isAlive()) {
             assert !graph.isFrozen();
             NodeEventListener listener = graph.nodeEventListener;
-            fireNodeEvent(node, listener);
+            fireNodeEvent(node, listener, Graph.NodeEvent.ZERO_USAGES);
         }
     }
 
-    private void fireNodeEvent(Node node, NodeEventListener listener) {
+    private void fireNodeEvent(Node node, NodeEventListener listener, Graph.NodeEvent nodeEvent) {
         if (listener != null) {
-            listener.event(Graph.NodeEvent.ZERO_USAGES, node);
+            listener.event(nodeEvent, node);
         }
     }
 
