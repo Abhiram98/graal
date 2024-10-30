@@ -144,7 +144,10 @@ public final class ReentrantBlockIterator {
         while (true) { // TERMINATION ARGUMENT: processing all blocks reverse post order until end
                        // of cfg or until a bailout is triggered because of a long compile
             CompilationAlarm.checkProgress(start.getCfg().graph);
-            checkExpiration(compilationAlarm, graph);
+            if (compilationAlarm.hasExpired()) {
+                double period = CompilationAlarm.Options.CompilationExpirationPeriod.getValue(graph.getOptions());
+                throw new PermanentBailoutException("Compilation exceeded %f seconds during CFG traversal", period);
+            }
             HIRBlock next = null;
             if (stopAtBlock != null && stopAtBlock.test(current)) {
                 states.put(current.getBeginNode(), state);
@@ -198,7 +201,7 @@ public final class ReentrantBlockIterator {
         }
     }
 
-    private static void checkExpiration(CompilationAlarm compilationAlarm, StructuredGraph graph) {
+    private void checkExpiration(CompilationAlarm compilationAlarm, StructuredGraph graph) {
         if (compilationAlarm.hasExpired()) {
             double period = CompilationAlarm.Options.CompilationExpirationPeriod.getValue(graph.getOptions());
             throw new PermanentBailoutException("Compilation exceeded %f seconds during CFG traversal", period);
