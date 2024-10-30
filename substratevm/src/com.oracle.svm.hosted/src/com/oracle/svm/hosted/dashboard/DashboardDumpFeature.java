@@ -171,7 +171,16 @@ public class DashboardDumpFeature implements InternalFeature {
                                 true,
                                 os -> {
                                     try (JsonBuilder.ObjectBuilder builder = objectBuilder.append("code-breakdown").object()) {
-                                        dump.toJson(builder);
+                                        dump.build();
+                                        try (JsonBuilder.ArrayBuilder array = builder.append("code-size").array()) {
+                                            for (Map.Entry<String, Integer> entry : dump.getData().entrySet()) {
+                                                try (JsonBuilder.ObjectBuilder object = array.nextEntry().object()) {
+                                                    object
+                                                            .append("name", entry.getKey())
+                                                            .append("size", entry.getValue());
+                                                }
+                                            }
+                                        }
                                     } catch (IOException ex) {
                                         ((AfterCompilationAccessImpl) access).getDebugContext().log("Dump of Code-Breakdown failed with: %s", ex);
                                     }
@@ -190,6 +199,19 @@ public class DashboardDumpFeature implements InternalFeature {
                                         ((AfterCompilationAccessImpl) access).getDebugContext().log("Dump of Code-Breakdown failed with: %s", ex);
                                     }
                                 });
+            }
+        }
+    }
+
+    private void toJson(CodeBreakdown dump, JsonBuilder.ObjectBuilder builder) throws IOException {
+        dump.build();
+        try (JsonBuilder.ArrayBuilder array = builder.append("code-size").array()) {
+            for (Map.Entry<String, Integer> entry : dump.getData().entrySet()) {
+                try (JsonBuilder.ObjectBuilder object = array.nextEntry().object()) {
+                    object
+                            .append("name", entry.getKey())
+                            .append("size", entry.getValue());
+                }
             }
         }
     }

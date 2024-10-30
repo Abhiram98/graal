@@ -24,7 +24,6 @@
  */
 package com.oracle.svm.hosted.dashboard;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,8 +31,6 @@ import org.graalvm.nativeimage.hosted.Feature;
 
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.code.CompileQueue;
-
-import jdk.graal.compiler.util.json.JsonBuilder;
 
 class CodeBreakdown {
     private boolean built = false;
@@ -44,7 +41,7 @@ class CodeBreakdown {
         this.access = access;
     }
 
-    private void build() {
+    void build() {
         if (built) {
             return;
         }
@@ -60,16 +57,4 @@ class CodeBreakdown {
         return data;
     }
 
-    public void toJson(JsonBuilder.ObjectBuilder builder) throws IOException {
-        build();
-        try (JsonBuilder.ArrayBuilder array = builder.append("code-size").array()) {
-            for (Map.Entry<String, Integer> entry : data.entrySet()) {
-                try (JsonBuilder.ObjectBuilder object = array.nextEntry().object()) {
-                    object
-                            .append("name", entry.getKey())
-                            .append("size", entry.getValue());
-                }
-            }
-        }
-    }
 }
