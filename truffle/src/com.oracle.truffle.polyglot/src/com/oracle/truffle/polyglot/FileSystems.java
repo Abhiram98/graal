@@ -1230,11 +1230,18 @@ final class FileSystems {
 
         static ResourcesFileSystem createForEngine(PolyglotEngineImpl engine, FileSystem resourcesFileSystem, FileSystem delegateFileSystem) {
             Set<Path> languageHomes = new HashSet<>();
-            languageHomes(engine, languageHomes);
+            for (PolyglotLanguage language : engine.languages) {
+                if (language != null) {
+                    final String languageHome = language.cache.getLanguageHome();
+                    if (languageHome != null) {
+                        languageHomes.add(Paths.get(languageHome));
+                    }
+                }
+            }
             return new ResourcesFileSystem(resourcesFileSystem, delegateFileSystem, engine.internalResourceRoots, languageHomes);
         }
 
-        private static void languageHomes(PolyglotEngineImpl engine, Set<Path> languageHomes) {
+        private void languageHomes(PolyglotEngineImpl engine, Set<Path> languageHomes) {
             for (PolyglotLanguage language : engine.languages) {
                 if (language != null) {
                     final String languageHome = language.cache.getLanguageHome();
